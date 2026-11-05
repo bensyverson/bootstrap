@@ -1,0 +1,31 @@
+{
+  "screen": "github-signup",
+  "mode": "waiting",
+  "progress": 1,
+  "title": [
+    {
+      "text": "Make your GitHub account."
+    }
+  ],
+  "status": [
+    {
+      "text": "GitHub’s sign-up page is open in your browser. Come back here when you’re done."
+    }
+  ],
+  "choices": [
+    {
+      "id": "made-it",
+      "label": "I’ve made my account",
+      "primary": true
+    },
+    {
+      "id": "not-now",
+      "label": "Not now"
+    },
+    {
+      "id": "signup",
+      "label": "Open the sign-up page",
+      "url": "https://github.com/signup"
+    }
+  ]
+}

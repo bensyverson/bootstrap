@@ -350,7 +350,7 @@ func TestScreensJSON(t *testing.T) {
 	if err := json.Unmarshal([]byte(r.stdout), &got); err != nil {
 		t.Fatalf("%v\n%s", err, r.stdout)
 	}
-	if len(got.Screens) != 22 || got.Screens[0].Screen != "welcome" || !got.Screens[20].Internal || !got.Screens[21].Internal {
+	if len(got.Screens) != 27 || got.Screens[0].Screen != "welcome" || !got.Screens[25].Internal || !got.Screens[26].Internal {
 		t.Errorf("got %+v", got)
 	}
 }

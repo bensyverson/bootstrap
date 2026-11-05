@@ -102,13 +102,16 @@ function show(d) {
   }
   if (d.field) {
     const f = el("input", "field"); f.value = d.field.value; f.setAttribute("aria-label", d.field.label); f.autocomplete = "off";
+    f.placeholder = d.field.label;
+    if (d.field.kind === "email") f.type = "email";
     f.oninput = () => swapStatus(shown.status);
     next.append(f);
   }
   const row = el("div", "choices");
   row.append(...(d.choices || []).map(choice => {
     const b = el("button", choice.primary ? "main" : "", choice.label);
-    b.onclick = () => answer(choice);
+    // A button with an address opens it beside the page, and answers nothing.
+    b.onclick = () => (choice.url ? open(choice.url, "_blank", "noopener") : answer(choice));
     return b;
   }));
   next.append(row);

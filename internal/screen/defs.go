@@ -3,7 +3,6 @@ package screen
 import (
 	"embed"
 	"slices"
-	"strings"
 
 	"github.com/bensyverson/bootstrap/catalog"
 )
@@ -94,6 +93,38 @@ type spec struct {
 	next     string
 	internal bool
 	chat     bool
+	// links are buttons that open a page and answer nothing, after the choices.
+	links []linkDef
+	// detail is what the flow fills in from what it learned, beyond the closed lists.
+	detail detail
+	// draft marks words Ben hasn't approved yet.
+	draft bool
+}
+
+type linkDef struct {
+	id, label, url string
+}
+
+// detail is what a screen takes from the flow, checked in Validate.
+type detail int
+
+const (
+	noDetail detail = iota
+	// codeDetail is gh's one-time code.
+	codeDetail
+	// identityDetail is a name and GitHub's private email, which {name} and {email} show.
+	identityDetail
+)
+
+// Drafts lists the screens whose words Ben hasn't approved, in path order.
+func Drafts() []ID {
+	var ids []ID
+	for _, s := range specs {
+		if s.draft {
+			ids = append(ids, s.id)
+		}
+	}
+	return ids
 }
 
 var specs = []spec{
@@ -121,18 +152,30 @@ var specs = []spec{
 		field: &Field{Label: "Project name", Value: "my-project"}, choices: []choiceDef{{"next", "Next"}}, next: nextAnswer},
 	{id: "building", mode: Working, title: "Setting up your project",
 		statuses: []option{{"folder", "Making your folder"}, {"git", "Turning on Git"}, {"rules", "Teaching {ai} how you work"}}, next: nextWork},
-	{id: "git-ask", mode: Waiting, title: TodoWords + ": Use Git for this project?",
-		statuses: []option{
-			{"repo", TodoWords + ": Git keeps every version of your work."},
-			{"ignore", TodoWords + ": Add a list of files Git should leave out?"},
-			{"commit", TodoWords + ": Save this first version?"},
-		},
-		choices: []choiceDef{{"yes", TodoWords + ": Yes"}, {"not-now", TodoWords + ": Not now"}}, next: nextAnswer},
+	{id: "git-ask", mode: Waiting, title: "Should Git keep track of this project?",
+		status:  "Git saves every version of your work, so you can always go back.",
+		choices: []choiceDef{{"yes", "Yes, use Git"}, {"not-now", "Not now"}}, next: nextAnswer, draft: true},
 	{id: "github", mode: Waiting, title: "Want a place to keep your work online?", status: "GitHub is free. You can always do this later.",
-		choices: []choiceDef{{"yes", "Yes, help me"}, {"not-now", "Not now"}}, next: nextAnswer},
-	{id: "settings", mode: Waiting, title: TodoWords + ": Turn on the helpers for {app}?",
-		status:  TodoWords + ": They keep sessions short and plans in Jobs.",
-		choices: []choiceDef{{"yes", TodoWords + ": Yes"}, {"not-now", TodoWords + ": Not now"}}, next: nextAnswer},
+		choices: []choiceDef{{"yes", "Yes, I have an account"}, {"make-one", "Yes, help me make one"}, {"not-now", "Not now"}}, next: nextAnswer, draft: true},
+	{id: "github-signup", mode: Waiting, title: "Make your GitHub account.",
+		status:  "GitHub’s sign-up page is open in your browser. Come back here when you’re done.",
+		choices: []choiceDef{{"made-it", "I’ve made my account"}, {"not-now", "Not now"}},
+		links:   []linkDef{{"signup", "Open the sign-up page", "https://github.com/signup"}}, next: nextAnswer, draft: true},
+	{id: "github-code", mode: Waiting, title: "Your turn: enter this code on GitHub.",
+		status: "Open GitHub, sign in if it asks, and type this code. This page moves on by itself when you’re done.",
+		links:  []linkDef{{"device", "Open GitHub", "https://github.com/login/device"}}, detail: codeDetail, next: nextWork, draft: true},
+	{id: "identity", mode: Waiting, title: "Sign your work as {name}?",
+		status:  "Git puts a name and email on every version you save. We’ll use {email}, a private address from GitHub, so your real email stays hidden.",
+		choices: []choiceDef{{"use-these", "Yes, use these"}, {"skip", "Skip"}}, detail: identityDetail, next: nextAnswer, draft: true},
+	{id: "identity-name", mode: Waiting, layout: LayoutLow, title: "What name should Git put on your work?",
+		status: "Git adds it to every version you save.",
+		field:  &Field{Label: "Your name", Kind: FieldName}, choices: []choiceDef{{"next", "Next"}, {"skip", "Skip"}}, next: nextAnswer, draft: true},
+	{id: "identity-email", mode: Waiting, layout: LayoutLow, title: "And your email?",
+		status: "It goes into your project’s history, so anyone you share the project with can see it.",
+		field:  &Field{Label: "Your email", Kind: FieldEmail}, choices: []choiceDef{{"next", "Next"}, {"skip", "Skip"}}, next: nextAnswer, draft: true},
+	{id: "settings", mode: Waiting, title: "Turn on {ai}’s helpers?",
+		status:  "They warn {ai} before a session runs too long, and keep its plans in Jobs.",
+		choices: []choiceDef{{"yes", "Yes, turn them on"}, {"not-now", "Not now"}}, next: nextAnswer, draft: true},
 	{id: "phone", mode: Waiting, title: "Want to use {ai} from your phone?",
 		choices: []choiceDef{{"yes", "Show me how"}, {"not-now", "Not now"}}, next: nextAnswer},
 	{id: "done", mode: Settled, title: "All set!", status: "You can close this and go back to {app}.", next: nextStop},
@@ -143,20 +186,6 @@ var specs = []spec{
 	{id: "chat", mode: Waiting, title: "Let’s talk in {app}.", status: "{ai} has a question.", chat: true, next: nextChat},
 	{id: Lost, mode: Waiting, title: LostTitle, status: LostLine, internal: true},
 	{id: End, mode: Settled, title: EndTitle, status: EndLine, internal: true},
-}
-
-// TodoWords starts every word Ben hasn't written yet.
-const TodoWords = "TODO-WORDS"
-
-// Placeholders lists the screens still holding TodoWords, in path order.
-func Placeholders() []ID {
-	var ids []ID
-	for _, s := range specs {
-		if slices.ContainsFunc(s.words(), func(w string) bool { return strings.HasPrefix(w, TodoWords) }) {
-			ids = append(ids, s.id)
-		}
-	}
-	return ids
 }
 
 // words is every word a screen can show, before names are swapped in.
@@ -178,6 +207,9 @@ func (s spec) words() []string {
 	}
 	for _, c := range s.choices {
 		add(c.label)
+	}
+	for _, l := range s.links {
+		add(l.label)
 	}
 	return out
 }

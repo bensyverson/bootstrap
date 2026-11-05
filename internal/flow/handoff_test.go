@@ -59,6 +59,8 @@ func TestUnexpectedResultsHandOff(t *testing.T) {
 		skip    bool
 		exit    int
 		hasTail bool
+		// times is how many calls the result holds for, or every call when 0.
+		times int
 	}{
 		{name: "a skippable tool exits 1", match: "brew install bensyverson/tap/sleepy", result: flow.Result{Exit: 1, Output: []byte("==> Fetching\nError: no bottle available\n")},
 			reason: session.ReasonExit, tool: "sleepy", what: "brew install bensyverson/tap/sleepy exited 1", skip: true, exit: 1, hasTail: true},
@@ -71,7 +73,7 @@ func TestUnexpectedResultsHandOff(t *testing.T) {
 		{name: "a tool says yes but isn't there", match: "brew install bensyverson/tap/sleepy", result: flow.Result{Output: []byte("Warning: already installed\n")},
 			reason: session.ReasonMissing, tool: "sleepy", what: "brew install bensyverson/tap/sleepy exited 0, but /opt/homebrew/bin/sleepy isn't there", skip: true, hasTail: true},
 		{name: "a check exits with a code it never uses", match: "gh auth status", result: flow.Result{Exit: 4, Output: []byte("panic\n")},
-			reason: session.ReasonExit, what: "gh auth status exited 4", skip: true, exit: 4, hasTail: true},
+			reason: session.ReasonExit, what: "gh auth status exited 4", skip: true, exit: 4, hasTail: true, times: 1},
 		{name: "git init fails", match: "git init", result: flow.Result{Exit: 128, Output: []byte("fatal: cannot mkdir\n")},
 			reason: session.ReasonExit, what: "git init exited 128", skip: true, exit: 128, hasTail: true},
 		{name: "job init fails", match: "job init", result: flow.Result{Exit: 2, Output: []byte("error\n")},
@@ -80,7 +82,7 @@ func TestUnexpectedResultsHandOff(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			w := newWorld(t)
-			w.mac.On(c.match, c.result, 0)
+			w.mac.On(c.match, c.result, c.times)
 			w.resume = w.skipOrRetry
 			if err := w.walk(); err != nil {
 				t.Fatal(err)

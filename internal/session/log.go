@@ -332,7 +332,7 @@ func (s Store) RecordAnswer(seq int, ans screen.Answer, now time.Time) (State, e
 		if err != nil {
 			return event{}, err
 		}
-		if name, ok := screen.FolderName(ans.Name); ok && desc.Field != nil {
+		if name, ok := screen.FolderName(ans.Name); ok && desc.Field != nil && desc.Field.Folder() {
 			ans.Name = name
 		}
 		if err := screen.ValidateAnswer(desc, ans); err != nil {

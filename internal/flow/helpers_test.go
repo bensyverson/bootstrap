@@ -48,17 +48,19 @@ type world struct {
 
 func defaultAnswers() map[asked]screen.Answer {
 	return map[asked]screen.Answer{
-		{"welcome", ""}:       {Choice: "see-plan"},
-		{"list", ""}:          {Choice: "lets-go", Tools: []string{"sleepy"}},
-		{"naming", ""}:        {Choice: "next", Name: "Pine Bakery"},
-		{"git-ask", "repo"}:   {Choice: "yes"},
-		{"git-ask", "ignore"}: {Choice: "yes"},
-		{"git-ask", "commit"}: {Choice: "yes"},
-		{"github", ""}:        {Choice: "yes"},
-		{"making", ""}:        {Choice: "website"},
-		{"live-yet", ""}:      {Choice: "not-yet"},
-		{"settings", ""}:      {Choice: "yes"},
-		{"phone", ""}:         {Choice: "yes"},
+		{"welcome", ""}:        {Choice: "see-plan"},
+		{"list", ""}:           {Choice: "lets-go", Tools: []string{"sleepy"}},
+		{"naming", ""}:         {Choice: "next", Name: "Pine Bakery"},
+		{"git-ask", ""}:        {Choice: "yes"},
+		{"github", ""}:         {Choice: "yes"},
+		{"github-signup", ""}:  {Choice: "made-it"},
+		{"identity", ""}:       {Choice: "use-these"},
+		{"identity-name", ""}:  {Choice: "next", Name: "ada"},
+		{"identity-email", ""}: {Choice: "next", Name: "ada@example.com"},
+		{"making", ""}:         {Choice: "website"},
+		{"live-yet", ""}:       {Choice: "not-yet"},
+		{"settings", ""}:       {Choice: "yes"},
+		{"phone", ""}:          {Choice: "yes"},
 	}
 }
 

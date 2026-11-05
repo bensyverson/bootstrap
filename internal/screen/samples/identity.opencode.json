@@ -1,0 +1,26 @@
+{
+  "screen": "identity",
+  "mode": "waiting",
+  "progress": 1,
+  "title": [
+    {
+      "text": "Sign your work as Ada Lovelace?"
+    }
+  ],
+  "status": [
+    {
+      "text": "Git puts a name and email on every version you save. We’ll use 1234+ada@users.noreply.github.com, a private address from GitHub, so your real email stays hidden."
+    }
+  ],
+  "choices": [
+    {
+      "id": "use-these",
+      "label": "Yes, use these",
+      "primary": true
+    },
+    {
+      "id": "skip",
+      "label": "Skip"
+    }
+  ]
+}

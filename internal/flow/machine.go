@@ -29,7 +29,36 @@ const (
 	// homebrewTeam is the Developer ID that signs Homebrew's .pkg.
 	homebrewTeam = "927JGANW46"
 	homebrewPkg  = "Homebrew.pkg"
+	// appleInstaller is Apple's installer, which xcode-select starts behind every
+	// other window; opening it brings it to the front (project/2026-11-05-vm-run-findings.md).
+	appleInstaller = "/System/Library/CoreServices/Install Command Line Developer Tools.app"
 )
+
+// What pkgutil --check-signature prints for a package Homebrew signed and Apple
+// notarized. The signer is the chain's first certificate; a team ID anywhere
+// else in the output proves nothing.
+var (
+	pkgDistributed = regexp.MustCompile(`(?m)^\s*Status: signed by a developer certificate issued by Apple for distribution\s*$`)
+	pkgNotarized   = regexp.MustCompile(`(?m)^\s*Notarization: trusted by the Apple notary service\s*$`)
+	pkgSigner      = regexp.MustCompile(`(?m)^\s*1\. (.*)$`)
+)
+
+// homebrewSigned says whether pkgutil's report shows Homebrew's own signature and
+// Apple's notarization, and if not, what's wrong.
+func homebrewSigned(report string) (bool, string) {
+	signer := pkgSigner.FindStringSubmatch(report)
+	switch {
+	case !pkgDistributed.MatchString(report):
+		return false, "isn't signed for distribution"
+	case signer == nil:
+		return false, "names no signer"
+	case !strings.HasPrefix(signer[1], "Developer ID Installer: ") || !strings.HasSuffix(strings.TrimSpace(signer[1]), "("+homebrewTeam+")"):
+		return false, fmt.Sprintf("is signed by %q, not Homebrew (%s)", strings.TrimSpace(signer[1]), homebrewTeam)
+	case !pkgNotarized.MatchString(report):
+		return false, "isn't notarized by Apple"
+	}
+	return true, ""
+}
 
 var steps = []stepDef{
 	{ID: StepPlan, Screens: []screen.ID{"welcome", "list", "fast"}, Asks: []screen.ID{"welcome", "list"}, check: checkPlan, act: actPlan},
@@ -38,10 +67,10 @@ var steps = []stepDef{
 	{ID: StepTools, Screens: []screen.ID{"tool"}, check: checkTools, act: actTools},
 	{ID: StepFolder, Screens: []screen.ID{"naming", "building"}, Asks: []screen.ID{"naming"}, check: checkFolder, act: actFolder},
 	{ID: StepGit, Screens: []screen.ID{"git-ask", "building"}, Asks: []screen.ID{"git-ask"}, Skippable: true, check: checkGit, act: actGit},
-	{ID: StepGitHub, Screens: []screen.ID{"github"}, Asks: []screen.ID{"github"}, Skippable: true, check: checkGitHub, act: actGitHub},
+	{ID: StepGitHub, Screens: []screen.ID{"github", "github-signup", "github-code"}, Asks: []screen.ID{"github", "github-signup"}, Skippable: true, check: checkGitHub, act: actGitHub},
+	{ID: StepIdentity, Screens: []screen.ID{"identity", "identity-name", "identity-email"}, Asks: []screen.ID{"identity", "identity-name", "identity-email"}, Skippable: true, check: checkIdentity, act: actIdentity},
 	{ID: StepStage, Screens: []screen.ID{"making", "xcode", "live-yet"}, Asks: []screen.ID{"making", "xcode", "live-yet"}, check: checkStage, act: actStage},
 	{ID: StepRules, Screens: []screen.ID{"building"}, check: checkRules, act: actRules},
-	{ID: StepCommit, Screens: []screen.ID{"git-ask"}, Asks: []screen.ID{"git-ask"}, Skippable: true, check: checkCommit, act: actCommit},
 	{ID: StepSettings, Screens: []screen.ID{"settings"}, Asks: []screen.ID{"settings"}, Skippable: true, check: checkSettings, act: actSettings},
 	{ID: StepPhone, Screens: []screen.ID{"phone"}, Asks: []screen.ID{"phone"}, Skippable: true, check: checkPhone, act: actPhone},
 	{ID: StepDone, Screens: []screen.ID{"done"}, check: checkDone, act: actDone},
@@ -134,6 +163,9 @@ func actApple(r *run) (outcome, error) {
 	if _, h, err := r.exec(Command{Kind: Change, Path: xcodeSelectPath, Args: []string{"--install"}}, "clt"); err != nil || h != nil {
 		return orHandOff(h, err)
 	}
+	if _, h, err := r.exec(Command{Kind: Change, Path: openPath, Args: []string{"-a", appleInstaller}}, "clt"); err != nil || h != nil {
+		return orHandOff(h, err)
+	}
 	if err := r.note("installing Apple's tools: the person is clicking through Apple's window"); err != nil {
 		return outcome{}, err
 	}
@@ -179,13 +211,18 @@ func actHomebrew(r *run) (outcome, error) {
 	}
 	// Checked by signer, not a pinned checksum, because the version moves. spctl
 	// alone isn't trusted: a VM rejected a good package.
-	res, h, err := r.exec(Command{Kind: Inspect, Path: pkgutilPath, Args: []string{"--check-signature", pkg}}, "homebrew")
+	// pkgutil exits 1 for a package with no signature, which is refused below like any other.
+	check := Command{Kind: Inspect, Path: pkgutilPath, Args: []string{"--check-signature", pkg}}
+	res, h, err := r.exec(check, "homebrew", 0, 1)
 	if err != nil || h != nil {
 		return orHandOff(h, err)
 	}
-	if !strings.Contains(string(res.Output), "("+homebrewTeam+")") {
-		h := r.trouble(session.ReasonUnsigned, "homebrew", fmt.Sprintf("%s isn't signed by Homebrew (%s)", homebrewPkg, homebrewTeam))
-		h.Evidence = session.Evidence{Command: Command{Path: pkgutilPath, Args: []string{"--check-signature", pkg}}.String(), Tail: tail(res.Output)}
+	if ok, why := homebrewSigned(string(res.Output)); !ok || res.Exit != 0 {
+		if why == "" {
+			why = fmt.Sprintf("failed its signature check (exit %d)", res.Exit)
+		}
+		h := r.trouble(session.ReasonUnsigned, "homebrew", fmt.Sprintf("%s %s, so it wasn't opened", homebrewPkg, why))
+		h.Evidence = session.Evidence{Command: check.String(), Exit: res.Exit, Log: filepath.Join(r.f.logs(), "homebrew.log"), Tail: tail(res.Output)}
 		return handOff(h)
 	}
 	if err := r.show(screen.Request{Screen: "brew-ask"}); err != nil {

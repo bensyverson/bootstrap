@@ -1,0 +1,32 @@
+{
+  "screen": "identity-email",
+  "mode": "waiting",
+  "layout": "low",
+  "progress": 1,
+  "title": [
+    {
+      "text": "And your email?"
+    }
+  ],
+  "status": [
+    {
+      "text": "It goes into your project’s history, so anyone you share the project with can see it."
+    }
+  ],
+  "field": {
+    "label": "Your email",
+    "value": "",
+    "kind": "email"
+  },
+  "choices": [
+    {
+      "id": "next",
+      "label": "Next",
+      "primary": true
+    },
+    {
+      "id": "skip",
+      "label": "Skip"
+    }
+  ]
+}

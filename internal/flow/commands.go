@@ -20,6 +20,12 @@ const tailLines = 20
 // for any result outside expect (exit 0 when none is given). tool is the catalog
 // tool the command is for, if any, which decides whether skipping is offered.
 func (r *run) exec(cmd Command, tool string, expect ...int) (Result, *session.Handoff, error) {
+	return r.stream(cmd, tool, nil, expect...)
+}
+
+// stream is exec for a command whose output the person needs before it exits:
+// line gets each line as it comes. A nil line runs the command plainly.
+func (r *run) stream(cmd Command, tool string, line func(string), expect ...int) (Result, *session.Handoff, error) {
 	if cmd.Timeout == 0 {
 		cmd.Timeout = r.f.cfg.Limits.Command
 	}
@@ -27,7 +33,12 @@ func (r *run) exec(cmd Command, tool string, expect ...int) (Result, *session.Ha
 		expect = []int{0}
 	}
 	began := time.Now()
-	res := r.f.cfg.Runner.Run(r.ctx, cmd)
+	var res Result
+	if line == nil {
+		res = r.f.cfg.Runner.Run(r.ctx, cmd)
+	} else {
+		res = r.f.cfg.Runner.Stream(r.ctx, cmd, line)
+	}
 	if err := r.ctx.Err(); err != nil {
 		return res, nil, err
 	}

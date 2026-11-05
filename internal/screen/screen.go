@@ -39,10 +39,12 @@ type Span struct {
 }
 
 // Choice is one button. ID is what wait answer returns; Label is what a person reads.
+// A button with a URL opens that page in a new tab and answers nothing.
 type Choice struct {
 	ID      string `json:"id"`
 	Label   string `json:"label"`
 	Primary bool   `json:"primary,omitempty"`
+	URL     string `json:"url,omitempty"`
 }
 
 // Row is one line of the list screen.
@@ -55,11 +57,27 @@ type Row struct {
 	Checked  bool   `json:"checked"`
 }
 
-// Field is the one text box.
+// FieldKind is what a text box holds, which decides how its answer is checked.
+type FieldKind string
+
+const (
+	// FieldFolder is a project's folder name, made git-friendly when it's answered.
+	FieldFolder FieldKind = ""
+	// FieldName is a person's name, kept as they typed it.
+	FieldName FieldKind = "name"
+	// FieldEmail is an email address.
+	FieldEmail FieldKind = "email"
+)
+
+// Field is the one text box. Label is also what the box shows while it's empty.
 type Field struct {
-	Label string `json:"label"`
-	Value string `json:"value"`
+	Label string    `json:"label"`
+	Value string    `json:"value"`
+	Kind  FieldKind `json:"kind,omitempty"`
 }
+
+// Folder reports whether the box names a folder, so its answer is made git-friendly.
+func (f Field) Folder() bool { return f.Kind == FieldFolder }
 
 // Description is everything the page draws. The page knows nothing about any
 // particular screen, so anything it needs has to be in here. samples/ holds the
@@ -85,6 +103,11 @@ type Request struct {
 	Tool   string `json:"tool,omitempty"`
 	Status string `json:"status,omitempty"`
 	Reason string `json:"reason,omitempty"`
+	// Code is gh's one-time code, for the screen that shows it.
+	Code string `json:"code,omitempty"`
+	// Name and Email are what Git would sign the person's work with, from GitHub.
+	Name  string `json:"name,omitempty"`
+	Email string `json:"email,omitempty"`
 }
 
 // Context is what a description depends on besides the request.
@@ -96,7 +119,8 @@ type Context struct {
 	Carried float64
 }
 
-// Answer is what a person decided on a screen.
+// Answer is what a person decided on a screen. Name is what they typed in the
+// screen's text box, whatever the box holds.
 type Answer struct {
 	Choice string   `json:"choice"`
 	Tools  []string `json:"tools,omitempty"`

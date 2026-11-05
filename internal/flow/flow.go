@@ -23,8 +23,9 @@ import (
 	"github.com/bensyverson/bootstrap/internal/session"
 )
 
-// The steps, in order: the order in project/2026-11-05-server-driven-flow.md,
-// with the first commit after the project's files exist.
+// The steps, in order: the order in project/2026-11-05-server-driven-flow.md.
+// There's no commit: the setup never commits for the person (Ben, 2026-11-05),
+// and Git's identity comes after GitHub, which can supply it.
 const (
 	StepPlan     session.StepID = "plan"
 	StepApple    session.StepID = "apple"
@@ -33,9 +34,9 @@ const (
 	StepFolder   session.StepID = "folder"
 	StepGit      session.StepID = "git"
 	StepGitHub   session.StepID = "github"
+	StepIdentity session.StepID = "identity"
 	StepStage    session.StepID = "stage"
 	StepRules    session.StepID = "rules"
-	StepCommit   session.StepID = "commit"
 	StepSettings session.StepID = "settings"
 	StepPhone    session.StepID = "phone"
 	StepDone     session.StepID = "done"
@@ -392,8 +393,10 @@ func told(req screen.Request, a screen.Answer) string {
 	switch {
 	case len(a.Tools) > 0 || req.Screen == "list":
 		return fmt.Sprintf("person chose %s, keeping %s", a.Choice, joinList(screen.KeepRequired(a.Tools)))
-	case a.Name != "":
+	case req.Screen == "naming":
 		return "person named the project " + a.Name
+	case a.Name != "" && a.Choice != "skip":
+		return fmt.Sprintf("person typed %q on %s", a.Name, req.Screen)
 	case req.Status != "":
 		return fmt.Sprintf("person chose %s on %s %s", a.Choice, req.Screen, req.Status)
 	}

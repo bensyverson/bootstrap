@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -30,6 +31,44 @@ func TestExecRunnerCapturesOutputAndExit(t *testing.T) {
 	}
 	if got := string(res.Output); got != "out one\nerr\n" {
 		t.Errorf("output = %q", got)
+	}
+}
+
+// The script won't go on until the first line has reached the caller, so this
+// passes only if lines arrive while the command still runs.
+func TestExecRunnerStreamsLinesAsTheyCome(t *testing.T) {
+	root, dir := t.TempDir(), t.TempDir()
+	gate := filepath.Join(dir, "gate")
+	script(t, filepath.Join(root, "bin/talk"), `echo "! One-time code (D7BA-CFE2) copied to clipboard"
+i=0; while [ ! -e "$1" ] && [ $i -lt 300 ]; do sleep 0.01; i=$((i+1)); done
+[ -e "$1" ] || { echo "never heard back" >&2; exit 9; }
+echo done >&2`)
+	var lines []string
+	res := flow.ExecRunner{Root: root}.Stream(context.Background(), flow.Command{Path: "/bin/talk", Args: []string{gate}, Timeout: 10 * time.Second}, func(line string) {
+		lines = append(lines, line)
+		if len(lines) == 1 {
+			os.WriteFile(gate, nil, 0o600)
+		}
+	})
+	if res.Err != nil || res.Exit != 0 {
+		t.Fatalf("result = %+v, output %q", res, res.Output)
+	}
+	want := []string{"! One-time code (D7BA-CFE2) copied to clipboard", "done"}
+	if !slices.Equal(lines, want) {
+		t.Errorf("lines = %q, want %q", lines, want)
+	}
+	if got := string(res.Output); got != strings.Join(want, "\n")+"\n" {
+		t.Errorf("output = %q", got)
+	}
+}
+
+func TestExecRunnerStreamTimesOut(t *testing.T) {
+	root := t.TempDir()
+	script(t, filepath.Join(root, "bin/slow"), `echo waiting; sleep 10`)
+	var lines []string
+	res := flow.ExecRunner{Root: root}.Stream(context.Background(), flow.Command{Path: "/bin/slow", Timeout: 300 * time.Millisecond}, func(line string) { lines = append(lines, line) })
+	if !res.TimedOut || !slices.Equal(lines, []string{"waiting"}) {
+		t.Errorf("result = %+v, lines %q", res, lines)
 	}
 }
 

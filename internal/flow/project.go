@@ -13,38 +13,48 @@ import (
 )
 
 const (
-	// rulesSource is what agents init renders the rules from.
+	// rulesSource is what agents init renders the rules from. Plain agents init
+	// would use the modules built into agents, which are only its own (agents,
+	// module-authoring); Ben's rules live in this source.
 	rulesSource = "github.com/bensyverson/agents-md"
 	// xcodeInAppStore opens Xcode's page in the App Store.
 	xcodeInAppStore = "macappstore://apps.apple.com/app/xcode/id497799835"
-	firstCommit     = "Sets up the project"
-	// starterIgnore is a new project's .gitignore, before local/ and job's lines join it.
-	starterIgnore = ".DS_Store\n"
-	localDir      = "local"
+	localDir        = "local"
+	// defaultBranch is the first branch of every repo Git makes, unless the person chose one.
+	defaultBranch = "main"
+)
+
+// The .gitignore is built from what the setup knows, with no question (Ben,
+// 2026-11-05): every project leaves out the Mac's own files, and the making
+// answer adds what a website's or an app's tools leave behind. local/ and job's
+// lines join them from their own steps.
+var (
+	alwaysIgnore = []string{".DS_Store"}
+	ignoreFor    = map[string][]string{
+		website: {"node_modules/", ".env", "dist/"},
+		anApp:   {".build/", ".swiftpm/", "DerivedData/", "xcuserdata/"},
+	}
 )
 
 // jobIdentity is the name job init records for each app's agent (project/2026-11-05-init-existing-project-findings.md).
 var jobIdentity = map[string]string{screen.ClaudeCode.ID: "claude", screen.OpenCode.ID: "opencode"}
 
 var (
-	naming    = screen.Request{Screen: "naming"}
-	askRepo   = screen.Request{Screen: "git-ask", Status: "repo"}
-	askIgnore = screen.Request{Screen: "git-ask", Status: "ignore"}
-	askCommit = screen.Request{Screen: "git-ask", Status: "commit"}
-	askGitHub = screen.Request{Screen: "github"}
-	making    = screen.Request{Screen: "making"}
-	xcode     = screen.Request{Screen: "xcode"}
-	liveYet   = screen.Request{Screen: "live-yet"}
-	settings  = screen.Request{Screen: "settings"}
-	phone     = screen.Request{Screen: "phone"}
+	naming   = screen.Request{Screen: "naming"}
+	askRepo  = screen.Request{Screen: "git-ask"}
+	making   = screen.Request{Screen: "making"}
+	xcode    = screen.Request{Screen: "xcode"}
+	liveYet  = screen.Request{Screen: "live-yet"}
+	settings = screen.Request{Screen: "settings"}
+	phone    = screen.Request{Screen: "phone"}
 )
 
 // Answers the flow reads by their choice id.
 const (
-	yes      = "yes"
 	notNow   = "not-now"
 	appStore = "app-store"
 	anApp    = "app"
+	website  = "website"
 )
 
 var errNoProject = errors.New("the project steps ran before the folder step")
@@ -148,18 +158,29 @@ func checkGit(r *run) (session.StepStatus, *session.Handoff, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	if !exists(filepath.Join(dir, ".git")) {
-		no, err := r.declined(askRepo)
-		if no {
-			return session.StepSkipped, nil, err
-		}
-		return "", nil, err
+	if exists(filepath.Join(dir, ".git")) {
+		return session.StepDone, nil, nil
 	}
-	no, err := r.declined(askIgnore)
-	if err != nil || (!no && !exists(filepath.Join(dir, ".gitignore"))) {
-		return "", nil, err
+	no, err := r.declined(askRepo)
+	if no {
+		return session.StepSkipped, nil, err
 	}
-	return session.StepDone, nil, nil
+	return "", nil, err
+}
+
+// globalGit is one of Git's settings for every repo on the Mac, or "" when it's unset.
+func (r *run) globalGit(git, key string) (string, *session.Handoff, error) {
+	res, h, err := r.exec(Command{Kind: Inspect, Path: git, Args: []string{"config", "--global", "--get", key}}, "", 0, 1)
+	if err != nil || h != nil || res.Exit == 1 {
+		return "", h, err
+	}
+	return strings.TrimSpace(string(res.Output)), nil, nil
+}
+
+// setGlobalGit changes one of Git's settings for every repo on the Mac.
+func (r *run) setGlobalGit(git, key, value string) (*session.Handoff, error) {
+	_, h, err := r.exec(Command{Kind: Change, Path: git, Args: []string{"config", "--global", key, value}}, "")
+	return h, err
 }
 
 func actGit(r *run) (outcome, error) {
@@ -182,75 +203,22 @@ func actGit(r *run) (outcome, error) {
 		if err := r.show(screen.Request{Screen: "building", Status: "git"}); err != nil {
 			return outcome{}, err
 		}
+		// Before git init, so the first branch is main. A name the person chose stays.
+		branch, h, err := r.globalGit(git, "init.defaultBranch")
+		if err != nil || h != nil {
+			return orHandOff(h, err)
+		}
+		if branch == "" {
+			if h, err := r.setGlobalGit(git, "init.defaultBranch", defaultBranch); err != nil || h != nil {
+				return orHandOff(h, err)
+			}
+		}
 		if _, h, err := r.exec(Command{Kind: Change, Path: git, Args: []string{"init"}, Dir: dir}, ""); err != nil || h != nil {
 			return orHandOff(h, err)
 		}
 		if err := r.note("turned on Git in %s", r.tilde(dir)); err != nil {
 			return outcome{}, err
 		}
-	}
-	ignore := filepath.Join(dir, ".gitignore")
-	if !exists(ignore) {
-		a, ask, err := r.asked(askIgnore)
-		if err != nil || ask != nil {
-			return deref(ask, err)
-		}
-		if a.Choice == yes {
-			if err := os.WriteFile(ignore, []byte(starterIgnore), 0o644); err != nil {
-				return outcome{}, err
-			}
-			if err := r.note("added a .gitignore"); err != nil {
-				return outcome{}, err
-			}
-		}
-	}
-	return done()
-}
-
-func checkGitHub(r *run) (session.StepStatus, *session.Handoff, error) {
-	if _, ok := r.locate(ghPath); ok {
-		res, h, err := r.exec(Command{Kind: Inspect, Path: ghPath, Args: []string{"auth", "status"}}, "", 0, 1)
-		if err != nil || h != nil {
-			return "", h, err
-		}
-		if res.Exit == 0 {
-			return session.StepDone, nil, nil
-		}
-	}
-	no, err := r.declined(askGitHub)
-	if no {
-		return session.StepSkipped, nil, err
-	}
-	return "", nil, err
-}
-
-func actGitHub(r *run) (outcome, error) {
-	a, ask, err := r.asked(askGitHub)
-	if err != nil || ask != nil {
-		return deref(ask, err)
-	}
-	if a.Choice == notNow {
-		return skipped()
-	}
-	if _, ok := r.locate(ghPath); !ok {
-		install := Command{Kind: Change, Path: brewPath, Args: []string{"install", "gh"}}
-		if _, h, err := r.exec(install, ""); err != nil || h != nil {
-			return orHandOff(h, err)
-		}
-		if _, ok := r.locate(ghPath); !ok {
-			return handOff(r.trouble(session.ReasonMissing, "", fmt.Sprintf("%s exited 0, but %s isn't there", install, ghPath)))
-		}
-	}
-	login := Command{Kind: Change, Path: ghPath, Args: []string{"auth", "login", "--hostname", "github.com", "--web", "--git-protocol", "https", "--skip-ssh-key"}, Timeout: r.f.cfg.Limits.Login}
-	if _, h, err := r.exec(login, ""); err != nil || h != nil {
-		return orHandOff(h, err)
-	}
-	// gh's own exit isn't proof: the design confirms the sign-in took.
-	if _, h, err := r.exec(Command{Kind: Inspect, Path: ghPath, Args: []string{"auth", "status"}}, ""); err != nil || h != nil {
-		return orHandOff(h, err)
-	}
-	if err := r.note("signed in to GitHub"); err != nil {
-		return outcome{}, err
 	}
 	return done()
 }
@@ -308,11 +276,25 @@ func checkRules(r *run) (session.StepStatus, *session.Handoff, error) {
 	if err != nil {
 		return "", nil, err
 	}
+	ignored, err := r.ignored()
+	if err != nil {
+		return "", nil, err
+	}
+	ignore := filepath.Join(dir, ".gitignore")
 	if exists(filepath.Join(dir, "AGENTS.md")) && isDir(filepath.Join(dir, localDir)) &&
-		hasLine(filepath.Join(dir, ".gitignore"), localDir+"/") && exists(filepath.Join(dir, ".jobs.db")) {
+		!slices.ContainsFunc(ignored, func(l string) bool { return !hasLine(ignore, l) }) && exists(filepath.Join(dir, ".jobs.db")) {
 		return session.StepDone, nil, nil
 	}
 	return "", nil, nil
+}
+
+// ignored is every line the setup puts in the .gitignore, besides job's own.
+func (r *run) ignored() ([]string, error) {
+	what, _, err := r.answer(making)
+	if err != nil {
+		return nil, err
+	}
+	return slices.Concat(alwaysIgnore, ignoreFor[what.Choice], []string{localDir + "/"}), nil
 }
 
 // toolPath is a required tool's full path, or a handoff when it isn't there.
@@ -362,8 +344,14 @@ func actRules(r *run) (outcome, error) {
 	if err := os.MkdirAll(filepath.Join(dir, localDir), 0o755); err != nil {
 		return outcome{}, err
 	}
-	if err := addLine(filepath.Join(dir, ".gitignore"), localDir+"/"); err != nil {
+	ignored, err := r.ignored()
+	if err != nil {
 		return outcome{}, err
+	}
+	for _, line := range ignored {
+		if err := addLine(filepath.Join(dir, ".gitignore"), line); err != nil {
+			return outcome{}, err
+		}
 	}
 	if !exists(filepath.Join(dir, ".jobs.db")) {
 		job, h := r.toolPath("jobs")

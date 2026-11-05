@@ -2,64 +2,11 @@ package flow
 
 import (
 	"fmt"
-	"path/filepath"
 	"slices"
 
 	"github.com/bensyverson/bootstrap/internal/screen"
 	"github.com/bensyverson/bootstrap/internal/session"
 )
-
-func checkCommit(r *run) (session.StepStatus, *session.Handoff, error) {
-	dir, err := r.mustProject()
-	if err != nil {
-		return "", nil, err
-	}
-	if !exists(filepath.Join(dir, ".git")) {
-		return session.StepSkipped, nil, nil
-	}
-	git, h := r.git()
-	if h != nil {
-		return "", h, nil
-	}
-	res, h, err := r.exec(Command{Kind: Inspect, Path: git, Args: []string{"rev-parse", "--verify", "--quiet", "HEAD"}, Dir: dir}, "", 0, 1)
-	if err != nil || h != nil {
-		return "", h, err
-	}
-	if res.Exit == 0 {
-		return session.StepDone, nil, nil
-	}
-	if no, err := r.declined(askCommit); no || err != nil {
-		return session.StepSkipped, nil, err
-	}
-	return "", nil, nil
-}
-
-func actCommit(r *run) (outcome, error) {
-	dir, err := r.mustProject()
-	if err != nil {
-		return outcome{}, err
-	}
-	a, ask, err := r.asked(askCommit)
-	if err != nil || ask != nil {
-		return deref(ask, err)
-	}
-	if a.Choice == notNow {
-		return skipped()
-	}
-	git, h := r.git()
-	if h != nil {
-		return handOff(*h)
-	}
-	for _, args := range [][]string{{"add", "-A"}, {"commit", "-m", firstCommit}} {
-		if _, h, err := r.exec(Command{Kind: Change, Path: git, Args: args, Dir: dir}, ""); err != nil || h != nil {
-			return orHandOff(h, err)
-		}
-	}
-	if err := r.note("saved the first version with Git"); err != nil {
-		return outcome{}, err
-	}
-	return done()
-}
 
 // finished is how this step ended earlier in the session, for steps that leave nothing on the Mac to check.
 func (r *run) finished() (session.StepStatus, error) {

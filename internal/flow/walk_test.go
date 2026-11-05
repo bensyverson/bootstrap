@@ -18,14 +18,15 @@ func TestStepsRunInTheApprovedOrder(t *testing.T) {
 	for _, s := range flow.Steps() {
 		got = append(got, s.ID)
 	}
-	want := []session.StepID{flow.StepPlan, flow.StepApple, flow.StepHomebrew, flow.StepTools, flow.StepFolder, flow.StepGit, flow.StepGitHub, flow.StepStage, flow.StepRules, flow.StepCommit, flow.StepSettings, flow.StepPhone, flow.StepDone}
+	want := []session.StepID{flow.StepPlan, flow.StepApple, flow.StepHomebrew, flow.StepTools, flow.StepFolder, flow.StepGit, flow.StepGitHub, flow.StepIdentity, flow.StepStage, flow.StepRules, flow.StepSettings, flow.StepPhone, flow.StepDone}
 	if !slices.Equal(got, want) {
 		t.Errorf("steps = %v, want %v", got, want)
 	}
 	for _, s := range flow.Steps() {
 		for _, id := range slices.Concat(s.Screens, s.Asks) {
-			if _, err := screen.Describe(screen.Request{Screen: id, Tool: "jobs"}, screen.Context{Agent: screen.ClaudeCode}); err != nil && !strings.Contains(err.Error(), "takes no tool") {
-				t.Errorf("%s shows %s: %v", s.ID, id, err)
+			valid := slices.Contains(screen.ScreenIDs(), string(id))
+			if !valid {
+				t.Errorf("%s shows %s, which isn't a screen", s.ID, id)
 			}
 		}
 		for _, id := range s.Asks {
@@ -62,17 +63,32 @@ func TestWalkFromNothingToDone(t *testing.T) {
 		}
 	}
 	ignore, _ := os.ReadFile(filepath.Join(project, ".gitignore"))
-	if !slices.Contains(strings.Split(string(ignore), "\n"), "local/") {
-		t.Errorf(".gitignore = %q, want a local/ line", ignore)
+	if got, want := string(ignore), ".DS_Store\nnode_modules/\n.env\ndist/\nlocal/\n.jobs.db\n"; got != want {
+		t.Errorf(".gitignore = %q, want %q", got, want)
 	}
 	if hooks := w.mac.Hooks(); !slices.Equal(hooks, []string{"contextfill", "job"}) {
 		t.Errorf("hooks = %v", hooks)
 	}
 	changes := strings.Join(w.mac.Changes(), "\n")
-	for _, want := range []string{"brew trust bensyverson/tap", "brew install bensyverson/tap/job", "job init --as claude", "gh auth login --hostname github.com --web --git-protocol https --skip-ssh-key", "git commit"} {
+	for _, want := range []string{
+		"xcode-select --install\nopen -a '/System/Library/CoreServices/Install Command Line Developer Tools.app'",
+		"brew trust bensyverson/tap", "brew install bensyverson/tap/job", "job init --as claude",
+		"git config --global init.defaultBranch main\ngit init",
+		"gh auth login --hostname github.com --web --git-protocol https --skip-ssh-key\ngh auth setup-git",
+		"git config --global user.name 'Ada Lovelace'", "git config --global user.email 1234+ada@users.noreply.github.com",
+		"agents init github.com/bensyverson/agents-md",
+	} {
 		if !strings.Contains(changes, want) {
 			t.Errorf("never ran %q:\n%s", want, changes)
 		}
+	}
+	for _, never := range []string{"git commit", "git add", "shellenv"} {
+		if strings.Contains(changes, never) {
+			t.Errorf("ran %q:\n%s", never, changes)
+		}
+	}
+	if globals := w.mac.Globals(); globals["user.name"] != "Ada Lovelace" || globals["user.email"] != "1234+ada@users.noreply.github.com" || globals["init.defaultBranch"] != "main" {
+		t.Errorf("git's settings = %v", globals)
 	}
 	for _, c := range w.mac.Calls() {
 		if !filepath.IsAbs(c.Path) {
@@ -161,7 +177,7 @@ func TestAStartingFolderThatIsARepoIsSetUpInPlace(t *testing.T) {
 		t.Error("made ~/Projects for a folder that was already a project")
 	}
 	for _, a := range w.asked() {
-		if a.Screen == "naming" || a == (asked{"git-ask", "repo"}) {
+		if a.Screen == "naming" || a.Screen == "git-ask" {
 			t.Errorf("asked %v about a folder that's already a repo", a)
 		}
 	}
@@ -216,20 +232,22 @@ func TestSkipTheTourKeepsEveryTool(t *testing.T) {
 
 func TestDecliningLeavesThingsAlone(t *testing.T) {
 	w := newWorld(t)
-	for _, key := range []asked{{"git-ask", "repo"}, {"github", ""}, {"settings", ""}, {"phone", ""}} {
+	for _, key := range []asked{{"git-ask", ""}, {"github", ""}, {"settings", ""}, {"phone", ""}} {
 		w.answers[key] = screen.Answer{Choice: "not-now"}
 	}
 	if err := w.walk(); err != nil {
 		t.Fatal(err)
 	}
 	changes := strings.Join(w.mac.Changes(), "\n")
-	for _, never := range []string{"git init", "git commit", "gh auth login", "hook install"} {
+	for _, never := range []string{"git init", "git config", "gh auth login", "hook install"} {
 		if strings.Contains(changes, never) {
 			t.Errorf("ran %q after the person said not now", never)
 		}
 	}
-	if slices.Contains(w.asked(), asked{"git-ask", "commit"}) {
-		t.Error("asked to commit with no repo")
+	for _, a := range w.asked() {
+		if strings.HasPrefix(string(a.Screen), "identity") {
+			t.Errorf("asked %v with no repo to sign", a)
+		}
 	}
 	for _, h := range w.state().Handoffs {
 		if h.Handoff.Kind == session.HandoffPhone {
@@ -247,6 +265,37 @@ func TestAnAppAsksAboutXcode(t *testing.T) {
 	}
 	if !strings.Contains(strings.Join(w.mac.Changes(), "\n"), "open macappstore://") {
 		t.Errorf("didn't open the App Store: %v", w.mac.Changes())
+	}
+	ignore, _ := os.ReadFile(filepath.Join(w.home, "Projects", "pine-bakery", ".gitignore"))
+	if got, want := string(ignore), ".DS_Store\n.build/\n.swiftpm/\nDerivedData/\nxcuserdata/\nlocal/\n.jobs.db\n"; got != want {
+		t.Errorf(".gitignore = %q, want %q", got, want)
+	}
+}
+
+func TestOtherWorkIgnoresOnlyWhatsKnown(t *testing.T) {
+	w := newWorld(t)
+	w.answers[asked{"making", ""}] = screen.Answer{Choice: "code"}
+	if err := w.walk(); err != nil {
+		t.Fatal(err)
+	}
+	ignore, _ := os.ReadFile(filepath.Join(w.home, "Projects", "pine-bakery", ".gitignore"))
+	if got, want := string(ignore), ".DS_Store\nlocal/\n.jobs.db\n"; got != want {
+		t.Errorf(".gitignore = %q, want %q", got, want)
+	}
+}
+
+func TestAnExistingGitignoreKeepsItsLines(t *testing.T) {
+	w := newWorld(t)
+	start := filepath.Join(w.home, "code", "bakery")
+	put(t, filepath.Join(start, ".git", "HEAD"), "ref: refs/heads/main\n")
+	put(t, filepath.Join(start, ".gitignore"), "secrets.txt\nnode_modules/")
+	w.probe.Cwd = start
+	if err := w.walk(); err != nil {
+		t.Fatal(err)
+	}
+	ignore, _ := os.ReadFile(filepath.Join(start, ".gitignore"))
+	if got, want := string(ignore), "secrets.txt\nnode_modules/\n.DS_Store\n.env\ndist/\nlocal/\n.jobs.db\n"; got != want {
+		t.Errorf(".gitignore = %q, want %q", got, want)
 	}
 }
 

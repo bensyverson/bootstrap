@@ -25,3 +25,7 @@ It assesses apps, so a signed and notarized `bootstrap` comes back "rejected (th
 ## 2026-11-05 A vanilla Tart VM is about 0.5 GB short for Apple's tools
 
 `ghcr.io/cirruslabs/macos-tahoe-vanilla` has 18.7 GB free, and Apple's Command Line Tools refuse to start below 19.18 GB. `tart set --disk-size` doesn't help: the new space lands behind the recovery partition, which SIP won't let `diskutil` move or delete. Clear `~/Library/Caches`, `~/Library/Application Support/com.apple.wallpaper`, `/private/var/folders/*/*/C`, then run `sudo log erase --all` before starting Apple's step. That reached 19.25 GB. See [the VM runs](2026-11-05-vm-run-findings.md), "Fourth run".
+
+## 2026-11-05 `pkgutil --check-signature` says "invalid signature" inside the Bash sandbox
+
+Run sandboxed, it reports `Status: invalid signature` (exit 1) for Homebrew's good package, because it can't reach the trust service. With the sandbox off, the same file says signed, notarized and `Developer ID Installer: Patrick Linnane (927JGANW46)`. Check a signature with the sandbox off. The flow refuses the sandboxed answer, which is right. See [the seams doc](2026-11-05-bootstrap-seams.md#the-real-installers-uykejv-2026-11-05).

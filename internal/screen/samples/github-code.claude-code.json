@@ -1,0 +1,24 @@
+{
+  "screen": "github-code",
+  "mode": "waiting",
+  "progress": 1,
+  "title": [
+    {
+      "text": "Your turn: enter this code on GitHub."
+    }
+  ],
+  "status": [
+    {
+      "text": "Open GitHub, sign in if it asks, and type this code. This page moves on by itself when you’re done."
+    }
+  ],
+  "code": "D7BA-CFE2",
+  "choices": [
+    {
+      "id": "device",
+      "label": "Open GitHub",
+      "primary": true,
+      "url": "https://github.com/login/device"
+    }
+  ]
+}

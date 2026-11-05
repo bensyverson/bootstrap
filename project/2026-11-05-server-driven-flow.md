@@ -70,6 +70,8 @@ The server runs the [setup order](2026-11-05-setup-link-plan.md#setup-order) as 
 | Phone | Asks | Explains `/remote-control` |
 | Done | Shows done, with how to open the project | Summarizes in the chat, and tells the person to open a new Terminal window in the project folder |
 
+> **Corrected 2026-11-05 (`UyKEjV`):** the Git row is now the repo only, asked on the page. There's no first commit (Settled since, 5), and the `.gitignore` is built without a question (7). A Git identity step follows GitHub (6). As built: [the seams doc](2026-11-05-bootstrap-seams.md#the-real-installers-uykejv-2026-11-05).
+
 **Handoffs** are the rows with work on the agent's side, plus `trouble` and anything the server doesn't recognize, such as an unexpected exit code or a step that took far longer than allowed. When unsure, the server hands off; it never guesses.
 
 **The lost screen** only matters during a handoff now. During installs, the page needs nothing from the agent, so a missing agent no longer stalls the person. If the agent is gone when a handoff comes, the page shows the lost screen as today, and "continue" picks up through `bootstrap status`.

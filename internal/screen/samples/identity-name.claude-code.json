@@ -1,0 +1,32 @@
+{
+  "screen": "identity-name",
+  "mode": "waiting",
+  "layout": "low",
+  "progress": 1,
+  "title": [
+    {
+      "text": "What name should Git put on your work?"
+    }
+  ],
+  "status": [
+    {
+      "text": "Git adds it to every version you save."
+    }
+  ],
+  "field": {
+    "label": "Your name",
+    "value": "",
+    "kind": "name"
+  },
+  "choices": [
+    {
+      "id": "next",
+      "label": "Next",
+      "primary": true
+    },
+    {
+      "id": "skip",
+      "label": "Skip"
+    }
+  ]
+}

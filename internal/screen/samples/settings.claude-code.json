@@ -4,23 +4,23 @@
   "progress": 0.5,
   "title": [
     {
-      "text": "TODO-WORDS: Turn on the helpers for Claude Code?"
+      "text": "Turn on Claude’s helpers?"
     }
   ],
   "status": [
     {
-      "text": "TODO-WORDS: They keep sessions short and plans in Jobs."
+      "text": "They warn Claude before a session runs too long, and keep its plans in Jobs."
     }
   ],
   "choices": [
     {
       "id": "yes",
-      "label": "TODO-WORDS: Yes",
+      "label": "Yes, turn them on",
       "primary": true
     },
     {
       "id": "not-now",
-      "label": "TODO-WORDS: Not now"
+      "label": "Not now"
     }
   ]
 }

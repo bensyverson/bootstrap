@@ -49,4 +49,8 @@ type Result struct {
 // Runner runs every outside command the flow needs. Tests use a fake, so no test touches the Mac.
 type Runner interface {
 	Run(ctx context.Context, cmd Command) Result
+	// Stream runs a command as Run does, and hands line each line of its output,
+	// without the newline, as it arrives, for a command that says something the
+	// person needs before it exits. line runs on the caller's behalf, one call at a time.
+	Stream(ctx context.Context, cmd Command, line func(string)) Result
 }

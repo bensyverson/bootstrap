@@ -5,7 +5,9 @@ package flowtest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -26,13 +28,33 @@ type Mac struct {
 	calls     []flow.Command
 	overrides []override
 	loggedIn  bool
-	committed map[string]bool
+	globals   map[string]string
 	hooks     []string
-	// Signer is the package's signer that pkgutil reports.
+	// Signer is the package's signer that pkgutil reports first in the chain.
 	Signer string
+	// Chain is any further certificates pkgutil lists before Apple's own.
+	Chain []string
+	// Notarized is whether pkgutil reports Apple's notary trusting the package.
+	Notarized bool
+	// Unsigned makes pkgutil report no signature at all.
+	Unsigned bool
 	// QuietInstalls leaves Apple's and Homebrew's installers running without ever finishing.
 	QuietInstalls bool
+	// GitHubUser is who gh api user says is signed in.
+	GitHubUser GitHubUser
+	// LoginWait runs while gh auth login waits for the person, after it printed its code.
+	LoginWait func()
 }
+
+// GitHubUser is the part of gh api user the flow reads.
+type GitHubUser struct {
+	Login string `json:"login"`
+	ID    int    `json:"id"`
+	Name  string `json:"name"`
+}
+
+// LoginCode is the one-time code the pretend gh prints.
+const LoginCode = "D7BA-CFE2"
 
 type override struct {
 	match  string
@@ -42,7 +64,22 @@ type override struct {
 
 // New makes a Mac with nothing on it.
 func New(root string) *Mac {
-	return &Mac{Root: root, committed: map[string]bool{}, Signer: HomebrewSigner}
+	return &Mac{Root: root, globals: map[string]string{}, Signer: HomebrewSigner, Notarized: true,
+		GitHubUser: GitHubUser{Login: "ada", ID: 1234, Name: "Ada Lovelace"}}
+}
+
+// Globals is Git's global settings.
+func (m *Mac) Globals() map[string]string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return maps.Clone(m.globals)
+}
+
+// SetGlobal sets one of Git's global settings, as the person might have before.
+func (m *Mac) SetGlobal(key, value string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.globals[key] = value
 }
 
 // On makes commands containing match return result, for the next times calls, or for every call when times is 0.
@@ -91,6 +128,44 @@ func (m *Mac) Place(path string) error {
 		return err
 	}
 	return os.WriteFile(full, []byte("#!/bin/sh\n"), 0o755)
+}
+
+// Stream answers one command, handing over its output a line at a time. gh's
+// sign-in prints its code, waits in LoginWait as the real one waits for the
+// person, and only then finishes.
+func (m *Mac) Stream(ctx context.Context, cmd flow.Command, line func(string)) flow.Result {
+	if filepath.Base(cmd.Path) != "gh" || len(cmd.Args) < 2 || cmd.Args[0] != "auth" || cmd.Args[1] != "login" || m.overridden(cmd) {
+		res := m.Run(ctx, cmd)
+		each(res.Output, line)
+		return res
+	}
+	m.mu.Lock()
+	m.calls = append(m.calls, cmd)
+	wait := m.LoginWait
+	m.mu.Unlock()
+	first := "! One-time code (" + LoginCode + ") copied to clipboard\nOpen this URL to continue in your web browser: https://github.com/login/device\n"
+	each([]byte(first), line)
+	if wait != nil {
+		wait()
+	}
+	m.mu.Lock()
+	m.loggedIn = true
+	m.mu.Unlock()
+	last := "✓ Authentication complete.\n✓ Logged in as " + m.GitHubUser.Login + "\n"
+	each([]byte(last), line)
+	return ok(first + last)
+}
+
+func each(output []byte, line func(string)) {
+	for l := range strings.Lines(string(output)) {
+		line(strings.TrimRight(l, "\n"))
+	}
+}
+
+func (m *Mac) overridden(cmd flow.Command) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return slices.ContainsFunc(m.overrides, func(o override) bool { return strings.Contains(cmd.String(), o.match) })
 }
 
 // Run answers one command.
@@ -153,7 +228,7 @@ func (m *Mac) act(cmd flow.Command) flow.Result {
 		}
 		return ok("")
 	case "pkgutil":
-		return ok("Package \"Homebrew.pkg\":\n   Status: signed by a developer certificate issued by Apple for distribution\n   Notarization: trusted by the Apple notary service\n   Certificate Chain:\n    1. " + m.Signer + "\n")
+		return m.pkgutil(filepath.Base(arg(1)))
 	case "open":
 		if strings.HasSuffix(arg(0), ".pkg") && !m.QuietInstalls {
 			if err := m.Place("/opt/homebrew/bin/brew"); err != nil {
@@ -173,6 +248,17 @@ func (m *Mac) act(cmd flow.Command) flow.Result {
 		case arg(0) == "auth" && arg(1) == "login":
 			m.loggedIn = true
 			return ok("✓ Logged in")
+		case arg(0) == "auth" && arg(1) == "setup-git":
+			return ok("")
+		case arg(0) == "api" && arg(1) == "user":
+			if !m.loggedIn {
+				return failed(4, "To get started with GitHub CLI, please run:  gh auth login")
+			}
+			body, err := json.Marshal(m.GitHubUser)
+			if err != nil {
+				return fail(err)
+			}
+			return ok(string(body))
 		}
 	case "git":
 		return m.git(cmd)
@@ -221,19 +307,37 @@ func (m *Mac) git(cmd flow.Command) flow.Result {
 			return fail(err)
 		}
 		return ok("Initialized empty Git repository")
-	case "rev-parse --verify --quiet HEAD":
-		if m.committed[cmd.Dir] {
-			return ok("abc123")
+	}
+	switch args := cmd.Args; {
+	case len(args) == 4 && args[0] == "config" && args[1] == "--global" && args[2] == "--get":
+		value, set := m.globals[args[3]]
+		if !set {
+			return failed(1, "")
 		}
-		return failed(1, "")
-	case "add -A":
+		return ok(value + "\n")
+	case len(args) == 4 && args[0] == "config" && args[1] == "--global":
+		m.globals[args[2]] = args[3]
 		return ok("")
 	}
-	if len(cmd.Args) > 0 && cmd.Args[0] == "commit" {
-		m.committed[cmd.Dir] = true
-		return ok("[main (root-commit) abc123]")
-	}
 	return failed(1, "git: unknown")
+}
+
+// pkgutil prints what the real one does for a package: its status, Apple's
+// notary, and the chain from the signer up to Apple's root.
+func (m *Mac) pkgutil(name string) flow.Result {
+	if m.Unsigned {
+		return failed(1, fmt.Sprintf("Package %q:\n   Status: no signature\n", name))
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "Package %q:\n   Status: signed by a developer certificate issued by Apple for distribution\n", name)
+	if m.Notarized {
+		b.WriteString("   Notarization: trusted by the Apple notary service\n")
+	}
+	b.WriteString("   Signed with a trusted timestamp on: 2026-10-01 18:00:00 +0000\n   Certificate Chain:\n")
+	for i, cert := range slices.Concat([]string{m.Signer}, m.Chain, []string{"Developer ID Certification Authority", "Apple Root CA"}) {
+		fmt.Fprintf(&b, "    %d. %s\n       Expires: 2030-01-01 00:00:00 +0000\n       SHA256 Fingerprint:\n           AB CD EF\n       ------------------------------------------------------------------------\n", i+1, cert)
+	}
+	return ok(b.String())
 }
 
 func (m *Mac) agents(cmd flow.Command) flow.Result {

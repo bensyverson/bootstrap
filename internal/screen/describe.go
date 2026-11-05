@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/bensyverson/bootstrap/catalog"
 )
@@ -48,7 +50,44 @@ func Validate(req Request) error {
 	case len(s.reasons) > 0 && !slices.Contains(optionIDs(s.reasons), req.Reason):
 		return invalid(optionIDs(s.reasons), "unknown reason %q for the %s screen", req.Reason, s.id)
 	}
+	return s.validateDetail(req)
+}
+
+// The details the flow fills in. Each has gh's or GitHub's exact shape, so a
+// request can't carry words of its own onto the page.
+var (
+	oneTimeCode   = regexp.MustCompile(`^[A-Z0-9]{4}-[A-Z0-9]{4}$`)
+	noreplyEmail  = regexp.MustCompile(`^[0-9]+\+[A-Za-z0-9-]+@users\.noreply\.github\.com$`)
+	typedEmail    = regexp.MustCompile(`^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$`)
+	maxNameLength = 255
+)
+
+func (s spec) validateDetail(req Request) error {
+	switch {
+	case s.detail != codeDetail && req.Code != "":
+		return invalid(nil, "the %s screen takes no code", s.id)
+	case s.detail != identityDetail && (req.Name != "" || req.Email != ""):
+		return invalid(nil, "the %s screen takes no name or email", s.id)
+	case s.detail == codeDetail && !oneTimeCode.MatchString(req.Code):
+		return invalid(nil, "the %s screen needs gh's one-time code, like ABCD-1234", s.id)
+	case s.detail == identityDetail && !GitName(req.Name):
+		return invalid(nil, "the %s screen needs a name Git can use", s.id)
+	case s.detail == identityDetail && !noreplyEmail.MatchString(req.Email):
+		return invalid(nil, "the %s screen needs GitHub's private email, like 1234+name@users.noreply.github.com", s.id)
+	}
 	return nil
+}
+
+// GitName reports whether a name can go into git config as it is: one line, not
+// mistakable for an option, and not empty.
+func GitName(name string) bool {
+	return name != "" && name == strings.TrimSpace(name) && !strings.HasPrefix(name, "-") &&
+		utf8.RuneCountInString(name) <= maxNameLength && !strings.ContainsFunc(name, unicode.IsControl)
+}
+
+// GitEmail reports whether a typed email can go into git config as it is.
+func GitEmail(email string) bool {
+	return typedEmail.MatchString(email) && !strings.HasPrefix(email, "-") && len(email) <= maxNameLength
 }
 
 // CheckChosen refuses a tool the person skipped on the list screen, since showing
@@ -103,12 +142,22 @@ func (s spec) describe(req Request, ctx Context) Description {
 		d.Note = ctx.Agent.Fill(tool.Say)
 	}
 	d.Status = spans(s.statusText(req), tool, ctx.Agent)
+	if s.detail == codeDetail {
+		d.Code = req.Code
+	}
+	if s.detail == identityDetail {
+		// After the app's names are in, so a name is shown exactly as GitHub has it.
+		d.Title, d.Status = fillIdentity(d.Title, req), fillIdentity(d.Status, req)
+	}
 	for i, c := range s.choices {
 		// Nothing offers to skip what can't be skipped.
 		if c.id == "skip" && tool.Required {
 			continue
 		}
 		d.Choices = append(d.Choices, Choice{ID: c.id, Label: fillTool(c.label, tool, ctx.Agent), Primary: i == 0})
+	}
+	for i, l := range s.links {
+		d.Choices = append(d.Choices, Choice{ID: l.id, Label: fillTool(l.label, tool, ctx.Agent), URL: l.url, Primary: i == 0 && len(s.choices) == 0})
 	}
 	if s.rows {
 		kept := chosenOrAll(ctx.Chosen)
@@ -134,6 +183,15 @@ func (s spec) statusText(req Request) string {
 		}
 	}
 	return s.status
+}
+
+func fillIdentity(in []Span, req Request) []Span {
+	r := strings.NewReplacer("{name}", req.Name, "{email}", req.Email)
+	out := make([]Span, len(in))
+	for i, s := range in {
+		out[i] = Span{Text: r.Replace(s.Text), URL: s.URL}
+	}
+	return out
 }
 
 func fillTool(text string, tool catalog.Tool, agent Agent) string {
@@ -210,7 +268,7 @@ func Progress(req Request, chosen []string, carried float64) float64 {
 		p = (steps - 1) / steps
 	case "building":
 		p = 0.92
-	case "github", "phone", "done":
+	case "github", "github-signup", "github-code", "identity", "identity-name", "identity-email", "phone", "done":
 		p = 1
 	default:
 		return carried
@@ -235,7 +293,9 @@ func PathOrder(chosen []string) []Request {
 func ValidateAnswer(desc Description, ans Answer) error {
 	var choices []string
 	for _, c := range desc.Choices {
-		choices = append(choices, c.ID)
+		if c.URL == "" {
+			choices = append(choices, c.ID)
+		}
 	}
 	if !slices.Contains(choices, ans.Choice) {
 		return invalid(choices, "unknown choice %q for the %s screen", ans.Choice, desc.Screen)
@@ -254,7 +314,14 @@ func ValidateAnswer(desc Description, ans Answer) error {
 		}
 		return nil
 	}
-	if !SafeFolderName(ans.Name) {
+	switch {
+	// What's typed before a skip is thrown away, so it needn't be whole.
+	case ans.Choice == "skip":
+	case desc.Field.Kind == FieldName && !GitName(strings.TrimSpace(ans.Name)):
+		return invalid(nil, "type your name on one line")
+	case desc.Field.Kind == FieldEmail && !GitEmail(strings.TrimSpace(ans.Name)):
+		return invalid(nil, "%q doesn't look like an email address", ans.Name)
+	case desc.Field.Folder() && !SafeFolderName(ans.Name):
 		return invalid(nil, "%q can't be a folder name. Use letters, numbers and dashes", ans.Name)
 	}
 	return nil

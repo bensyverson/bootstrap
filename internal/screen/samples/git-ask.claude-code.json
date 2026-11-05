@@ -4,23 +4,23 @@
   "progress": 0.5,
   "title": [
     {
-      "text": "TODO-WORDS: Use Git for this project?"
+      "text": "Should Git keep track of this project?"
     }
   ],
   "status": [
     {
-      "text": "TODO-WORDS: Git keeps every version of your work."
+      "text": "Git saves every version of your work, so you can always go back."
     }
   ],
   "choices": [
     {
       "id": "yes",
-      "label": "TODO-WORDS: Yes",
+      "label": "Yes, use Git",
       "primary": true
     },
     {
       "id": "not-now",
-      "label": "TODO-WORDS: Not now"
+      "label": "Not now"
     }
   ]
 }

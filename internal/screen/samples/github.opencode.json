@@ -15,8 +15,12 @@
   "choices": [
     {
       "id": "yes",
-      "label": "Yes, help me",
+      "label": "Yes, I have an account",
       "primary": true
+    },
+    {
+      "id": "make-one",
+      "label": "Yes, help me make one"
     },
     {
       "id": "not-now",

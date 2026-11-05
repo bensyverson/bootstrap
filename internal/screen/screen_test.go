@@ -28,6 +28,10 @@ func sampleRequest(id ID) Request {
 		return Request{Screen: id, Tool: "sleepy", Reason: "network"}
 	case "building":
 		return Request{Screen: id, Status: "folder"}
+	case "github-code":
+		return Request{Screen: id, Code: sampleCode}
+	case "identity":
+		return Request{Screen: id, Name: sampleName, Email: sampleEmail}
 	}
 	return Request{Screen: id}
 }
@@ -129,6 +133,14 @@ var recordedCopyChanges = map[string]bool{
 }
 
 func TestCopyComesFromThePrototype(t *testing.T) {
+	drafted := map[string]bool{}
+	for _, sp := range specs {
+		if sp.draft {
+			for _, w := range sp.words() {
+				drafted[w] = true
+			}
+		}
+	}
 	raw, err := os.ReadFile(prototypePath)
 	if err != nil {
 		t.Fatal(err)
@@ -138,8 +150,8 @@ func TestCopyComesFromThePrototype(t *testing.T) {
 		t.Fatalf("Copy() returned only %d strings", len(Copy()))
 	}
 	for _, s := range Copy() {
-		// Placeholders wait on Ben's words; TestPlaceholderScreens keeps them listed.
-		if recordedCopyChanges[s] || strings.HasPrefix(s, TodoWords) {
+		// Drafts wait on Ben's approval; TestDraftScreens keeps them listed.
+		if recordedCopyChanges[s] || drafted[s] {
 			continue
 		}
 		for _, f := range fragments(s) {
@@ -291,7 +303,9 @@ func allRequests() []Request {
 		for _, tool := range tools {
 			for _, status := range statuses {
 				for _, reason := range reasons {
-					requests = append(requests, Request{Screen: def.Screen, Tool: tool, Status: status, Reason: reason})
+					req := sampleRequest(def.Screen)
+					req.Tool, req.Status, req.Reason = tool, status, reason
+					requests = append(requests, req)
 				}
 			}
 		}
@@ -440,30 +454,28 @@ func TestStatusDefaultsToTheFirst(t *testing.T) {
 	}
 }
 
-// Screens the flow needs before Ben has written their words. Each is marked, so none
-// can ship unnoticed, and the prototype check skips them.
-func TestPlaceholderScreens(t *testing.T) {
-	want := []ID{"git-ask", "settings"}
-	if got := Placeholders(); !slices.Equal(got, want) {
-		t.Errorf("placeholders = %v, want %v", got, want)
-	}
-	for _, id := range want {
-		desc, err := Describe(Request{Screen: id}, Context{Agent: ClaudeCode})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !strings.HasPrefix(plain(desc.Title), TodoWords) {
-			t.Errorf("%s title = %q", id, plain(desc.Title))
-		}
-		if !AwaitsClick(id) {
-			t.Errorf("%s asks the person something", id)
-		}
+// Screens whose words are drafts Ben hasn't approved. Each is listed, so none can
+// ship unnoticed, and the prototype check skips them. Approving a screen's words
+// takes it off this list.
+func TestDraftScreens(t *testing.T) {
+	want := []ID{"git-ask", "github", "github-signup", "github-code", "identity", "identity-name", "identity-email", "settings"}
+	if got := Drafts(); !slices.Equal(got, want) {
+		t.Errorf("drafts = %v, want %v", got, want)
 	}
 	gitAsk := slices.IndexFunc(Definitions(), func(d Definition) bool { return d.Screen == "git-ask" })
 	if gitAsk < 0 {
 		t.Fatal("no git-ask screen")
 	}
-	if got := Definitions()[gitAsk].Statuses; !slices.Equal(got, []string{"repo", "ignore", "commit"}) {
+	// The setup never commits for the person, and the .gitignore needs no question.
+	if got := Definitions()[gitAsk].Statuses; len(got) != 0 {
 		t.Errorf("git-ask statuses = %v", got)
+	}
+}
+
+func TestNoWordIsAPlaceholder(t *testing.T) {
+	for _, w := range Copy() {
+		if strings.Contains(w, "TODO") {
+			t.Errorf("%q is a placeholder", w)
+		}
 	}
 }
