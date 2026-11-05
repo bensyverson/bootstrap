@@ -37,6 +37,7 @@
       "say": "Teaches {ai} how you work.",
       "required": true,
       "own_step": false,
+      "formula": "agents",
       "detect": ["/opt/homebrew/bin/agents", "~/go/bin/agents", "~/.swiftpm/bin/agents"]
     },
     {
@@ -46,6 +47,7 @@
       "say": "Lets {ai} manage big projects.",
       "required": true,
       "own_step": false,
+      "formula": "job",
       "detect": ["/opt/homebrew/bin/job", "~/go/bin/job", "~/.swiftpm/bin/job"]
     },
     {
@@ -55,6 +57,7 @@
       "say": "Keeps sessions from going too long.",
       "required": true,
       "own_step": false,
+      "formula": "contextfill",
       "detect": ["/opt/homebrew/bin/contextfill", "~/go/bin/contextfill", "~/.swiftpm/bin/contextfill"]
     },
     {
@@ -64,6 +67,7 @@
       "say": "Lets {ai} see websites.",
       "required": false,
       "own_step": false,
+      "formula": "sleepy",
       "detect": ["/opt/homebrew/bin/sleepy", "~/go/bin/sleepy", "~/.swiftpm/bin/sleepy"]
     },
     {
@@ -73,6 +77,7 @@
       "say": "Lets {ai} analyze pictures.",
       "required": false,
       "own_step": false,
+      "formula": "peep",
       "detect": ["/opt/homebrew/bin/peep", "~/go/bin/peep", "~/.swiftpm/bin/peep"]
     },
     {
@@ -82,6 +87,7 @@
       "say": "Lets {ai} draw designs.",
       "required": false,
       "own_step": false,
+      "formula": "woodcase",
       "detect": ["/opt/homebrew/bin/woodcase", "~/go/bin/woodcase", "~/.swiftpm/bin/woodcase"]
     }
   ]

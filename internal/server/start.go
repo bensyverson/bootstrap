@@ -184,6 +184,8 @@ type ChildOptions struct {
 	Agent screen.Agent
 	Port  int
 	Page  fs.FS
+	// Flow, when set, drives the setup from inside the server once the session has begun.
+	Flow func(context.Context) error
 }
 
 // RunChild is the background server's whole life. It reports one line on out, then
@@ -210,7 +212,7 @@ func RunChild(opts ChildOptions, out io.WriteCloser) {
 		say(report{Error: err.Error()})
 		return
 	}
-	srv, err := New(Config{Store: opts.Store, Token: hex.EncodeToString(raw), Port: opts.Port, Page: opts.Page})
+	srv, err := New(Config{Store: opts.Store, Token: hex.EncodeToString(raw), Port: opts.Port, Page: opts.Page, Flow: opts.Flow})
 	if err != nil {
 		say(report{Error: err.Error()})
 		return

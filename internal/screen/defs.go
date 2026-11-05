@@ -3,6 +3,7 @@ package screen
 import (
 	"embed"
 	"slices"
+	"strings"
 
 	"github.com/bensyverson/bootstrap/catalog"
 )
@@ -115,8 +116,18 @@ var specs = []spec{
 		field: &Field{Label: "Project name", Value: "my-project"}, choices: []choiceDef{{"next", "Next"}}, next: nextAnswer},
 	{id: "building", mode: Working, title: "Setting up your project",
 		statuses: []option{{"folder", "Making your folder"}, {"git", "Turning on Git"}, {"rules", "Teaching {ai} how you work"}}, next: nextWork},
+	{id: "git-ask", mode: Waiting, title: TodoWords + ": Use Git for this project?",
+		statuses: []option{
+			{"repo", TodoWords + ": Git keeps every version of your work."},
+			{"ignore", TodoWords + ": Add a list of files Git should leave out?"},
+			{"commit", TodoWords + ": Save this first version?"},
+		},
+		choices: []choiceDef{{"yes", TodoWords + ": Yes"}, {"not-now", TodoWords + ": Not now"}}, next: nextAnswer},
 	{id: "github", mode: Waiting, title: "Want a place to keep your work online?", status: "GitHub is free. You can always do this later.",
 		choices: []choiceDef{{"yes", "Yes, help me"}, {"not-now", "Not now"}}, next: nextAnswer},
+	{id: "settings", mode: Waiting, title: TodoWords + ": Turn on the helpers for {app}?",
+		status:  TodoWords + ": They keep sessions short and plans in Jobs.",
+		choices: []choiceDef{{"yes", TodoWords + ": Yes"}, {"not-now", TodoWords + ": Not now"}}, next: nextAnswer},
 	{id: "phone", mode: Waiting, title: "Want to use {ai} from your phone?",
 		choices: []choiceDef{{"yes", "Show me how"}, {"not-now", "Not now"}}, next: nextAnswer},
 	{id: "done", mode: Settled, title: "All set!", status: "You can close this and go back to {app}.", next: nextStop},
@@ -126,6 +137,43 @@ var specs = []spec{
 	{id: "fixing", mode: Working, title: "{ai} is on it.", status: "Looking at what went wrong", next: nextWork},
 	{id: "chat", mode: Waiting, title: "Let’s talk in {app}.", status: "{ai} has a question.", chat: true, next: nextChat},
 	{id: Lost, mode: Waiting, title: LostTitle, status: LostLine, internal: true},
+}
+
+// TodoWords starts every word Ben hasn't written yet.
+const TodoWords = "TODO-WORDS"
+
+// Placeholders lists the screens still holding TodoWords, in path order.
+func Placeholders() []ID {
+	var ids []ID
+	for _, s := range specs {
+		if slices.ContainsFunc(s.words(), func(w string) bool { return strings.HasPrefix(w, TodoWords) }) {
+			ids = append(ids, s.id)
+		}
+	}
+	return ids
+}
+
+// words is every word a screen can show, before names are swapped in.
+func (s spec) words() []string {
+	var out []string
+	add := func(strs ...string) {
+		for _, w := range strs {
+			if w != "" {
+				out = append(out, w)
+			}
+		}
+	}
+	add(s.title, s.note, s.status, s.code)
+	if s.field != nil {
+		add(s.field.Label, s.field.Value)
+	}
+	for _, o := range slices.Concat(s.statuses, s.reasons) {
+		add(o.text)
+	}
+	for _, c := range s.choices {
+		add(c.label)
+	}
+	return out
 }
 
 func find(id ID) (spec, bool) {
@@ -188,24 +236,8 @@ func ScreenIDs() []string {
 // Copy lists every word the screens can show, before names are swapped in.
 func Copy() []string {
 	var out []string
-	add := func(strs ...string) {
-		for _, s := range strs {
-			if s != "" {
-				out = append(out, s)
-			}
-		}
-	}
 	for _, s := range specs {
-		add(s.title, s.note, s.status, s.code)
-		if s.field != nil {
-			add(s.field.Label, s.field.Value)
-		}
-		for _, o := range slices.Concat(s.statuses, s.reasons) {
-			add(o.text)
-		}
-		for _, c := range s.choices {
-			add(c.label)
-		}
+		out = append(out, s.words()...)
 	}
 	return out
 }

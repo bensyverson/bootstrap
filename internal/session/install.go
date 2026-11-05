@@ -36,6 +36,19 @@ type Progress struct {
 // cancel counts only for an installer this wait saw running. It renews a session when it can, but needs
 // none, so the chat fallback can use it where this folder can't even be written.
 func (s Store) WaitInstall(ctx context.Context, probe detect.Probe, toolID string, timeout time.Duration) (Progress, error) {
+	return watchInstall(ctx, probe, toolID, timeout, func() error {
+		s.Renew(time.Now())
+		return nil
+	})
+}
+
+// WatchInstall is WaitInstall with no session: it writes nothing, so a flow in the
+// server can watch without claiming an agent is there.
+func WatchInstall(ctx context.Context, probe detect.Probe, toolID string, timeout time.Duration) (Progress, error) {
+	return watchInstall(ctx, probe, toolID, timeout, func() error { return nil })
+}
+
+func watchInstall(ctx context.Context, probe detect.Probe, toolID string, timeout time.Duration, renew func() error) (Progress, error) {
 	tool, ok := catalog.Find(toolID)
 	if !ok {
 		return Progress{}, errors.New("unknown tool " + toolID)
@@ -48,10 +61,6 @@ func (s Store) WaitInstall(ctx context.Context, probe detect.Probe, toolID strin
 	}
 	seen := false
 	var got Progress
-	renew := func() error {
-		s.Renew(time.Now())
-		return nil
-	}
 	err := poll(ctx, timeout, renew, func() (bool, error) {
 		if path, ok := detect.Locate(probe, tool.Detect); ok {
 			got = Progress{Event: Arrived, Path: path}

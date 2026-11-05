@@ -134,7 +134,8 @@ func TestCopyComesFromThePrototype(t *testing.T) {
 		t.Fatalf("Copy() returned only %d strings", len(Copy()))
 	}
 	for _, s := range Copy() {
-		if recordedCopyChanges[s] {
+		// Placeholders wait on Ben's words; TestPlaceholderScreens keeps them listed.
+		if recordedCopyChanges[s] || strings.HasPrefix(s, TodoWords) {
 			continue
 		}
 		for _, f := range fragments(s) {
@@ -421,5 +422,33 @@ func TestStatusDefaultsToTheFirst(t *testing.T) {
 	}
 	if plain(got.Status) != "Making your folder" {
 		t.Errorf("status = %q", plain(got.Status))
+	}
+}
+
+// Screens the flow needs before Ben has written their words. Each is marked, so none
+// can ship unnoticed, and the prototype check skips them.
+func TestPlaceholderScreens(t *testing.T) {
+	want := []ID{"git-ask", "settings"}
+	if got := Placeholders(); !slices.Equal(got, want) {
+		t.Errorf("placeholders = %v, want %v", got, want)
+	}
+	for _, id := range want {
+		desc, err := Describe(Request{Screen: id}, Context{Agent: ClaudeCode})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.HasPrefix(plain(desc.Title), TodoWords) {
+			t.Errorf("%s title = %q", id, plain(desc.Title))
+		}
+		if !AwaitsClick(id) {
+			t.Errorf("%s asks the person something", id)
+		}
+	}
+	gitAsk := slices.IndexFunc(Definitions(), func(d Definition) bool { return d.Screen == "git-ask" })
+	if gitAsk < 0 {
+		t.Fatal("no git-ask screen")
+	}
+	if got := Definitions()[gitAsk].Statuses; !slices.Equal(got, []string{"repo", "ignore", "commit"}) {
+		t.Errorf("git-ask statuses = %v", got)
 	}
 }

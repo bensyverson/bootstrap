@@ -30,6 +30,14 @@ const (
 	kindTabs   kind = "tabs"
 	kindStop   kind = "stop"
 	kindAgent  kind = "agent" // a serve from a different app, which changes the name people read
+
+	// What a flow in the server writes, and the agent's replies to it.
+	kindDrive   kind = "drive" // a flow started running the setup
+	kindStep    kind = "step"
+	kindNote    kind = "note"
+	kindHandoff kind = "handoff"
+	kindTake    kind = "take" // the agent saw the open handoff
+	kindResume  kind = "resume"
 )
 
 // event is one line of the log. Only the fields for its kind are set.
@@ -49,6 +57,11 @@ type event struct {
 	Answer *screen.Answer `json:"answer,omitempty"`
 
 	Tabs int `json:"tabs,omitempty"`
+
+	Step    *Step    `json:"step,omitempty"`
+	Text    string   `json:"text,omitempty"`
+	Handoff *Handoff `json:"handoff,omitempty"`
+	Way     Way      `json:"way,omitempty"`
 }
 
 func (s *State) apply(e event) {
@@ -57,6 +70,8 @@ func (s *State) apply(e event) {
 	case kindServer:
 		s.ID = e.Session
 		s.Tabs = 0
+		// A flow belongs to the server that ran it; a new server drives only if its flow says so.
+		s.Driving = false
 		if agent, err := screen.FindAgent(e.Agent); err == nil {
 			s.Agent = agent
 		}
@@ -79,6 +94,8 @@ func (s *State) apply(e event) {
 		s.Tabs = e.Tabs
 	case kindStop:
 		s.Ended = true
+	case kindDrive, kindStep, kindNote, kindHandoff, kindTake, kindResume:
+		s.applyFlow(e)
 	case kindAgent:
 		if agent, err := screen.FindAgent(e.Agent); err == nil {
 			s.Agent = agent

@@ -71,3 +71,21 @@ func TestGenericFolderAnyCase(t *testing.T) {
 		}
 	}
 }
+
+// The flow installs each tool from the tap by formula, which isn't always the tool's id.
+func TestEveryTapToolNamesItsFormula(t *testing.T) {
+	for _, tool := range Tools() {
+		if tool.OwnStep {
+			if tool.Formula != "" {
+				t.Errorf("%s has its own step, not a formula", tool.ID)
+			}
+			continue
+		}
+		if tool.Formula == "" {
+			t.Errorf("%s has no formula", tool.ID)
+		}
+	}
+	if jobs, _ := Find("jobs"); jobs.Formula != "job" {
+		t.Errorf("jobs installs as bensyverson/tap/job, got %q", jobs.Formula)
+	}
+}

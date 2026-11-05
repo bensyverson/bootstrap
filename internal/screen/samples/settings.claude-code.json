@@ -1,0 +1,26 @@
+{
+  "screen": "settings",
+  "mode": "waiting",
+  "progress": 0.5,
+  "title": [
+    {
+      "text": "TODO-WORDS: Turn on the helpers for Claude Code?"
+    }
+  ],
+  "status": [
+    {
+      "text": "TODO-WORDS: They keep sessions short and plans in Jobs."
+    }
+  ],
+  "choices": [
+    {
+      "id": "yes",
+      "label": "TODO-WORDS: Yes",
+      "primary": true
+    },
+    {
+      "id": "not-now",
+      "label": "TODO-WORDS: Not now"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "screen": "git-ask",
+  "mode": "waiting",
+  "progress": 0.5,
+  "title": [
+    {
+      "text": "TODO-WORDS: Use Git for this project?"
+    }
+  ],
+  "status": [
+    {
+      "text": "TODO-WORDS: Git keeps every version of your work."
+    }
+  ],
+  "choices": [
+    {
+      "id": "yes",
+      "label": "TODO-WORDS: Yes",
+      "primary": true
+    },
+    {
+      "id": "not-now",
+      "label": "TODO-WORDS: Not now"
+    }
+  ]
+}

@@ -77,6 +77,16 @@ type State struct {
 	Deadline time.Time
 	Tabs     int
 	Progress float64
+
+	// Driving is a flow running the setup in the server, so the page needs nothing from the agent.
+	Driving bool
+	Step    *Step
+	// Finished is each step's last ending, done or skipped, in this session.
+	Finished map[StepID]StepStatus
+	Notes    []Note
+	Handoffs []Logged
+	Open     *Open
+	Resumed  *Resumed
 }
 
 // Frame is what the server sends the page. Screen is nil before the agent's first
@@ -107,9 +117,17 @@ func (s State) CurrentAnswer() (Answered, bool) {
 
 // Lost reports whether the page should say the agent has gone. Past the allowance
 // that holds, unless a person may still be reading a screen they can click on, or
-// the agent is waiting on their reply in the chat.
+// the agent is waiting on their reply in the chat. While a flow drives the setup,
+// only a handoff the agent hasn't picked up can lose it.
 func (s State) Lost(now time.Time) bool {
 	if s.Ended {
+		return false
+	}
+	switch {
+	case s.Open != nil && !s.Open.Taken:
+		// A handoff no agent has picked up: the chat screen's exemption is for an agent that's talking.
+		return now.After(s.Deadline)
+	case s.Driving && s.Open == nil:
 		return false
 	}
 	if s.Current != nil {
@@ -126,6 +144,9 @@ func (s State) Lost(now time.Time) bool {
 
 // PastLifetime reports whether the agent has been gone so long that the server should exit.
 func (s State) PastLifetime(now time.Time) bool {
+	if s.Driving && s.Open == nil {
+		return false
+	}
 	if s.Current != nil && screen.AwaitsChat(s.Current.Request.Screen) {
 		return false
 	}

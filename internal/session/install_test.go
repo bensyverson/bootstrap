@@ -137,3 +137,18 @@ func TestWaitInstallSeesAStartBesideALeftoverFolder(t *testing.T) {
 		t.Errorf("got %+v, err %v", got, err)
 	}
 }
+
+// The flow watches from inside the server, where a beat would claim an agent that isn't there.
+func TestWatchInstallLeavesNoBeat(t *testing.T) {
+	store := begun(t)
+	before := load(t, store).Seq
+	probe := fakeProbe(t)
+	place(t, probe.Root, "Library/Developer/CommandLineTools/usr/bin/git", 0o755)
+	got, err := WatchInstall(context.Background(), probe, "clt", 5*time.Second)
+	if err != nil || got.Event != Arrived {
+		t.Errorf("got %+v, err %v", got, err)
+	}
+	if after := load(t, store).Seq; after != before {
+		t.Errorf("the log moved from %d to %d", before, after)
+	}
+}

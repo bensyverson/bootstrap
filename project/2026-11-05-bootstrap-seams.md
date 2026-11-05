@@ -10,6 +10,7 @@ What the core and server leaves (`rgABs5`, `Bm1yQO`) settled, for whoever builds
 | `internal/detect` | What's on this Mac, and the folder's kind. Only reports. |
 | `internal/screen` | Every word, the closed lists, progress, and the description the page draws. |
 | `internal/session` | The log, replaying it, who's lost, and `wait`. |
+| `internal/flow` | The setup as data, run by the server (below). `flowtest` is a pretend Mac for its tests. |
 | `internal/server` | Loopback HTTP and Server-Sent Events, the refusals, and how a server starts and exits. |
 | `internal/page` | The one embed seam. The real page replaces `internal/page/files/`, and the server doesn't change. |
 | `internal/cli`, `cmd/bootstrap` | Parsing, rows and exit codes. |
@@ -72,6 +73,25 @@ The default `wait` timeout and the allowance are constants in `internal/session/
 - **A typed name becomes git-friendly (Ben, 2026-11-05).** It's lowercased and spaces become dashes, so "Pine Bakery" is saved as `pine-bakery`. After that it may hold letters, numbers, dots, dashes and underscores, starting with a letter or number. Anything else, including non-ASCII letters, is refused rather than quietly dropped.
 - **A sleeping machine doesn't use up the allowance or the tab grace.** The server spots a gap of over 30 seconds between readings, which it reads every 200ms.
 - **A tab gets 30 seconds to come back**, for a reload, and the first tab gets 10 minutes, in case someone has to open the link by hand.
+
+## The flow core (`3rqKIp`, 2026-11-05)
+
+`internal/flow` is the library behind [the server-driven flow](2026-11-05-server-driven-flow.md). The verbs (`VBA13e`) and the installers (`UyKEjV`) plug into it.
+
+- **Steps are data.** `flow.Steps()` lists the 13 steps in order (plan, apple, homebrew, tools, folder, git, github, stage, rules, commit, settings, phone, done), each with the screens it shows, the screens it asks on, and whether it can be skipped. A test comparing the chat fallback with the flow can read that list.
+- **Every step checks, then acts.** A check says done, skipped (the person already said not now), or "act". An act ends done, skipped, needing the person (a question on the page, after which the act runs again from the top), or in trouble. So every act is safe to repeat, and a second run over a finished setup runs only inspections.
+- **Answers come from the log.** A question already answered in this session isn't asked again, so a restarted server picks up where it was.
+- **Every outside command goes through `flow.Runner`,** by full path, tagged `Inspect` or `Change`. Only the fake exists so far; the real runner is the installers' leaf. Each command's output is appended to `~/.bootstrap/steps/<tool or step>.log`.
+- **Anything unexpected is a `trouble` handoff,** never a guess: an exit code the step doesn't expect, a timeout, a command that won't start, an installer that quits, a tool missing after a clean exit, too little disk, a `.pkg` not signed by 927JGANW46, or a file where the project folder goes. It carries the command, exit code, log path and last 20 lines, and the ways forward: always retry and talk, plus skip for a tool the person may go without or a step they may skip. The page shows `chat`, and the flow waits for `resume`. Phone and done are handoffs the flow doesn't wait for.
+- **The folder step** sets up in place when the starting folder is a Git repo that isn't the home folder or one of its standard folders; otherwise it asks for a name and makes `~/Projects/<name>`, or uses that folder if it exists. It never moves anything.
+
+**What the log gained.** `session` holds the one shared struct for both sides: `Step`, `Note`, `Handoff` (with `Evidence` and `Way`s) and the replayed `State.Driving`, `Step`, `Finished`, `Notes`, `Handoffs`, `Open` and `Resumed`. The agent's side is `Store.TakeHandoff` (it has seen the handoff) and `Store.Resume`. `session.WatchInstall` is `WaitInstall` without the beat, because a beat from the server would claim an agent that isn't there.
+
+**Who's lost changed.** While a flow drives and nothing is handed off, the page never shows the lost screen and the hour doesn't run. A handoff the agent hasn't taken counts against the allowance even on the `chat` screen; once taken, `chat` waits on the person as before. A new server clears `Driving`.
+
+**The server** takes `Config.Flow` (and `ChildOptions.Flow`), a `func(context.Context) error` it runs beside itself. The flow's context ends when the server exits, under the same page, token and tab rules as before; `Server.FlowErr` keeps why a flow stopped early.
+
+**Placeholders.** `git-ask` (statuses `repo`, `ignore`, `commit`) and `settings` are new screens whose words start with `TODO-WORDS` until Ben writes them; `screen.Placeholders()` lists them. `catalog/tools.json` gained each tap tool's `formula`, since `jobs` installs as `bensyverson/tap/job`.
 
 ## Cards and titles, after the live review (2026-11-05)
 

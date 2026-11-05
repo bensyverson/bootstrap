@@ -52,6 +52,9 @@ type Config struct {
 	Now           func() time.Time
 	Tick          time.Duration
 	FirstTabGrace time.Duration
+	// Flow, when set, runs the setup for as long as Run serves. Its context ends
+	// when the server exits, under the same rules as without one.
+	Flow func(context.Context) error
 }
 
 // Server is one running page.
@@ -72,6 +75,7 @@ type Server struct {
 	everTab      bool
 	emptySince   time.Time
 	closeOnce    sync.Once
+	flowErr      error
 }
 
 // New binds to the loopback address, and only there. A failure here is what sends
@@ -143,6 +147,7 @@ func (s *Server) Close() {
 func (s *Server) Run() ExitReason {
 	s.Serve()
 	defer s.Close()
+	defer s.startFlow()()
 	tick := time.NewTicker(s.cfg.Tick)
 	defer tick.Stop()
 	for range tick.C {
@@ -151,6 +156,39 @@ func (s *Server) Run() ExitReason {
 		}
 	}
 	return ExitNone
+}
+
+// FlowErr is why the flow stopped early, if it did.
+func (s *Server) FlowErr() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.flowErr
+}
+
+// flowStopWait bounds how long an exiting server waits for its flow to notice.
+const flowStopWait = 5 * time.Second
+
+// startFlow runs the flow beside the server, and returns what stops it.
+func (s *Server) startFlow() (stop func()) {
+	if s.cfg.Flow == nil {
+		return func() {}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	finished := make(chan struct{})
+	go func() {
+		defer close(finished)
+		err := s.cfg.Flow(ctx)
+		s.mu.Lock()
+		s.flowErr = err
+		s.mu.Unlock()
+	}()
+	return func() {
+		cancel()
+		select {
+		case <-finished:
+		case <-time.After(flowStopWait):
+		}
+	}
 }
 
 // Tabs counts the open pages.

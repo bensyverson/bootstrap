@@ -19,13 +19,15 @@ var genericJSON []byte
 
 // Tool is one row of catalog/tools.json. Say may hold the {ai} placeholder.
 type Tool struct {
-	ID       string   `json:"id"`
-	Name     string   `json:"name"`
-	URL      string   `json:"url"`
-	Say      string   `json:"say"`
-	Required bool     `json:"required"`
-	OwnStep  bool     `json:"own_step"`
-	Detect   []string `json:"detect"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	URL      string `json:"url"`
+	Say      string `json:"say"`
+	Required bool   `json:"required"`
+	OwnStep  bool   `json:"own_step"`
+	// Formula is the tool's name in bensyverson/tap, for every tool without its own step.
+	Formula string   `json:"formula,omitempty"`
+	Detect  []string `json:"detect"`
 	// Installer is part of the installer's command line, for pgrep -f. An installer
 	// that quits before Detect finds anything was canceled or failed.
 	Installer string `json:"installer,omitempty"`
