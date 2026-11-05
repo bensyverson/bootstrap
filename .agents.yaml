@@ -11,3 +11,5 @@ modules:
   - planning
   - delegation
   - harness
+  - cli-design
+  - go

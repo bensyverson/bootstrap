@@ -30,7 +30,13 @@ The agent opens a rich local page served by `bootstrap`, a small signed and nota
 
 - **Look (Ben, 2026-11-05):** magical and ethereal, in light mode, around one central Three.js object that morphs and glows. Bold titles and simple choices, with no eyebrow text, subheads or detailed breakdowns. Each screen has very few words, at a 6th-grade reading level or below. The first mock is in [2026-11-05-setup-page-mock/](2026-11-05-setup-page-mock/): an iridescent bubble that gains a light with each tool, so it also shows progress. Ben found the bubble too close to Siri, tried clear glass metaballs in a motion prototype, and chose silk threads (2026-11-05): light that adds up in linear color, moving from blue through cyan to green as work gets done, then relaxing to its starting form. Motion follows state: fast while the agent works, slow and soothing while it waits for the user. Type is Grand, Ben's own typeface: Medium for titles, tracked in slightly, and Regular for buttons. The name of the launching agent comes from the environment, so "Claude" and "Claude Code" swap to "OpenCode". The tool is called Jobs in anything a person reads, and tool names link to their repos. The first title avoids sounding like Apple. **There is never a hard cut (Ben):** every change of state animates over 1 to 2 seconds on a cubic S-curve, and titles and controls always transition in and out. Ben leans toward threads overall and loves glass's progress fill; if it's glass, the fill goes from blue to green. Apple's Command Line Tools are their own step, so nothing big is hidden inside the Homebrew step, and that step explains what it does before asking for a password. Proposed in the prototype, not yet ruled on: one list screen with checkboxes instead of one approval per tool, a one-line status while working, a fill inside the object for progress, and small pictures of each tool drifting by.
 - **Choice:** the page offers "Show me" or "Just give me the goods". The fast path says "Got it! Continue in Claude Code." The guided path explains what's being installed and why, offers toggles for anything skippable, and shows live progress.
+
+  > **Correction, 2026-11-05.** The approved prototype changed these words: the first screen offers "See the plan" and "Skip the tour", and the fast path says "Got it. We'll only stop if we need you." See [the prototype](2026-11-05-setup-page-mock/prototype/).
+
 - **Fallback:** if the script can't run, the agent says so in a sentence, then teaches and asks in the chat. There is no hosted page.
+
+  > **Correction, 2026-11-05.** "The script" is now the signed `bootstrap` binary. The fallback itself stands.
+
 - **One source:** what each tool is, why it's there and whether it can be skipped live in one file that the page and the agent both read.
 - **`/remote-control`:** offered as the last step, because the Homebrew install needs someone at the Mac. Which accounts can use it is unchecked.
 - **Pro mode:** the first run offers "skip the tour next time" and saves that in bootstrap's own preferences file. After that there's no browser and no explanations, only the questions it can't detect and a short summary. The setup can also install a `/new-project` command that fetches the latest `SETUP.md`, so `SETUP.md` has a machine part that runs once and a project part that runs every time.
@@ -47,6 +53,9 @@ Some modules name skippable tools: `web.md` relies on `sleepy`, and `images.md` 
 Each step skips what's already done, so running it again is safe. Every install says what the tool is and why it's being installed before it happens.
 
 0. **Where are we?** On a new Mac, Claude Code may well be running in the home folder. Never run `git init` or `agents init` there: offer to create a project folder and have the user restart the session in it.
+
+   > **Addition, Ben, 2026-11-05.** The same goes for `~/Desktop`, `~/Documents`, `~/Downloads` and generically named folders like "Claude" or "Claude Code". `bootstrap detect` reports the folder's kind. See [the binary plan](2026-11-05-bootstrap-binary-plan.md).
+
 1. **Homebrew.** If it's missing, explain it and offer a walkthrough. The user runs the official brew.sh command in a real terminal, because it can ask for their Mac password and the `!` prefix takes no keyboard input. It also sets up Apple's Command Line Tools, which can take a while. Then use `/opt/homebrew/bin/brew` directly and confirm with `brew --version`, since the running session may not see the new `PATH`. If they decline, stop before touching their files and explain what's missing.
 2. **Tools.** `agents`, `job`, `contextfill`, `sleepy`, `peep` and `woodcase`.
 3. **Git.** Check for it after step 1. On a Mac without the Command Line Tools, `/usr/bin/git` is a stub, so `command -v git` passes and running it opens Apple's install dialog. Check for `/Library/Developer/CommandLineTools/usr/bin/git`, the same file Homebrew checks.
@@ -65,7 +74,7 @@ All from Ben, 2026-11-05.
 
 - **Formulae, not casks.** The tap already signs and notarizes bottles, so casks would be a second pipeline for no gain.
 - **People pin Ben's `agents-md`** and move with `agents update`. Their `rule:` feedback doesn't reach him, and that's accepted.
-- **`harness` is a default module** (`agents-md` commit b6e1a33, unpushed). `delegation.md` links to it, and an `agents init` scratch run showed the file missing before the change and present after.
+- **`harness` is a default module** (`agents-md` commit b6e1a33, pushed since this was written). `delegation.md` links to it, and an `agents init` scratch run showed the file missing before the change and present after.
 - **The main-thread context line is 33%.** The setup installs `contextfill hook --max 40 --main-max 33`.
 - **The `local/` rule lives in this repo**, not in `agents-md`.
 - **Machine-wide settings only with consent:** the `contextfill` hook and the plan-mode block. Not the iTerm status hook or permission settings.

@@ -10,6 +10,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 
 - [README.md](README.md) — the page a pasted link lands on (not written yet)
 - [project/](project/) — dated plans, findings and decisions; the current plan is [the setup link plan](project/2026-11-05-setup-link-plan.md)
+- [The `bootstrap` binary plan](project/2026-11-05-bootstrap-binary-plan.md) — the detail for the `VNF9sG` job: commands, session log and build order
 - [Setup page prototype](project/2026-11-05-setup-page-mock/prototype/) — the approved look and motion, in one page; `build.py` makes `local.html`; the [mock](project/2026-11-05-setup-page-mock/) shows the options tried
 - [Clean Mac research](project/2026-11-05-clean-mac-research.md) and [what's stock on macOS](project/2026-11-05-stock-macos-runtimes.md) — what's settled, and where the rest gets tested
 - [project/backlog.md](project/backlog.md) and [project/gotchas.md](project/gotchas.md) — work parked, and traps to know
@@ -96,7 +97,21 @@ Defaults, not laws. When we break one, we do it consciously and say so in the re
 - **The head of `AGENTS.md` lists where the docs live; keep that list current.**
 <!-- agents:end docs -->
 
-<!-- agents:begin index@8cf2c7 -->
+<!-- agents:begin go@91ab6a -->
+## Go
+
+- Before committing: `go fix ./...`, `gofmt -w .`, `go vet ./...` and `go mod tidy`, then the tests you touched. `go fix` converges over several passes — "re-run to apply more" is progress, not failure; re-run until clean before editing code.
+- **Run `go fix ./...` before staging, not just before committing.** A pre-commit hook that re-stages `gofmt` rewrites will not re-stage `go fix` rewrites: a file `go fix` changed that is already gofmt-clean commits unfixed, and your working tree quietly diverges from what you committed.
+- **Tests that share a database need `-p 1` and a database per agent.** `go test ./...` runs packages in parallel, so packages that seed the same fixtures and truncate the same tables produce a wall of unrelated-looking failures that survives a re-run and reads as a real regression.
+- **Schema changes are numbered migrations** in the project's migrations directory (the head names it). Never run one by hand — the binary migrates when it starts or opens the database and records the version; the next run applies it. Read the full note history on the task (`job show <id>`) before writing schema; it is the most expensive thing to change.
+- **On SQLite:** **`CHECK` passes on NULL.** `CHECK (a = b)` admits any row where either side is NULL — guard every comparison with `IS NOT NULL`, or it enforces nothing.
+- **On SQLite:** **NULLs are distinct in a `UNIQUE` index.** A nullable column in a dedup key admits duplicates forever; wrap it in `COALESCE(col, '')` in the index expression.
+- **On SQLite:** **Never hold a transaction open across a model or network call.** `BeginTx` is deferred — it pins a read snapshot at the first read, so the write at the end fails with `SQLITE_BUSY_SNAPSHOT` if any other connection committed meanwhile, and `busy_timeout` cannot rescue it because waiting cannot refresh a stale snapshot. Split into a step that reads and calls but writes nothing, and a short transaction that persists the result.
+- Wire types are structs, not `map[string]any`, unless the shape is genuinely dynamic.
+- **`r.ParseForm()` reads a body only when it is urlencoded**; for multipart it leaves it empty without erroring. Keep one wire format per route — a handler that accepts two body shapes needs two sets of checks where the design wanted one.
+<!-- agents:end go -->
+
+<!-- agents:begin index@f4b312 -->
 ## Situational instructions
 
 These files carry instructions for specific situations. When one applies, read the file before acting and follow it.
@@ -108,4 +123,5 @@ These files carry instructions for specific situations. When one applies, read t
 | Before writing a plan, importing a `tasks:` block, or detailing the leaves of work ahead | `project/agents/planning.md` |
 | Before dispatching any subagent | `project/agents/delegation.md` |
 | The first time a tool call is refused or denied, and before briefing a subagent | `project/agents/harness.md` |
+| Before building or extending a command-line tool | `project/agents/cli-design.md` |
 <!-- agents:end index -->
