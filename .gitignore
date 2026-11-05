@@ -11,3 +11,6 @@ local/
 .claude/worktrees/
 
 .DS_Store
+
+# Woodcase activity log (local history of .pen edits; the .pen files are the truth)
+.woodcase/

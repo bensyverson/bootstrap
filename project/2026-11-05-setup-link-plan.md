@@ -18,6 +18,30 @@ The link is the repo URL. A test fetch of `github.com/bensyverson/agents` (WebFe
 
 An agent may rightly treat a page's instructions as untrusted. Stating the changes and asking first is the design, not a workaround. How agents treat a bare link is untested until the acceptance leaf.
 
+## The interface
+
+The agent opens a rich local page served by `bootstrap`, a small signed and notarized Go binary (Ben, 2026-11-05). We first planned a Perl script, then chose Go because the page needs live progress, embedded assets and a heartbeat ([what's stock on macOS](2026-11-05-stock-macos-runtimes.md)).
+
+- **What it does:** it serves the page, collects choices and reports what's already on the machine. The agent still does the installing, so judgment stays with the agent. All screens and copy live in the binary.
+- **How the agent talks to it:** a small command line with JSON output, along the lines of `bootstrap detect`, `serve`, `step` and `wait`.
+- **How it arrives:** with `curl` from a GitHub release, since Homebrew may not exist yet. `curl` sets no quarantine flag ([research](2026-11-05-clean-mac-research.md)). The agent can't read a binary, so `SETUP.md` pins a version and checksum, and the agent verifies those and the Developer ID signature before running it. Later runs can use the tap.
+- **Security:** it binds to `127.0.0.1`, requires a random token, checks `Host` and `Origin`, and exits after the agent is gone.
+- **Assets:** Three.js, the card images and Grand are embedded. Grand ships only as Regular and Medium, subset to about 100 Latin characters, about 9KB each, with kerning and Ben's copyright kept.
+
+- **Look (Ben, 2026-11-05):** magical and ethereal, in light mode, around one central Three.js object that morphs and glows. Bold titles and simple choices, with no eyebrow text, subheads or detailed breakdowns. Each screen has very few words, at a 6th-grade reading level or below. The first mock is in [2026-11-05-setup-page-mock/](2026-11-05-setup-page-mock/): an iridescent bubble that gains a light with each tool, so it also shows progress. Ben found the bubble too close to Siri, tried clear glass metaballs in a motion prototype, and chose silk threads (2026-11-05): light that adds up in linear color, moving from blue through cyan to green as work gets done, then relaxing to its starting form. Motion follows state: fast while the agent works, slow and soothing while it waits for the user. Type is Grand, Ben's own typeface: Medium for titles, tracked in slightly, and Regular for buttons. The name of the launching agent comes from the environment, so "Claude" and "Claude Code" swap to "OpenCode". The tool is called Jobs in anything a person reads, and tool names link to their repos. The first title avoids sounding like Apple. **There is never a hard cut (Ben):** every change of state animates over 1 to 2 seconds on a cubic S-curve, and titles and controls always transition in and out. Ben leans toward threads overall and loves glass's progress fill; if it's glass, the fill goes from blue to green. Apple's Command Line Tools are their own step, so nothing big is hidden inside the Homebrew step, and that step explains what it does before asking for a password. Proposed in the prototype, not yet ruled on: one list screen with checkboxes instead of one approval per tool, a one-line status while working, a fill inside the object for progress, and small pictures of each tool drifting by.
+- **Choice:** the page offers "Show me" or "Just give me the goods". The fast path says "Got it! Continue in Claude Code." The guided path explains what's being installed and why, offers toggles for anything skippable, and shows live progress.
+- **Fallback:** if the script can't run, the agent says so in a sentence, then teaches and asks in the chat. There is no hosted page.
+- **One source:** what each tool is, why it's there and whether it can be skipped live in one file that the page and the agent both read.
+- **`/remote-control`:** offered as the last step, because the Homebrew install needs someone at the Mac. Which accounts can use it is unchecked.
+- **Pro mode:** the first run offers "skip the tour next time" and saves that in bootstrap's own preferences file. After that there's no browser and no explanations, only the questions it can't detect and a short summary. The setup can also install a `/new-project` command that fetches the latest `SETUP.md`, so `SETUP.md` has a machine part that runs once and a project part that runs every time.
+
+## Required and skippable tools
+
+- **Required:** Homebrew, Git, `agents`, `job`, `contextfill`.
+- **Skippable:** `sleepy`, `peep`, `woodcase`, `gh`, the `contextfill` hook, the plan-mode block and the `PATH` change.
+
+Some modules name skippable tools: `web.md` relies on `sleepy`, and `images.md` lists `peep`, `sleepy` and `woodcase`. So modules decide what's recommended: enabling `web` recommends `sleepy`, and enabling `images` recommends all three. Skipping one says what the agent loses, and a later project that enables the module offers the tool again. The rules also need to say what to do when a tool isn't installed.
+
 ## Setup order
 
 Each step skips what's already done, so running it again is safe. Every install says what the tool is and why it's being installed before it happens.
@@ -25,7 +49,11 @@ Each step skips what's already done, so running it again is safe. Every install 
 0. **Where are we?** On a new Mac, Claude Code may well be running in the home folder. Never run `git init` or `agents init` there: offer to create a project folder and have the user restart the session in it.
 1. **Homebrew.** If it's missing, explain it and offer a walkthrough. The user runs the official brew.sh command in a real terminal, because it can ask for their Mac password and the `!` prefix takes no keyboard input. It also sets up Apple's Command Line Tools, which can take a while. Then use `/opt/homebrew/bin/brew` directly and confirm with `brew --version`, since the running session may not see the new `PATH`. If they decline, stop before touching their files and explain what's missing.
 2. **Tools.** `agents`, `job`, `contextfill`, `sleepy`, `peep` and `woodcase`.
-3. **Git.** Check for it after step 1. On a Mac without the Command Line Tools, `/usr/bin/git` is a stub, so `command -v git` passes and running it opens Apple's install dialog; use `xcode-select -p` to check. `git init`, `.gitignore` and a first commit, each with consent. Create no remote and install no hooks.
+3. **Git.** Check for it after step 1. On a Mac without the Command Line Tools, `/usr/bin/git` is a stub, so `command -v git` passes and running it opens Apple's install dialog. Check for `/Library/Developer/CommandLineTools/usr/bin/git`, the same file Homebrew checks.
+
+   > **Correction, 2026-11-05.** This first said to use `xcode-select -p`. That was wrong for this purpose: it succeeds on a Mac with only Xcode, where Homebrew would still install the tools. See [the research](2026-11-05-clean-mac-research.md).
+
+   `git init`, `.gitignore` and a first commit, each with consent. Create no remote and install no hooks.
 4. **`gh`.** Detect it and suggest it if missing, but never get stuck on it, because local Git works without an account. If they say yes, explain what Git and GitHub are and why we use them, then walk them through an account and `gh auth login` in a real terminal.
 5. **Project.** Detect the stack, or ask what the project is if the folder is empty. Enable the default modules plus what's detected (`go`, `swift`, `swiftui`, `python`, `web`). Ask about what can't be detected: `stage-pilot` or `stage-build`, and whether to add `images`. Create `local/` and its `.gitignore` entry, and run `job init` and `job gitignore`.
 6. **Install path.** If the project will install something, offer to add the default path to `PATH`: `~/go/bin` for Go and `~/.swiftpm/bin` for Swift.
@@ -46,7 +74,7 @@ All from Ben, 2026-11-05.
 - **The Bash sandbox is left off by default.** `harness.md` should say its sandbox failures only apply when it's on.
 - **Ben-specific wording comes out of the shared modules**, so the rules read correctly on anyone's machine. The change reaches all of Ben's repos on update.
 - **The public repo is `bensyverson/bootstrap`**, created and pushed when ready. Ben has approved that.
-- **`contextfill` defaults to a 33% main-thread limit**, and people should be able to configure it. How is still open.
+- **`contextfill` stays pure.** It measures the fill and compares it to the number it's given: no config file, no built-in limit, no advice. The hook command or plugin holds a person's numbers as flags, and the rules say what the line means. The rules keep every sentence and all their numbers, call 33% and 40% defaults, and add that a line named by the hook wins. They also say wrap-up starts at the line, it isn't a cutoff, and to keep working until then.
 
 ## Tasks
 

@@ -1,0 +1,634 @@
+<title>Setup Motion Study</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  --ink: #101F3C;
+  --sky-top: #FFFFFF;
+  --sky-mid: #F3F7FC;
+  --sky-low: #E1EAF5;
+  --quiet: #FFFFFFC4;
+  --hint: #51627F;
+  --font: "Grand", "Avenir Next", "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, Menlo, monospace;
+  --ease: cubic-bezier(.65, 0, .35, 1);
+  --S: min(62vh, 92vw);
+  --aura: 88 136 232;
+  --good: #17A673; --near: #E3A008; --past: #E0603A;
+  color-scheme: light;
+}
+@font-face { font-family: "Grand"; font-weight: 400; font-display: block; src: url("data:font/woff2;base64,__REGULAR__") format("woff2"); }
+@font-face { font-family: "Grand"; font-weight: 500; font-display: block; src: url("data:font/woff2;base64,__MEDIUM__") format("woff2"); }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--sky-top), var(--sky-mid) 60%, var(--sky-low)) fixed;
+  color: var(--ink);
+  font-family: var(--font);
+  font-weight: 400;
+}
+/* The object never moves or resizes. Words may pass over it. */
+#stage {
+  position: fixed; left: 50%; top: 3vh; width: var(--S); height: var(--S); margin-left: calc(var(--S) / -2);
+}
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#glow {
+  position: absolute; left: 50%; top: 50%; width: 88%; height: 88%; transform: translate(-50%, -50%);
+  border-radius: 50%; opacity: 0;
+  background: radial-gradient(closest-side, #DDF7E899, #E3F7EC44 55%, #E3F7EC00);
+}
+#words { position: fixed; inset: 0; pointer-events: none; }
+.panel {
+  position: absolute; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; pointer-events: auto;
+  left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+  top: calc(3vh + var(--S) + 6px); justify-items: center; text-align: center;
+  will-change: transform, opacity;
+}
+.panel.leaving { pointer-events: none; }
+.panel.overlay { top: 0; bottom: 56px; align-content: center; }
+.panel.low { top: auto; bottom: 84px; }
+h1 {
+  margin: 0;
+  font-weight: 500;
+  font-size: clamp(32px, 4.3vw, 62px);
+  max-width: 75vw;
+  line-height: 1.06;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+.overlay h1 { font-size: clamp(30px, 3.6vw, 52px); }
+@media (max-width: 1024px) { h1 { max-width: none; } }
+h1 a, .name a, .statusBox a { color: inherit; text-decoration: underline; text-decoration-thickness: .055em; text-underline-offset: .12em; text-decoration-color: #101F3C55; }
+.statusBox a { text-decoration-thickness: 1px; text-underline-offset: .16em; }
+h1 a:hover, .name a:hover, .statusBox a:hover { text-decoration-color: var(--ink); }
+/* Old and new status share one cell, so a change never moves anything around it. */
+.statusSlot { display: grid; margin-top: -6px; width: 100%; justify-items: center; }
+.statusSlot:empty { display: none; }
+.note { margin: -6px 0 0; font-weight: 500; font-size: clamp(16px, 1.4vw, 19px); line-height: 1.4; color: var(--ink); }
+.note + .statusSlot { margin-top: -18px; }
+.statusBox { grid-area: 1 / 1; max-width: 42em; font-size: clamp(16px, 1.4vw, 19px); line-height: 1.4; color: var(--hint); text-wrap: balance; }
+.choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+.choices:empty { display: none; }
+button, input, select { font-family: var(--font); }
+.choices button {
+  font-weight: 400;
+  font-size: clamp(18px, 1.6vw, 22px);
+  line-height: 1;
+  color: var(--ink);
+  background: var(--quiet);
+  border: 0;
+  border-radius: 40px;
+  padding: 20px 36px;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px #FFFFFFD9, 0 8px 26px -10px rgb(var(--aura) / .55);
+  transition: background .35s var(--ease), transform .35s var(--ease), box-shadow .35s var(--ease);
+}
+.choices button:hover { background: #FFFFFF; transform: translateY(-1px); box-shadow: inset 0 0 0 1px #FFFFFF, 0 12px 34px -10px rgb(var(--aura) / .8); }
+.choices button.main { background: var(--ink); color: #FFFFFF; box-shadow: 0 0 0 1px rgb(var(--aura) / .28), 0 10px 34px -8px rgb(var(--aura) / .72); }
+.choices button.main:hover { background: #1B2F57; box-shadow: 0 0 0 1px rgb(var(--aura) / .5), 0 14px 44px -6px rgb(var(--aura) / .95); }
+#pct { position: fixed; left: 0; right: 0; bottom: 50px; text-align: center; font-size: 13px; color: var(--hint); opacity: 0; transition: opacity 1s var(--ease); pointer-events: none; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #5B8FD9; outline-offset: 3px; }
+.rows { display: grid; gap: 1px; width: min(640px, 100%); text-align: left; }
+.row { display: grid; grid-template-columns: 22px 11.2em minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 7px 2px; font-size: clamp(16px, 1.4vw, 19px); cursor: pointer; }
+.row.needed { cursor: default; }
+.row input { width: 18px; height: 18px; accent-color: var(--ink); margin: 0; align-self: center; }
+.name { font-weight: 500; }
+.say { color: var(--hint); }
+.code { display: flex; gap: 8px; align-items: center; width: min(760px, 100%); background: #FFFFFFE6; border-radius: 14px; padding: 8px 8px 8px 18px; text-align: left; }
+.code code { font: 400 15px/1.3 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
+.code button { flex: none; font-size: 16px; border: 0; border-radius: 9px; padding: 10px 14px; background: var(--ink); color: #FFF; cursor: pointer; }
+.field { font-size: clamp(20px, 2vw, 26px); padding: 14px 22px; border: 0; border-radius: 40px; background: #FFFFFFE6; color: var(--ink); text-align: center; width: min(420px, 100%); }
+
+/* ---------- The best part of each tool, sliding in from its own edge ---------- */
+#peek { position: fixed; inset: 0; pointer-events: none; }
+.card {
+  position: absolute; top: calc(3vh + var(--S) / 2); width: min(32vw, 440px); border-radius: 12px; overflow: hidden;
+  background: #FFFFFF; box-shadow: 0 14px 44px #3D5A8A33;
+  font: 400 12px/1.5 var(--mono); color: #33445F;
+}
+.card.a { left: 2.5vw; }
+.card.b { right: 2.5vw; }
+.card img { display: block; width: 100%; height: auto; }
+.card pre { margin: 0; font: inherit; white-space: pre; overflow: hidden; }
+.pad { padding: 14px 16px; }
+.term { background: #101F3C; color: #D5E2F7; }
+.term b { color: #7FE8B8; font-weight: 400; }
+.term i { color: #8DA3C7; font-style: normal; }
+.gitcard svg { display: block; width: 100%; height: auto; }
+.prose { font: 400 13.5px/1.42 var(--font); color: #33445F; }
+.prose h6 { margin: 0 0 8px; font: 400 11px var(--mono); color: #7A8AA5; }
+.prose p { margin: 0 0 8px; }
+.prose p:last-child { margin: 0; }
+.prose strong { font-weight: 500; color: var(--ink); }
+.meter { display: grid; gap: 12px; }
+.meter div { display: grid; gap: 4px; }
+.meter span { font: 400 13px var(--font); display: flex; justify-content: space-between; color: #33445F; }
+.meter em { font-style: normal; font-weight: 500; }
+.bar { position: relative; height: 9px; border-radius: 5px; background: #E8EDF5; overflow: visible; }
+.bar u { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; display: block; }
+.bar s { position: absolute; left: 33%; top: -3px; bottom: -3px; width: 2px; background: var(--ink); opacity: .55; }
+.two { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: center; }
+.two.even { grid-template-columns: 1fr 1fr; }
+.two.even { gap: 6px; padding: 6px; background: #F1F4F9; }
+.two.even img { border-radius: 6px; }
+.tag { display: block; padding: 10px 16px; font: 400 13px var(--mono); color: #33445F; border-top: 1px solid #E8EDF5; }
+.tag b { font-weight: 400; color: var(--good); }
+.small { font-size: 10px; line-height: 1.45; }
+.tiny { font-size: 9.5px; line-height: 1.42; }
+.padsm { padding: 10px 12px; }
+.c1 { color: #7FE8B8; } .c2 { color: #FFC98A; } .c3 { color: #9CC2FF; }
+@media (max-width: 900px) { .card { display: none; } }
+@media (max-width: 760px) {
+  .panel.overlay { bottom: 52px; align-content: start; overflow: auto; padding-block: 12px; }
+  .choices button { padding: 17px 26px; }
+  .row { grid-template-columns: 22px minmax(0, 1fr); }
+  .say { grid-column: 2; }
+}
+#study {
+  position: fixed; bottom: max(10px, env(safe-area-inset-bottom, 0px)); left: 0; right: 0;
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 4px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+#study button, #study select { font-size: 14px; padding: 8px 12px; background: transparent; color: var(--hint); border: 0; border-radius: 30px; cursor: pointer; transition: background .3s var(--ease), color .3s var(--ease); }
+#study button[aria-pressed="true"] { color: var(--ink); background: var(--quiet); }
+#study select { max-width: 170px; }
+@media (prefers-reduced-motion: reduce) { #stage { transition: none; } }
+</style>
+
+<div id="stage"><div id="glow"></div><canvas id="gl" aria-hidden="true"></canvas></div>
+<main id="words"></main>
+<div id="pct" aria-hidden="true"></div>
+<div id="peek" aria-hidden="true"></div>
+<nav id="study" aria-label="Study controls">
+  <button id="pickClaude" aria-pressed="true">Claude Code</button>
+  <button id="pickOpen" aria-pressed="false">OpenCode</button>
+  <select id="jump" aria-label="Jump to a screen"></select>
+  <button id="again">Start over</button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const WAIT_SPEED = 0.85, WORK_SPEED = 3.8, SETTLED_SPEED = .7, TOOL_MS = 4600;
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = id => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+const GH = "https://github.com/bensyverson/";
+
+/* A link that opens one screen shows it at rest, with nothing mid-flight. */
+const hashParts = location.hash.slice(1).split("-");
+const atRest = !!location.hash;
+
+const AGENTS = { claude: { app: "Claude Code", ai: "Claude" }, opencode: { app: "OpenCode", ai: "OpenCode" } };
+let agent = hashParts.includes("opencode") ? AGENTS.opencode : AGENTS.claude;
+const fill = s => s.replaceAll("{app}", agent.app).replaceAll("{ai}", agent.ai);
+
+const BREW_CMD = '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"';
+
+const meter = (label, pct, color, say) => `<div><span>${label}<em style="color:${color}">${pct}%</em></span><p class="bar" style="margin:0"><u style="width:${pct}%;background:${color}"></u><s></s></p><span style="color:${color};font-size:12px">${say}</span></div>`;
+const CARDS = {
+  Homebrew: `<div class="pad term"><pre class="small">$ brew install sleepy
+<i>==&gt;</i> Fetching sleepy
+<i>==&gt;</i> Downloading sleepy-0.4.0.bottle.tar.gz
+######################################## 100.0%
+<i>==&gt;</i> Pouring sleepy-0.4.0.bottle.tar.gz
+<b>🍺  /opt/homebrew/Cellar/sleepy/0.4.0: 12 files</b>
+$ brew install woodcase
+<i>==&gt;</i> Downloading woodcase-0.1.5.bottle.tar.gz
+##########################                 64.2%</pre></div>`,
+  Git: `<div class="gitcard"><svg viewBox="0 0 400 190" role="img"><rect width="400" height="190" fill="#fff"/>
+    <path d="M26 24V166" stroke="#6C8CFF" stroke-width="3" fill="none"/>
+    <path d="M26 112C26 88 58 96 58 72V54C58 40 26 46 26 24" stroke="#17A673" stroke-width="3" fill="none"/>
+    <g fill="#6C8CFF"><circle cx="26" cy="24" r="6"/><circle cx="26" cy="112" r="6"/><circle cx="26" cy="166" r="6"/></g>
+    <g fill="#17A673"><circle cx="58" cy="54" r="6"/><circle cx="58" cy="78" r="6"/></g>
+    <g font-family="ui-monospace,Menlo,monospace" font-size="12.5" fill="#33445F">
+      <text x="84" y="28">Merges the sign-up page</text><text x="84" y="58">Saves new users</text>
+      <text x="84" y="82">Draws the sign-up page</text><text x="84" y="116">Fixes the menu on phones</text>
+      <text x="84" y="170">Starts the project</text></g></svg></div>`,
+  Agents: `<div class="pad prose"><h6>AGENTS.md</h6>
+    <p><strong>Understand the why.</strong> If the goal behind a request isn’t clear, ask before solving.</p>
+    <p><strong>Diverge, then converge.</strong> First brainstorm options, weigh them against the user’s goals, recommend one, confirm, then execute.</p>
+    <p><strong>Critique before declaring done.</strong> Re-read the original request: is the need actually met?</p></div>`,
+  Jobs: `<img alt="" decoding="sync" src="data:image/jpeg;base64,__IMG_jobs__">`,
+  Contextfill: () => `<div class="pad meter">${meter("Just started", 14, "var(--good)", "Plenty of room")}${meter("Going well", 29, "var(--near)", "Almost time to wrap up")}${meter("Long session", 37, "var(--past)", "Finish up and hand off")}</div>`,
+  Sleepy: `<div class="two"><img alt="" decoding="sync" src="data:image/jpeg;base64,__IMG_demo__"><pre class="padsm tiny">$ sleepy ax
+main
+ heading "Pine Bakery"
+ paragraph
+  text "Fresh bread…"
+ form
+  textbox "Email"
+  button "Join the list"</pre></div>`,
+  Peep: `<div class="two even"><img alt="" decoding="sync" src="data:image/jpeg;base64,__IMG_demo__"><img alt="" decoding="sync" src="data:image/jpeg;base64,__IMG_demo2__"></div><span class="tag">$ peep compare a.png b.png<br><b>MAE: 1.6</b>   R 2.6  G 1.9  B 2.0</span>`,
+  Woodcase: `<div class="two"><div style="background:#F1F4F9;display:grid;align-content:center;padding:8px"><img alt="" decoding="sync" src="data:image/jpeg;base64,__IMG_design__"></div><pre class="padsm tiny">&lt;div className="flex
+  flex-col gap-3.5"
+ style={{
+  width: 340,
+  borderRadius: 18,
+  padding: 28,
+ }}&gt;
+ &lt;p&gt;Pine Bakery&lt;/p&gt;</pre></div>`,
+};
+// Decode every picture before it's needed, so no card ever slides in half-painted.
+const decoded = Object.values(CARDS).filter(c => typeof c === "string").flatMap(c => [...c.matchAll(/src="([^"]+)"/g)].map(m => {
+  const i = new Image(); i.src = m[1]; if (i.decode) i.decode().catch(() => {}); return i;
+}));
+const TOOLS = [
+  { name: "Command Line Tools", url: "https://developer.apple.com/xcode/resources/", say: "Apple’s tools that Git and Homebrew need.", needed: true, ownStep: true },
+  { name: "Homebrew", url: "https://brew.sh", say: "Installs software packages.", needed: true, ownStep: true },
+  { name: "Git", url: "https://git-scm.com", say: "Saves your work, with version control.", needed: true, ownStep: true },
+  { name: "Agents", url: GH + "agents", say: "Teaches {ai} how you work.", needed: true },
+  { name: "Jobs", url: GH + "jobs", say: "Lets {ai} manage big projects.", needed: true },
+  { name: "Contextfill", url: GH + "contextfill", say: "Keeps sessions from going too long.", needed: true },
+  { name: "Sleepy", url: GH + "sleepyhollow", say: "Lets {ai} see websites." },
+  { name: "Peep", url: GH + "PixelPeeper", say: "Lets {ai} analyze pictures." },
+  { name: "Woodcase", url: GH + "woodcase", say: "Lets {ai} draw designs." },
+];
+const tool = n => TOOLS.find(t => t.name === n);
+let chosen = new Set(TOOLS.map(t => t.name)), projectName = "my-project", skipTour = false;
+const link = t => `<a href="${t.url}" target="_blank" rel="noopener">${t.name}</a>`;
+
+/* ---------- Transitions: one motion, never two. What leaves and what arrives share a clock. ---------- */
+const EASE = "cubic-bezier(.65,0,.35,1)";
+const SWAP_MS = 1400, STATUS_MS = 700;
+const reach = () => (calm ? 0 : Math.min(110, innerWidth * .08));
+let firstPaint = true;
+function arrive(node, ms, dx, dy = 0) {
+  if (atRest && firstPaint) return;
+  node.animate([{ opacity: 0, transform: `translate(${dx}px, ${dy}px)` }, { opacity: 1, transform: "none" }], { duration: ms, easing: EASE, fill: "backwards" });
+}
+function depart(node, ms, dx, dy = 0) {
+  const a = node.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: `translate(${dx}px, ${dy}px)` }], { duration: ms, easing: EASE, fill: "forwards" });
+  a.onfinish = () => node.remove();
+}
+
+/* ---------- Screens ---------- */
+let working = false, settled = false, progress = 0, runToken = 0, redraw = () => {}, panel = null, shownKey = "", statusSlot = null;
+const wait = (ms, token) => new Promise(r => setTimeout(() => { if (token === runToken) r(); }, ms));
+
+function show(spec) {
+  const { title, status = "", choices = [], rows = false, code = null, field = false, over = false, low = false, note = "" } = spec;
+  redraw = () => { shownKey = ""; show(spec); };
+  const key = JSON.stringify([fill(title), choices.map(c => c[0]), rows, code, field, over, low, fill(note)]);
+  // A status line changing under the same title moves on its own, and nothing else does.
+  if (key === shownKey && panel) { swapStatus(status); return; }
+  shownKey = key;
+
+  const hadFocus = panel && panel.contains(document.activeElement);
+  const old = panel;
+  const next = el("section", "panel" + (over ? " overlay" : "") + (low ? " low" : ""));
+  const h = el("h1"); h.innerHTML = fill(title); next.append(h);
+  if (note) next.append(el("p", "note", fill(note)));
+  statusSlot = el("div", "statusSlot");
+  if (status) statusSlot.append(statusLine(status));
+  next.append(statusSlot);
+  if (rows) { const r = el("div", "rows"); r.append(...TOOLS.map(rowFor)); next.append(r); }
+  if (code) {
+    const box = el("div", "code"), c = el("code", "", code), copy = el("button", "", "Copy");
+    copy.onclick = async () => { try { await navigator.clipboard.writeText(code); copy.textContent = "Copied"; } catch (e) { getSelection().selectAllChildren(c); } };
+    box.append(c, copy); next.append(box);
+  }
+  if (field) {
+    const f = el("input", "field"); f.value = projectName; f.setAttribute("aria-label", "Project name"); f.autocomplete = "off";
+    f.oninput = () => { projectName = f.value; }; next.append(f);
+  }
+  const row = el("div", "choices");
+  row.append(...choices.map(([label, fn], i) => { const b = el("button", i === 0 ? "main" : "", fill(label)); b.onclick = () => fn(); return b; }));
+  next.append(row);
+
+  $("words").append(next);
+  const R = reach();
+  if (old) { old.classList.add("leaving"); depart(old, SWAP_MS, -R); }
+  arrive(next, SWAP_MS, R);
+  panel = next;
+  if (hadFocus && row.firstChild) row.firstChild.focus({ preventScroll: true });
+  firstPaint = false;
+}
+function statusLine(text) {
+  const s = el("div", "statusBox"); s.setAttribute("role", "status"); s.innerHTML = fill(text);
+  return s;
+}
+function swapStatus(status) {
+  if (!statusSlot) return;
+  const old = statusSlot.querySelector(".statusBox:not(.gone)");
+  if (old && old.innerHTML === fill(status)) return;
+  const next = statusLine(status);
+  statusSlot.append(next);
+  // Within a step the line flips upward: the old one rises away as the new one rises in.
+  const lift = calm ? 0 : 16;
+  if (old) { old.classList.add("gone"); depart(old, STATUS_MS, 0, -lift); }
+  arrive(next, STATUS_MS, 0, lift);
+}
+function rowFor(t) {
+  const row = el("label", "row" + (t.needed ? " needed" : ""));
+  const box = el("input"); box.type = "checkbox"; box.checked = t.needed || chosen.has(t.name); box.disabled = !!t.needed;
+  box.setAttribute("aria-label", t.name);
+  box.onchange = () => box.checked ? chosen.add(t.name) : chosen.delete(t.name);
+  const name = el("span", "name"); name.innerHTML = link(t);
+  row.append(box, name, el("span", "say", fill(t.say)));
+  return row;
+}
+/* A card keeps one gentle tilt, and arrives and leaves by its own edge. */
+let cardSide = 0;
+function peek(name) {
+  [...$("peek").children].forEach(c => {
+    const out = c.dataset.side === "a" ? -1 : 1, r = c.dataset.tilt;
+    const a = c.animate([{ opacity: 1, transform: `translate(0, -50%) rotate(${r}deg)` }, { opacity: 0, transform: `translate(${out * 70}px, -50%) rotate(${r}deg)` }], { duration: 900, easing: EASE, fill: "forwards" });
+    a.onfinish = () => c.remove();
+  });
+  const body = CARDS[name];
+  if (!body) return;
+  const side = cardSide++ % 2 ? "b" : "a", r = side === "a" ? -1.6 : 1.4, from = side === "a" ? -1 : 1;
+  const c = el("div", "card " + side);
+  c.dataset.side = side; c.dataset.tilt = r;
+  c.innerHTML = typeof body === "function" ? body() : body;
+  c.style.transform = `translateY(-50%) rotate(${r}deg)`;
+  $("peek").append(c);
+  if (!atRest) c.animate([{ opacity: 0, transform: `translate(${from * 70}px, -50%) rotate(${r}deg)` }, { opacity: 1, transform: `translate(0, -50%) rotate(${r}deg)` }], { duration: 900, easing: EASE, fill: "backwards" });
+}
+const go = (isWorking, p) => { working = isWorking; settled = false; if (p !== undefined) progress = p; peek(null); runToken++; };
+
+const INSTALL_ORDER = () => TOOLS.filter(t => !t.ownStep && chosen.has(t.name));
+const STEPS = () => INSTALL_ORDER().length + 3;   // Apple's tools, Homebrew, every tool, the project
+
+const SCREENS = {
+  welcome() {
+    skipTour = false;
+    go(false, 0);
+    show({ title: "Let’s give {app} the good stuff.", choices: [["See the plan", SCREENS.list], ["Skip the tour", SCREENS.fast]] });
+  },
+  list() {
+    go(false, 0);
+    show({ title: "Here’s what you get.", rows: true, over: true, choices: [["Let’s go", SCREENS.appleAsk]] });
+  },
+  fast() {
+    skipTour = true;
+    go(true, 0);
+    const token = runToken;
+    show({ title: "Got it. We’ll only stop if we need you." });
+    wait(3000, token).then(SCREENS.appleAsk);
+  },
+  appleAsk() {
+    go(false, 0);
+    show({ title: "Your turn: click Install.", status: `A window from Apple will pop up. It adds the ${link(tool("Command Line Tools"))}, which include Git.`,
+      choices: [["I clicked it", SCREENS.appleWait]] });
+  },
+  appleWait() {
+    go(true, 1 / (STEPS() * 2));
+    peek("Git");
+    const token = runToken;
+    show({ title: "Adding Apple’s tools", note: tool("Command Line Tools").say, status: "Apple’s window shows how far along it is. This can take a while." });
+    wait(5000, token).then(SCREENS.terminal);
+  },
+  terminal() {
+    go(false, 1 / STEPS());
+    show({ title: "Your turn: paste this in Terminal.", low: true,
+      status: `This installs ${link(tool("Homebrew"))}, which installs other software for you. It will ask for your Mac password, and you won’t see it as you type. That’s normal.`,
+      code: BREW_CMD, choices: [["I did it", SCREENS.brewing]] });
+  },
+  brewing() {
+    go(true, 1.5 / STEPS());
+    peek("Homebrew");
+    const token = runToken;
+    show({ title: "Adding " + link(tool("Homebrew")), note: tool("Homebrew").say, status: "Follow along in Terminal." });
+    wait(5000, token).then(() => SCREENS.tools());
+  },
+  tools(startAt = 0) {
+    go(true);
+    const token = runToken, list = INSTALL_ORDER(), total = STEPS();
+    (async () => {
+      for (let i = startAt; i < list.length; i++) {
+        const t = list[i], n = i + 3;
+        progress = (n - 1) / total;
+        peek(t.name);
+        show({ title: "Adding " + link(t), note: t.say, status: `Downloading ${t.name}` });
+        if (atRest) return;
+        await wait(TOOL_MS * .5, token);
+        show({ title: "Adding " + link(t), note: t.say, status: `Installing ${t.name}` });
+        await wait(TOOL_MS * .5, token);
+      }
+      progress = (total - 1) / total;
+      skipTour ? SCREENS.building() : SCREENS.making();
+    })();
+  },
+  making() {
+    go(false);
+    show({ title: "What are you working on?", choices: [
+      ["A website", SCREENS.liveYet], ["A Mac or iPhone app", SCREENS.xcode],
+      ["Some code", SCREENS.liveYet], ["Something else", SCREENS.naming]] });
+  },
+  xcode() {
+    go(false);
+    show({ title: "This one needs Xcode.", status: "It’s free, and it’s big. The App Store will take a while.",
+      choices: [["Open the App Store", SCREENS.liveYet], ["Do it later", SCREENS.liveYet]] });
+  },
+  liveYet() {
+    go(false);
+    show({ title: "Do people use it yet?", choices: [["Not yet", SCREENS.naming], ["Yes", SCREENS.naming]] });
+  },
+  naming() {
+    go(false);
+    show({ title: "What should we call this project?", status: "We’ll make a folder with this name.", field: true, low: true, choices: [["Next", SCREENS.building]] });
+  },
+  building() {
+    go(true, .92);
+    const token = runToken;
+    show({ title: "Setting up your project", status: "Making your folder" });
+    (async () => {
+      await wait(1700, token); show({ title: "Setting up your project", status: "Turning on Git" });
+      await wait(1700, token); show({ title: "Setting up your project", status: "Teaching {ai} how you work" });
+      await wait(1700, token); skipTour ? SCREENS.done() : SCREENS.github();
+    })();
+  },
+  github() {
+    go(false, 1);
+    show({ title: "Want a place to keep your work online?", status: "GitHub is free. You can always do this later.",
+      choices: [["Yes, help me", SCREENS.phone], ["Not now", SCREENS.phone]] });
+  },
+  phone() {
+    go(false, 1);
+    show({ title: "Want to use {ai} from your phone?", choices: [["Show me how", SCREENS.done], ["Not now", SCREENS.done]] });
+  },
+  done() {
+    go(false, 1);
+    settled = true;
+    show({ title: "All set! You can close this and go back to {app}." });
+  },
+  trouble() {
+    go(false, .5);
+    show({ title: "Sleepy didn’t install.", status: "Your Mac couldn’t reach the download. Check your Wi-Fi.",
+      choices: [["Try again", () => SCREENS.tools()], ["Skip Sleepy", SCREENS.making], ["Ask {ai}", SCREENS.fixing]] });
+  },
+  fixing() {
+    go(true, .5);
+    const token = runToken;
+    show({ title: "{ai} is on it.", status: "Looking at what went wrong" });
+    wait(3000, token).then(() => SCREENS.tools());
+  },
+  lost() {
+    go(false, .5);
+    show({ title: "{app} stopped.", status: "Open it again and paste the same link. We’ll pick up where you left off." });
+  },
+  oldMac() {
+    go(false, 0);
+    show({ title: "This needs a newer Mac.", status: "It works on Macs with Apple chips. {ai} can still help you set up by hand.", choices: [["Tell {ai}", SCREENS.done]] });
+  },
+};
+const JUMPS = [["welcome","Welcome"],["list","What you get"],["fast","Skip the tour"],["appleAsk","Apple’s window"],["appleWait","Apple’s tools"],["terminal","Homebrew: your turn"],["brewing","Homebrew: installing"],["tools","Adding tools"],
+  ["making","What are you working on"],["xcode","Needs Xcode"],["liveYet","Do people use it"],["naming","Name it"],["building","Setting up project"],["github","GitHub"],["phone","Phone"],["done","Done"],
+  ["trouble","Something failed"],["fixing","Asking for help"],["lost","Agent stopped"],["oldMac","Older Mac"]];
+$("jump").replaceChildren(...JUMPS.map(([v, l]) => { const o = el("option", "", l); o.value = v; return o; }));
+$("jump").onchange = e => SCREENS[e.target.value]();
+
+/* ---------- Threads: light, not paint. Every color here is linear, and threads add up in a float buffer. ---------- */
+const threadVert = `
+attribute float aU, aR, aJ;
+uniform float uT, uN, uE, uLevel; uniform vec2 uFit;
+varying float vA; varying vec3 vC;
+vec3 pal(vec3 a,vec3 b,vec3 c,float t){ return t<.5?mix(a,b,t*2.):mix(b,c,(t-.5)*2.); }
+void main(){
+  float u=aU*6.2831853;
+  float wob=.075+.05*uE;
+  float r=.98+wob*sin(3.*u+aR*1.7+aJ*3.+uT*.7)+.022*sin(7.*u-uT+aJ*6.);
+  float ang=.9+aJ*.95+aR*.5+.34*sin(uT*.45+aR*1.3);
+  float x=r*cos(u), y=r*sin(u)*cos(ang), z=r*sin(u)*sin(ang);
+  float tilt=.35+aR*.5236+uT*(.05+.018*aR);
+  vec3 p=vec3(x*cos(tilt)-y*sin(tilt),x*sin(tilt)+y*cos(tilt),z);
+  float a=uT*.11; p=vec3(p.x*cos(a)+p.z*sin(a),p.y,-p.x*sin(a)+p.z*cos(a));
+  // Hue wanders along each thread and across each ribbon, so no two lines match.
+  float h=.5+.5*sin(6.2831853*(aR*.37+aJ*.8+aU+uT*.02));
+  vec3 cool=pal(vec3(.02,.10,.88),vec3(.03,.30,.98),vec3(.12,.05,.90),h);
+  vec3 grown=pal(vec3(.00,.52,.46),vec3(.01,.60,.14),vec3(.28,.74,.05),h);
+  // A wide, soft front: the two lights overlap across most of the sphere on the way.
+  float lvl=uLevel+.05*sin(p.x*4.+uT*.8);
+  float front=smoothstep(.62,-.62,p.y-lvl);
+  vC=mix(cool,grown,front);
+  float depth=p.z*.5+.5;
+  vA=clamp(uN-aR,0.,1.)*(.24+.24*depth)*(1.+.2*uE);
+  gl_Position=vec4(p.xy*.84*uFit,p.z*.1,1.);
+}`;
+const threadFrag = `
+precision highp float;
+varying float vA; varying vec3 vC;
+void main(){ gl_FragColor=vec4(vC*vA,vA); }`;
+const lightFrag = `
+precision highp float;
+uniform sampler2D tLight; varying vec2 vUv;
+vec3 toDisplay(vec3 c){ return mix(c*12.92,1.055*pow(max(c,vec3(.0001)),vec3(1./2.4))-.055,step(.0031308,c)); }
+void main(){
+  vec4 a=texture2D(tLight,vUv);
+  float d=a.a;
+  if(d<.0005){ gl_FragColor=vec4(0.); return; }
+  // Crossing threads mix as lights do: their colors average in linear, and they read denser.
+  vec3 lin=a.rgb/d;
+  lin*=1.+.3*(1.-exp(-d*1.2));
+  float cover=1.-exp(-d*1.15);
+  gl_FragColor=vec4(min(toDisplay(lin),vec3(1.))*cover,cover);
+}`;
+
+/* ---------- Render ---------- */
+const stage = $("stage"), canvas = $("gl");
+let renderer = null;
+try { renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "low-power" }); } catch (e) {}
+
+if (atRest) stage.style.transition = "none";
+if (hashParts[0] === "tools") {
+  const i = INSTALL_ORDER().findIndex(t => hashParts.includes(t.name.toLowerCase()));
+  SCREENS.tools(Math.max(i, 0));
+} else if (hashParts[0] === "card") {
+  const n = TOOLS.find(t => hashParts.includes(t.name.toLowerCase()));
+  go(true, .5); show({ title: "Adding " + link(n), status: "Installing " + n.name }); peek(n.name);
+} else (SCREENS[hashParts[0]] || SCREENS.welcome)();
+if (!atRest) canvas.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1600, easing: EASE });
+
+if (renderer) {
+  renderer.setClearColor(0x000000, 0);
+  const cam = new THREE.Camera();
+  const threadU = { uT: { value: 0 }, uN: { value: 3 }, uE: { value: 0 }, uLevel: { value: -2 }, uFit: { value: new THREE.Vector2(1, 1) } };
+  const threadScene = new THREE.Scene();
+  {
+    const RIB = 6, STR = 22, SEG = 180, pos = [], au = [], ar = [], aj = [], idx = [];
+    for (let r = 0; r < RIB; r++) for (let j = 0; j < STR; j++) {
+      const base = au.length;
+      for (let i = 0; i < SEG; i++) { pos.push(0, 0, 0); au.push(i / SEG); ar.push(r); aj.push(j / STR); }
+      for (let i = 0; i < SEG; i++) idx.push(base + i, base + (i + 1) % SEG);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("aU", new THREE.Float32BufferAttribute(au, 1));
+    geo.setAttribute("aR", new THREE.Float32BufferAttribute(ar, 1));
+    geo.setAttribute("aJ", new THREE.Float32BufferAttribute(aj, 1));
+    geo.setIndex(idx);
+    const mesh = new THREE.LineSegments(geo, new THREE.ShaderMaterial({
+      uniforms: threadU, vertexShader: threadVert, fragmentShader: threadFrag, transparent: true, depthTest: false, depthWrite: false,
+      blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor,
+    }));
+    mesh.frustumCulled = false;
+    threadScene.add(mesh);
+  }
+
+  // Half-float keeps faint threads from banding; where it's missing, eight bits still works.
+  const gl = renderer.getContext();
+  const floatOK = renderer.capabilities.isWebGL2 && !!gl.getExtension("EXT_color_buffer_float");
+  const RT = renderer.capabilities.isWebGL2 ? THREE.WebGLMultisampleRenderTarget : THREE.WebGLRenderTarget;
+  const light = new RT(4, 4, { type: floatOK ? THREE.HalfFloatType : THREE.UnsignedByteType, format: THREE.RGBAFormat, depthBuffer: false, stencilBuffer: false });
+  const lightScene = new THREE.Scene();
+  lightScene.add(new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), new THREE.ShaderMaterial({
+    uniforms: { tLight: { value: light.texture } },
+    vertexShader: "varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.,1.); }",
+    fragmentShader: lightFrag, blending: THREE.NoBlending, depthTest: false, depthWrite: false,
+  })));
+
+  function size() {
+    const w = stage.clientWidth, h = stage.clientHeight;
+    const dpr = Math.min(devicePixelRatio || 1, 1.75);
+    renderer.setPixelRatio(dpr);
+    renderer.setSize(w, h, false);
+    threadU.uFit.value.set(Math.min(w, h) / w, Math.min(w, h) / h);
+    light.setSize(Math.round(w * dpr), Math.round(h * dpr));
+  }
+  new ResizeObserver(size).observe(stage);
+  size();
+
+  let last = performance.now(), T = 7, speed = working ? WORK_SPEED : WAIT_SPEED, energy = working ? 1 : 0, shown = progress, ribbons = settled ? 3 : 3 + 3 * progress;
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, .05); last = now;
+    const blend = 1 - Math.exp(-dt * (working ? 3.2 : settled ? .55 : 1.1));
+    const wantSpeed = working ? WORK_SPEED : (settled ? SETTLED_SPEED : WAIT_SPEED);
+    speed += (wantSpeed * (calm ? .1 : 1) - speed) * blend;
+    energy += ((working ? 1 : 0) - energy) * blend;
+    shown += (progress - shown) * (1 - Math.exp(-dt * 1.2));
+    ribbons += ((settled ? 3 : 3 + 3 * progress) - ribbons) * (1 - Math.exp(-dt * .7));
+    T += dt * speed;
+
+    threadU.uT.value = T; threadU.uN.value = ribbons; threadU.uE.value = energy;
+    threadU.uLevel.value = -1.75 + 3.5 * shown;
+    renderer.setRenderTarget(light);
+    renderer.clear();
+    renderer.render(threadScene, cam);
+    renderer.setRenderTarget(null);
+    renderer.render(lightScene, cam);
+    $("glow").style.opacity = (.9 * shown).toFixed(3);
+    const aura = [88 - 60 * shown, 136 + 54 * shown, 232 - 118 * shown].map(Math.round).join(" ");
+    document.documentElement.style.setProperty("--aura", aura);
+    const pct = $("pct");
+    pct.textContent = Math.round(shown * 100) + "% complete";
+    pct.style.opacity = shown > .005 && !settled ? 1 : 0;
+    requestAnimationFrame(frame);
+  }
+  frame(performance.now());
+}
+
+function pickAgent(a) {
+  if (a === agent) return;
+  agent = a;
+  $("pickClaude").setAttribute("aria-pressed", a === AGENTS.claude);
+  $("pickOpen").setAttribute("aria-pressed", a === AGENTS.opencode);
+  redraw();
+}
+$("pickClaude").setAttribute("aria-pressed", agent === AGENTS.claude);
+$("pickOpen").setAttribute("aria-pressed", agent === AGENTS.opencode);
+$("pickClaude").onclick = () => pickAgent(AGENTS.claude);
+$("pickOpen").onclick = () => pickAgent(AGENTS.opencode);
+$("again").onclick = () => { chosen = new Set(TOOLS.map(t => t.name)); $("jump").value = "welcome"; SCREENS.welcome(); };
+</script>
