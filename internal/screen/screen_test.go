@@ -116,8 +116,11 @@ var recordedCopyChanges = map[string]bool{
 	" didn’t install.":                            true,
 	"Skip {tool}":                                 true,
 	", which include Git. This can take a while.": true,
-	"Let’s talk in {app}.":                        true,
-	"{ai} has a question.":                        true,
+	"Your turn: click through the installer.":     true,
+	"This adds ":                                  true,
+	", which installs other software for you. It will ask for your Mac password.": true,
+	"Let’s talk in {app}.": true,
+	"{ai} has a question.": true,
 }
 
 func TestCopyComesFromThePrototype(t *testing.T) {
@@ -321,9 +324,18 @@ func TestSpecificScreens(t *testing.T) {
 	if len(ask.Choices) != 0 || ask.Mode != Waiting {
 		t.Errorf("apple-ask has no button and waits on the person: %+v", ask)
 	}
-	terminal, _ := Describe(Request{Screen: "terminal"}, ctx)
-	if len(terminal.Choices) != 0 || !strings.Contains(terminal.Code, "Homebrew/install") || terminal.Layout != LayoutLow {
-		t.Errorf("terminal = %+v", terminal)
+	brew, _ := Describe(Request{Screen: "brew-ask"}, ctx)
+	if got := plain(brew.Title); got != "Your turn: click through the installer." {
+		t.Errorf("brew-ask title = %q", got)
+	}
+	if got := plain(brew.Status); got != "This adds Homebrew, which installs other software for you. It will ask for your Mac password." {
+		t.Errorf("brew-ask line = %q", got)
+	}
+	if len(brew.Choices) != 0 || brew.Code != "" || brew.Mode != Waiting {
+		t.Errorf("Apple blocks a pasted command, so there's nothing to paste: %+v", brew)
+	}
+	if _, err := Describe(Request{Screen: "terminal"}, ctx); err == nil {
+		t.Error("the paste screen is gone")
 	}
 	done, _ := Describe(Request{Screen: "done"}, ctx)
 	if done.Mode != Settled {

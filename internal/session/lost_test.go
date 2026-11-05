@@ -114,7 +114,7 @@ func TestClickWithALiveAgentIsNotLost(t *testing.T) {
 }
 
 func TestYourTurnScreensCanBeLost(t *testing.T) {
-	for _, id := range []screen.ID{"apple-ask", "terminal"} {
+	for _, id := range []screen.ID{"apple-ask", "brew-ask"} {
 		store := begun(t)
 		state := show(t, store, screen.Request{Screen: id}, t0)
 		if !state.Lost(t0.Add(DefaultAllowance + time.Second)) {

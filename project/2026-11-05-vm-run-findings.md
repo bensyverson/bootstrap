@@ -59,6 +59,8 @@ What this run can't show: Gatekeeper's verdict on the `.pkg` (the VM's own check
 
 ## What this means
 
+> **Built, 2026-11-05:** `wait clt`'s three events, `brew-ask` in place of `terminal`, and the disk row in `detect`. See [the seams doc](2026-11-05-bootstrap-seams.md).
+
 - **The `terminal` screen needs replacing** with Homebrew's `.pkg` (Ben, 2026-11-05). The new words are Ben's call.
 - **`SETUP.md` must run `brew trust bensyverson/tap` before `brew bundle`.**
 - **After `xcode-select --install`, the agent should run `open -a` on the installer.** In all four starts it opened behind.

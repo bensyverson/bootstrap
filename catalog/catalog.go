@@ -26,6 +26,18 @@ type Tool struct {
 	Required bool     `json:"required"`
 	OwnStep  bool     `json:"own_step"`
 	Detect   []string `json:"detect"`
+	// Installer is part of the installer's command line, for pgrep -f. An installer
+	// that quits before Detect finds anything was canceled or failed.
+	Installer string `json:"installer,omitempty"`
+	// Started is where a person's go-ahead shows up, for installers that have one.
+	Started *Sign `json:"started,omitempty"`
+}
+
+// Sign is a folder in Dir holding a file whose name starts with Prefix. Apple's
+// updater makes one when someone clicks Agree, and removes it once it's installed.
+type Sign struct {
+	Dir    string `json:"dir"`
+	Prefix string `json:"prefix"`
 }
 
 // load is once-only, and panics because the files are embedded: a parse failure

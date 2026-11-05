@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -225,7 +226,11 @@ func TestDetectRows(t *testing.T) {
 	if r.code != 0 || r.stderr != "" {
 		t.Fatalf("exit %d, stderr %q", r.code, r.stderr)
 	}
-	lines := strings.SplitN(r.stdout, "\n", 2)
+	disk := regexp.MustCompile(`(?m)^disk free_gb=[0-9.]+ apple_step=(enough|short)\n`)
+	if !disk.MatchString(r.stdout) {
+		t.Errorf("no disk row:\n%s", r.stdout)
+	}
+	lines := strings.SplitN(disk.ReplaceAllString(r.stdout, ""), "\n", 2)
 	if !strings.HasPrefix(lines[0], "chip=") || !strings.HasSuffix(lines[0], "macos=unknown") {
 		t.Errorf("first row = %q", lines[0])
 	}

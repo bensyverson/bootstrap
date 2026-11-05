@@ -1,0 +1,22 @@
+{
+  "screen": "brew-ask",
+  "mode": "waiting",
+  "progress": 0.111,
+  "title": [
+    {
+      "text": "Your turn: click through the installer."
+    }
+  ],
+  "status": [
+    {
+      "text": "This adds "
+    },
+    {
+      "text": "Homebrew",
+      "url": "https://brew.sh"
+    },
+    {
+      "text": ", which installs other software for you. It will ask for your Mac password."
+    }
+  ]
+}

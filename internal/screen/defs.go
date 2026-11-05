@@ -23,8 +23,6 @@ const (
 	OtherFailureLine = "Something went wrong. {ai} can take a look."
 )
 
-const brewCommand = `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
-
 // Next steps the ack on a screen teaches.
 const (
 	nextAnswer = "bootstrap wait answer"
@@ -102,9 +100,8 @@ var specs = []spec{
 		status: "A window from Apple will pop up. It adds the {link:clt}, which include Git. This can take a while.", next: nextCLT},
 	{id: "apple-wait", mode: Working, title: "Adding Apple’s tools", noteTool: "clt",
 		status: "Apple’s window shows how far along it is. This can take a while.", card: "git", next: nextCLT},
-	{id: "terminal", mode: Waiting, layout: LayoutLow, title: "Your turn: paste this in Terminal.",
-		status: "This installs {link:homebrew}, which installs other software for you. It will ask for your Mac password, and you won’t see it as you type. That’s normal.",
-		code:   brewCommand, next: nextBrew},
+	{id: "brew-ask", mode: Waiting, title: "Your turn: click through the installer.",
+		status: "This adds {link:homebrew}, which installs other software for you. It will ask for your Mac password.", next: nextBrew},
 	{id: "brew-wait", mode: Working, title: "Adding {link:homebrew}", noteTool: "homebrew",
 		status: "Follow along in Terminal.", card: "homebrew", next: nextBrew},
 	{id: "tool", mode: Working, title: "Adding {tool-link}", tool: installTool, cardTool: true,

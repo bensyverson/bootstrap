@@ -161,16 +161,19 @@ var showCommand = command{
 // arrivalTargets maps what wait accepts to the catalog tool that proves it.
 var arrivalTargets = map[string]string{"clt": "clt", "brew": "homebrew"}
 
-// arrivalNext is the step after a tool lands. Homebrew's file can appear before its
-// installer finishes, so the agent confirms that one by running it.
+// arrivalNext is the step after a tool lands. The agent confirms Homebrew by running it.
 var arrivalNext = map[string]string{"clt": "bootstrap show <screen>", "brew": "/opt/homebrew/bin/brew --version"}
+
+// startedNext is the step after someone gives an installer the go-ahead.
+var startedNext = map[string]string{"clt": "bootstrap show apple-wait, then bootstrap wait clt"}
 
 var waitTargets = []string{"answer", "clt", "brew"}
 
 type arrivalValue struct {
-	Target string `json:"target"`
-	Path   string `json:"path"`
-	Next   string `json:"next"`
+	Target string        `json:"target"`
+	Event  session.Event `json:"event"`
+	Path   string        `json:"path,omitempty"`
+	Next   string        `json:"next"`
 }
 
 type answerValue struct {
@@ -180,7 +183,7 @@ type answerValue struct {
 
 var waitCommand = command{
 	name: "wait", class: "Act", usage: "wait <answer|clt|brew> [--timeout 90s] [--json]",
-	about:   "Returns what the person chose on the current screen, or the arrival of Apple's tools or Homebrew. Answers to earlier screens are never returned. Running out of time is exit 3: run wait again.",
+	about:   "Returns what the person chose on the current screen, or what happened to Apple's tools or Homebrew: started (clt only, when the person clicks Agree), arrived, or canceled (exit 4). Answers to earlier screens are never returned. Running out of time is exit 3: run wait again.",
 	example: "bootstrap wait answer --timeout 90s",
 	flags:   []string{"timeout"},
 	run: func(c *call) (output, error) {
@@ -215,18 +218,26 @@ var waitCommand = command{
 }
 
 func waitArrival(c *call, store session.Store, target string, timeout time.Duration) (output, error) {
-	probe := detect.Probe{Root: c.env.Getenv(envRoot), Home: c.env.Getenv("HOME")}
-	path, err := store.WaitArrival(context.Background(), probe, arrivalTargets[target], timeout)
+	probe := detect.Probe{Root: c.env.Getenv(envRoot), Home: c.env.Getenv("HOME"), Running: detect.Running}
+	toolID := arrivalTargets[target]
+	got, err := store.WaitInstall(context.Background(), probe, toolID, timeout)
 	if errors.Is(err, session.ErrWaitTimeout) {
-		tool, _ := catalog.Find(arrivalTargets[target])
+		tool, _ := catalog.Find(toolID)
 		return output{}, &failure{code: exitTimeout, message: stillWaiting, state: fmt.Sprintf("target=%s path=%s", target, tool.Detect[0]), next: "bootstrap wait " + target}
 	}
 	if err != nil {
 		return output{}, err
 	}
+	switch got.Event {
+	case session.Canceled:
+		return output{}, &failure{code: exitTarget, message: "the installer closed before it finished", state: "target=" + target, next: fmt.Sprintf("bootstrap show trouble %s --reason other", toolID)}
+	case session.Started:
+		next := startedNext[target]
+		return output{rows: []string{"started target=" + target}, next: next, value: arrivalValue{Target: target, Event: got.Event, Next: next}}, nil
+	}
 	next := arrivalNext[target]
-	row := fmt.Sprintf("arrived target=%s %s", target, kv("path", path))
-	return output{rows: []string{row}, next: next, value: arrivalValue{Target: target, Path: path, Next: next}}, nil
+	row := fmt.Sprintf("arrived target=%s %s", target, kv("path", got.Path))
+	return output{rows: []string{row}, next: next, value: arrivalValue{Target: target, Event: got.Event, Path: got.Path, Next: next}}, nil
 }
 
 func waitAnswer(store session.Store, timeout time.Duration) (output, error) {

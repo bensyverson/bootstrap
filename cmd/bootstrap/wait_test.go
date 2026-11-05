@@ -113,8 +113,8 @@ func TestWaitAnswerOnAScreenWithNothingToAnswer(t *testing.T) {
 	w := newWorld(t)
 	w.serve(t)
 	w.run(t, "wait", "answer").wantErr(t, 2, "no screen", "next: bootstrap show welcome")
-	w.seq(t, "terminal")
-	w.run(t, "wait", "answer").wantErr(t, 2, "the terminal screen has nothing to answer", "next: bootstrap wait brew")
+	w.seq(t, "brew-ask")
+	w.run(t, "wait", "answer").wantErr(t, 2, "the brew-ask screen has nothing to answer", "next: bootstrap wait brew")
 }
 
 func TestWaitAnswerWhenThePageIsGone(t *testing.T) {
@@ -152,6 +152,20 @@ func TestWaitArrivals(t *testing.T) {
 				t.Fatal("wait never returned")
 			}
 		})
+	}
+}
+
+func TestWaitCLTSeesTheAgreeClick(t *testing.T) {
+	w := newWorld(t)
+	done := make(chan result, 1)
+	go func() { done <- w.run(t, "wait", "clt", "--timeout", "10s") }()
+	time.Sleep(200 * time.Millisecond)
+	touchExec(t, filepath.Join(w.root, "Library/Updates/047-91568/CLTools_Executables.pkg"))
+	select {
+	case r := <-done:
+		r.want(t, 0, "started target=clt\nnext: bootstrap show apple-wait, then bootstrap wait clt\n", "")
+	case <-time.After(15 * time.Second):
+		t.Fatal("wait never returned")
 	}
 }
 

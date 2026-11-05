@@ -130,7 +130,7 @@ func TestWaitAnswerRenews(t *testing.T) {
 	}
 }
 
-func TestWaitArrivalNeedsNoWritableFolder(t *testing.T) {
+func TestWaitInstallNeedsNoWritableFolder(t *testing.T) {
 	root, home := t.TempDir(), t.TempDir()
 	brew := filepath.Join(root, "opt/homebrew/bin/brew")
 	if err := os.MkdirAll(filepath.Dir(brew), 0o755); err != nil {
@@ -144,18 +144,18 @@ func TestWaitArrivalNeedsNoWritableFolder(t *testing.T) {
 		t.Fatal(err)
 	}
 	store := Store{Dir: filepath.Join(blocked, "sub")}
-	path, err := store.WaitArrival(context.Background(), detect.Probe{Root: root, Home: home}, "homebrew", time.Second)
-	if err != nil || path != "/opt/homebrew/bin/brew" {
-		t.Errorf("path %q, err %v", path, err)
+	got, err := store.WaitInstall(context.Background(), detect.Probe{Root: root, Home: home}, "homebrew", time.Second)
+	if err != nil || got.Event != Arrived || got.Path != "/opt/homebrew/bin/brew" {
+		t.Errorf("got %+v, err %v", got, err)
 	}
 }
 
-func TestWaitArrival(t *testing.T) {
+func TestWaitInstallArrival(t *testing.T) {
 	root := t.TempDir()
 	home := t.TempDir()
 	probe := detect.Probe{Root: root, Home: home}
 	store := Store{Dir: filepath.Join(t.TempDir(), "none")}
-	if _, err := store.WaitArrival(context.Background(), probe, "homebrew", 100*time.Millisecond); !errors.Is(err, ErrWaitTimeout) {
+	if _, err := store.WaitInstall(context.Background(), probe, "homebrew", 100*time.Millisecond); !errors.Is(err, ErrWaitTimeout) {
 		t.Errorf("err = %v", err)
 	}
 	brew := filepath.Join(root, "opt/homebrew/bin/brew")
@@ -165,8 +165,8 @@ func TestWaitArrival(t *testing.T) {
 	if err := os.WriteFile(brew, nil, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	path, err := store.WaitArrival(context.Background(), probe, "homebrew", time.Second)
-	if err != nil || path != "/opt/homebrew/bin/brew" {
-		t.Errorf("path %q, err %v", path, err)
+	got, err := store.WaitInstall(context.Background(), probe, "homebrew", time.Second)
+	if err != nil || got.Event != Arrived || got.Path != "/opt/homebrew/bin/brew" {
+		t.Errorf("got %+v, err %v", got, err)
 	}
 }

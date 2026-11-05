@@ -169,3 +169,29 @@ func TestUnknownMacOSAndChipSaySo(t *testing.T) {
 		t.Errorf("got macos=%q chip=%q, want unknown", got.MacOS, got.Chip)
 	}
 }
+
+func TestDiskSpaceForApplesStep(t *testing.T) {
+	cases := []struct {
+		name  string
+		free  func(string) (uint64, error)
+		space Space
+	}{
+		{"plenty", func(string) (uint64, error) { return 120e9, nil }, SpaceEnough},
+		{"exactly enough", func(string) (uint64, error) { return AppleStepNeeds, nil }, SpaceEnough},
+		{"short, as the VM was", func(string) (uint64, error) { return 18_700_000_000, nil }, SpaceShort},
+		{"macOS won't say", func(string) (uint64, error) { return 0, os.ErrPermission }, SpaceUnknown},
+		{"nothing to ask", nil, SpaceUnknown},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			home := t.TempDir()
+			got := Run(Probe{Root: t.TempDir(), Home: home, Cwd: home, Free: c.free}).Disk
+			if got.AppleStep != c.space {
+				t.Errorf("apple step = %s, want %s", got.AppleStep, c.space)
+			}
+			if c.space != SpaceUnknown && got.Free == 0 {
+				t.Errorf("free bytes missing: %+v", got)
+			}
+		})
+	}
+}

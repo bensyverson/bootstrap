@@ -74,6 +74,7 @@ type Report struct {
 	Arch   string `json:"arch"`
 	MacOS  string `json:"macos"`
 	Folder Folder `json:"folder"`
+	Disk   Disk   `json:"disk"`
 	Tools  []Tool `json:"tools"`
 }
 
@@ -83,6 +84,9 @@ type Probe struct {
 	Home string
 	Cwd  string
 	Chip func() string
+	// Free and Running are FreeBytes and Running outside tests. Nil means don't know.
+	Free    func(path string) (uint64, error)
+	Running func(pattern string) bool
 }
 
 // Run takes the whole report.
@@ -92,6 +96,7 @@ func Run(p Probe) Report {
 		Arch:   runtime.GOARCH,
 		MacOS:  macOSVersion(p),
 		Folder: inspectFolder(p),
+		Disk:   inspectDisk(p),
 	}
 	if p.Chip != nil {
 		if chip := p.Chip(); chip != "" {

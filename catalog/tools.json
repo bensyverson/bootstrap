@@ -7,7 +7,9 @@
       "say": "Apple’s tools that Git and Homebrew need.",
       "required": true,
       "own_step": true,
-      "detect": ["/Library/Developer/CommandLineTools/usr/bin/git"]
+      "detect": ["/Library/Developer/CommandLineTools/usr/bin/git"],
+      "installer": "Install Command Line Developer Tools.app/Contents/MacOS/",
+      "started": {"dir": "/Library/Updates", "prefix": "CLTools_"}
     },
     {
       "id": "homebrew",
@@ -16,7 +18,8 @@
       "say": "Installs software packages.",
       "required": true,
       "own_step": true,
-      "detect": ["/opt/homebrew/bin/brew"]
+      "detect": ["/opt/homebrew/bin/brew"],
+      "installer": "Installer.app/Contents/MacOS/Installer"
     },
     {
       "id": "git",

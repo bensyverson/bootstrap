@@ -2,11 +2,8 @@ package session
 
 import (
 	"context"
-	"errors"
 	"time"
 
-	"github.com/bensyverson/bootstrap/catalog"
-	"github.com/bensyverson/bootstrap/internal/detect"
 	"github.com/bensyverson/bootstrap/internal/screen"
 )
 
@@ -75,25 +72,4 @@ func (s Store) WaitAnswer(ctx context.Context, timeout time.Duration) (Answered,
 		return false, nil
 	})
 	return found, err
-}
-
-// WaitArrival returns the path that proves a tool has landed. It renews a session
-// when it can, but needs none, so the chat fallback can use it where this folder
-// can't even be written.
-func (s Store) WaitArrival(ctx context.Context, probe detect.Probe, toolID string, timeout time.Duration) (string, error) {
-	tool, ok := catalog.Find(toolID)
-	if !ok {
-		return "", errors.New("unknown tool " + toolID)
-	}
-	var path string
-	renew := func() error {
-		s.Renew(time.Now())
-		return nil
-	}
-	err := poll(ctx, timeout, renew, func() (bool, error) {
-		found, ok := detect.Locate(probe, tool.Detect)
-		path = found
-		return ok, nil
-	})
-	return path, err
 }

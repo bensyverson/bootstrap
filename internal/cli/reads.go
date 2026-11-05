@@ -51,10 +51,11 @@ var detectCommand = command{
 		if err != nil {
 			return output{}, &failure{code: exitEnviron, message: "can't read this folder: " + err.Error(), next: "cd into a folder, then bootstrap detect"}
 		}
-		r := detect.Run(detect.Probe{Root: c.env.Getenv(envRoot), Home: c.env.Getenv("HOME"), Cwd: cwd, Chip: detect.Chip})
+		r := detect.Run(detect.Probe{Root: c.env.Getenv(envRoot), Home: c.env.Getenv("HOME"), Cwd: cwd, Chip: detect.Chip, Free: detect.FreeBytes})
 		rows := []string{
 			strings.Join([]string{kv("chip", r.Chip), kv("arch", r.Arch), kv("macos", r.MacOS)}, " "),
 			fmt.Sprintf("folder kind=%s files=%s git=%s %s", r.Folder.Kind, r.Folder.Files, r.Folder.Git, kv("path", r.Folder.Path)),
+			fmt.Sprintf("disk free_gb=%.1f apple_step=%s", float64(r.Disk.Free)/1e9, r.Disk.AppleStep),
 		}
 		for _, t := range r.Tools {
 			row := fmt.Sprintf("tool %s %s", t.ID, t.State)

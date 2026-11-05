@@ -122,7 +122,7 @@ func TestShowAckTeachesTheNextCommand(t *testing.T) {
 	}{
 		{[]string{"show", "welcome"}, "shown seq=2 screen=welcome mode=waiting progress=0\nnext: bootstrap wait answer\n"},
 		{[]string{"show", "apple-ask"}, "shown seq=3 screen=apple-ask mode=waiting progress=0\nnext: bootstrap wait clt\n"},
-		{[]string{"show", "terminal"}, "shown seq=4 screen=terminal mode=waiting progress=0.111\nnext: bootstrap wait brew\n"},
+		{[]string{"show", "brew-ask"}, "shown seq=4 screen=brew-ask mode=waiting progress=0.111\nnext: bootstrap wait brew\n"},
 		{[]string{"show", "tool", "jobs", "--status", "installing", "--expect", "20m"}, "shown seq=5 screen=tool tool=jobs status=installing mode=working progress=0.333\nnext: do the work, then bootstrap show <screen>\n"},
 		{[]string{"show", "done"}, "shown seq=6 screen=done mode=settled progress=1\nnext: bootstrap stop\n"},
 	}
