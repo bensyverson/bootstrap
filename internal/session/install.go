@@ -29,9 +29,11 @@ type Progress struct {
 }
 
 // WaitInstall returns the first of a tool's arrival, its start, or its cancel. A start
-// counts only for a folder that appears during this wait, so a second wait after a
-// start, or a folder left by an earlier try, doesn't fire again. A cancel counts only
-// for an installer this wait saw running. It renews a session when it can, but needs
+// counts only for a folder that appears during this wait, so a folder left by an
+// earlier try doesn't fire. Nor does any folder while an install is already under way
+// (a folder there and the installer running when the wait began): Apple can download
+// two versions into two folders a moment apart, and the second isn't a new start. A
+// cancel counts only for an installer this wait saw running. It renews a session when it can, but needs
 // none, so the chat fallback can use it where this folder can't even be written.
 func (s Store) WaitInstall(ctx context.Context, probe detect.Probe, toolID string, timeout time.Duration) (Progress, error) {
 	tool, ok := catalog.Find(toolID)
@@ -39,8 +41,10 @@ func (s Store) WaitInstall(ctx context.Context, probe detect.Probe, toolID strin
 		return Progress{}, errors.New("unknown tool " + toolID)
 	}
 	var before map[string]bool
-	if tool.Started != nil {
+	watchStart := tool.Started != nil
+	if watchStart {
 		before = detect.Downloads(probe, *tool.Started)
+		watchStart = len(before) == 0 || !detect.InstallerRunning(probe, tool)
 	}
 	seen := false
 	var got Progress
@@ -53,7 +57,7 @@ func (s Store) WaitInstall(ctx context.Context, probe detect.Probe, toolID strin
 			got = Progress{Event: Arrived, Path: path}
 			return true, nil
 		}
-		if tool.Started != nil {
+		if watchStart {
 			now := detect.Downloads(probe, *tool.Started)
 			maps.DeleteFunc(now, func(dir string, _ bool) bool { return before[dir] })
 			if len(now) > 0 {

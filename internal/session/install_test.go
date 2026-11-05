@@ -107,3 +107,33 @@ func TestWaitInstallHasNoStartForHomebrew(t *testing.T) {
 		t.Errorf("got %+v, %v", got, err)
 	}
 }
+
+// Apple can download two versions of its tools, each into its own folder, a moment
+// apart. In the clt3 VM run the second folder appeared after an agent's next wait
+// began, and that wait returned started again instead of waiting for Git.
+func TestWaitInstallIgnoresASecondFolderOnceUnderWay(t *testing.T) {
+	probe := fakeProbe(t)
+	probe.Running = func(string) bool { return true }
+	place(t, probe.Root, cltPackage, 0o644)
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		place(t, probe.Root, "Library/Updates/140-17812/CLTools_Executables.pkg", 0o644)
+	}()
+	if got, err := noStore(t).WaitInstall(context.Background(), probe, "clt", 400*time.Millisecond); !errors.Is(err, ErrWaitTimeout) {
+		t.Errorf("a second folder during an install under way isn't a new start: %+v, %v", got, err)
+	}
+}
+
+// A folder left by an earlier try, with no installer running, doesn't hide a real start.
+func TestWaitInstallSeesAStartBesideALeftoverFolder(t *testing.T) {
+	probe := fakeProbe(t)
+	place(t, probe.Root, cltPackage, 0o644)
+	go func() {
+		time.Sleep(150 * time.Millisecond)
+		place(t, probe.Root, "Library/Updates/140-17812/CLTools_Executables.pkg", 0o644)
+	}()
+	got, err := noStore(t).WaitInstall(context.Background(), probe, "clt", 5*time.Second)
+	if err != nil || got.Event != Started {
+		t.Errorf("got %+v, err %v", got, err)
+	}
+}

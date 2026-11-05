@@ -1,6 +1,6 @@
 # VM runs: Homebrew's paste is blocked, its `.pkg` works, and Apple's step has a click signal (2026-11-05)
 
-**The headline:** on macOS 26.6.2, Apple blocks a pasted Homebrew command with a malware warning, so the `terminal` screen can't stay as designed. Homebrew's signed `.pkg` works on a bare Mac, and our tools pour from it even without Apple's tools. Apple's step still matters, because without it plain `git` is Apple's placeholder. The step has a signal for the moment someone clicks Agree, so `apple-wait` stays. Two runs, described below: the first VM (`clean`) and a fresh clone (`fresh`).
+**The headline:** on macOS 26.6.2, Apple blocks a pasted Homebrew command with a malware warning, so the `terminal` screen can't stay as designed. Homebrew's signed `.pkg` works on a bare Mac, and our tools pour from it even without Apple's tools. Apple's step still matters, because without it plain `git` is Apple's placeholder. The step has a signal for the moment someone clicks Agree, so `apple-wait` stays. Three runs, described below: the first VM (`clean`), a fresh clone (`fresh`), and a third clone (`clt3`) that checked `wait clt` against Apple's real install and showed that a running agent can't find `brew` by name.
 
 > **Correction, 2026-11-05:** the first version of this doc said `apple-wait` had no signal to start from and should go. The second run found one, below.
 
@@ -57,6 +57,35 @@ A new clone of the same image. Before anything ran: Gatekeeper on (`spctl --glob
 
 What this run can't show: Gatekeeper's verdict on the `.pkg` (the VM's own check failed), and on a file a browser downloaded, since everything here came by `curl`, which doesn't mark files for Gatekeeper. `brew trust` was remembered after Homebrew was removed and reinstalled, so the second Brewfile didn't re-test trust.
 
+## Third run (`clt3`)
+
+A new clone of the same image, prepared like `fresh`: Gatekeeper on (`spctl --status` said `assessments enabled`), `/etc/sudoers.d/admin-nopasswd` removed (`sudo -n true` then asked for a password), and no Apple tools or Homebrew. Commands ran over ssh from the Mini with `~agent/tart-install/vm.exp "<command>" <ip>`. `~/waitloop.sh` in the VM ran `bootstrap wait clt --timeout 30m --json` in a loop, the way an agent would, and logged each result with the time to `~/waitclt.log`. Apple's dialog was opened over ssh with `launchctl asuser 501 xcode-select --install`, and Ben clicked over Screen Sharing.
+
+| Question | What happened | Evidence |
+|---|---|---|
+| Does `started` fire on Agree? | Yes, both times: 20:33:29 and 20:46:02. | `~/waitclt.log` |
+| Does `arrived` fire on Git's file? | Yes, at 20:51:39, 5m37s after Agree. The second run took 5m38s. | `~/waitclt.log`, then `ls -la /Library/Developer/CommandLineTools/usr/bin/git` |
+| Does a failed install read as `canceled`? | Yes, but late. The install failed at 20:36:53. `wait clt` returned `canceled` (exit 4, "the installer closed before it finished") at 20:42:03, a second after Ben dismissed Apple's error. Until the person closes the error, the agent sits on `apple-wait`. | `/var/log/install.log`; `~/waitclt.log` |
+| Why did it fail? | Disk space: `PKInstallErrorDomain Code=107`, "There is not enough space available on “Macintosh HD” to install the software. An additional 201 MB is required." `df -h /` showed 18 GiB free afterward. Apple was installing two versions together, Command Line Tools for Xcode 26.5 and 26.6. Claude Code, installed at 20:35, had used about 305 MB of the same space. | `grep -E "20:3[3-9]" /var/log/install.log` |
+| Can `started` fire twice? | **Yes, a bug.** The second run logged `started` twice at 20:46:02. Apple downloads each version into its own folder in `/Library/Updates`, and the second folder appeared after the loop's second wait began, so it counted as a new start. | `~/waitclt.log` |
+| Where does Apple's dialog open? | Behind Terminal, as in all four earlier starts. | Ben, over Screen Sharing |
+
+Growing the VM's disk didn't help: `tart set --disk-size 80` worked, but the recovery partition sits between the system container and the new space, and SIP refuses `diskutil eraseVolume` on it ("APFS Recovery Physical Store"). Removing Claude Code and `~/Library/Caches` freed enough for the second try.
+
+### Can an agent find what Homebrew installed?
+
+Claude Code 2.1.318 was installed with `curl -fsSL https://claude.ai/install.sh | bash`. On this bare Mac it left `~/.local/bin` off `PATH` and printed the line to add to `~/.zshrc`, which was added. Ben started `claude` in a new Terminal window and signed in. Then Homebrew 7.0.12's `.pkg` was installed underneath it (`sudo installer -pkg Homebrew.pkg -target /`). The `.pkg` added `/etc/paths.d/homebrew`, holding `/opt/homebrew/bin`.
+
+| Where Claude ran | `brew --version` | `/opt/homebrew/bin/brew --version` |
+|---|---|---|
+| The session already running when Homebrew installed | `command not found: brew`; its `PATH` had no `/opt/homebrew/bin` | `Homebrew 7.0.12` |
+| A new session, in the same Terminal window | not found | worked |
+| A new session, in a new Terminal window | `Homebrew 7.0.12` | — |
+
+The `PATH` comes from the Terminal window's login shell, which reads `/etc/paths.d` only when it starts. Restarting the agent in the same window doesn't help. Every time, Claude suggested adding `eval "$(/opt/homebrew/bin/brew shellenv)"` to `~/.zprofile`, which the `.pkg` makes unnecessary.
+
+**Homebrew's signature.** `pkgutil --check-signature` on the `.pkg` from `https://github.com/Homebrew/brew/releases/download/7.0.12/Homebrew.pkg`: signed by "Developer ID Installer: Patrick Linnane (927JGANW46)", notarized by Apple, timestamped 2026-11-02. Patrick Linnane is a Homebrew maintainer. So 927JGANW46 is what Homebrew's own releases are signed with, shown by the release itself rather than by a statement in Homebrew's docs. Because it is one maintainer's Developer ID, it could change.
+
 ## What this means
 
 > **Built, 2026-11-05:** `wait clt`'s three events, `brew-ask` in place of `terminal`, and the disk row in `detect`. See [the seams doc](2026-11-05-bootstrap-seams.md).
@@ -68,14 +97,19 @@ What this run can't show: Gatekeeper's verdict on the `.pkg` (the VM's own check
 - **`wait clt` has signals at both ends.** Agree: a new folder holding `CLTools_` files in `/Library/Updates`, so `apple-ask` can move to `apple-wait`. Finished: Git's file. Canceled: Apple's installer process exits with no Git (first run). Two runs support the finished signal, one supports the click signal.
 - **Catch the common errors, not every edge case** (Ben, 2026-11-05). The common ones here are canceling and too little disk space. A folder an earlier, interrupted try left behind could fire the click signal early. The cheap guard is to look only for folders that weren't there before Apple's step started, and it's optional.
 - **Check free space up front.** Apple's step wanted about 19 GB free. `bootstrap detect` should report it, so the agent can explain before the person gets stuck.
+- **During setup, call everything Homebrew installs by full path:** `/opt/homebrew/bin/brew`, and the same for `agents`, `job` and the other tools. Don't add `brew shellenv` to the person's shell files, since the `.pkg` covers new shells. The done screen should tell the person to open a new Terminal window before their next session.
+- **Check for about 20 GB free before Apple's step.** The third run failed 201 MB short with 18 GiB free. Space taken by anything installed meanwhile counts too.
+- **Fix the duplicate `started`** in `wait clt`: once Apple's install is under way, a new folder isn't a new start.
+- **A failed install surfaces only when the person dismisses Apple's error.** Watching `/var/log/install.log` for `Install Failed` would catch it sooner. That's optional under "common errors, not every edge case".
+- **Check that Homebrew's `.pkg` is notarized,** not only its team ID, since the signer is a person.
 - **`SETUP.md` can't stop on `spctl` alone,** since it rejected a good file in this VM. Check the hash and `pkgutil --check-signature`.
 
 ## Still open
 
 1. Gatekeeper's real verdict, on a Mac that isn't this VM image, including a file a browser downloaded.
 2. Run from an agent in the VM's own Terminal with the page in front: does `open -a` still raise Apple's window?
-3. Can an agent that was already running when Homebrew installed find `brew`? Its PATH was set before the install, so it probably can't, and `SETUP.md` should call `/opt/homebrew/bin/brew` by full path unless this shows otherwise. The same goes for the tools it installs.
-4. Is 927JGANW46 Homebrew's official identity? `SETUP.md` should pin it only once that's confirmed from Homebrew's own docs.
+3. ~~Can an agent that was already running when Homebrew installed find `brew`?~~ No; see the third run.
+4. ~~Is 927JGANW46 Homebrew's official identity?~~ It signs Homebrew's own releases; see the third run.
 5. Does the page load with the network off? Run that with the network really off.
 6. Do the threads run smoothly on the Mini's own display?
 7. Not to be tested, per Ben: canceling partway through Apple's install or the `.pkg`.
