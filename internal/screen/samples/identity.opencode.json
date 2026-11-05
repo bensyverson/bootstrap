@@ -1,6 +1,7 @@
 {
   "screen": "identity",
   "mode": "waiting",
+  "layout": "low",
   "progress": 1,
   "title": [
     {

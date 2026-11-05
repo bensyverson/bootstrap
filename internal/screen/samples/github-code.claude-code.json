@@ -1,6 +1,7 @@
 {
   "screen": "github-code",
   "mode": "waiting",
+  "layout": "low",
   "progress": 1,
   "title": [
     {
