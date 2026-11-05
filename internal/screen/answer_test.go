@@ -54,3 +54,44 @@ func TestSafeFolderName(t *testing.T) {
 		}
 	}
 }
+
+// People type names the way they'd say them, so the folder name is made git-friendly
+// for them, rather than refusing "Pine Bakery" with an error.
+func TestFolderName(t *testing.T) {
+	cases := []struct {
+		typed, want string
+		ok          bool
+	}{
+		{"Pine Bakery", "pine-bakery", true},
+		{"  My   App  ", "my-app", true},
+		{"my-project", "my-project", true},
+		{"v2.site_new", "v2.site_new", true},
+		{"../etc", "", false},
+		{"a; rm -rf x", "", false},
+		{"café", "", false},
+		{"", "", false},
+		{"   ", "", false},
+		{".hidden", "", false},
+	}
+	for _, c := range cases {
+		got, ok := FolderName(c.typed)
+		if got != c.want || ok != c.ok {
+			t.Errorf("FolderName(%q) = %q, %v; want %q, %v", c.typed, got, ok, c.want, c.ok)
+		}
+	}
+}
+
+// With no button to move it on, this one screen has to say the wait can be long.
+func TestAppleAskSaysItCanTakeAWhile(t *testing.T) {
+	agent, err := FindAgent("claude-code")
+	if err != nil {
+		t.Fatal(err)
+	}
+	desc, err := Describe(Request{Screen: "apple-ask"}, Context{Agent: agent})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(plain(desc.Status), "This can take a while.") {
+		t.Errorf("status = %q", plain(desc.Status))
+	}
+}

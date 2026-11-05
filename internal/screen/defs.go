@@ -97,7 +97,7 @@ var specs = []spec{
 		choices: []choiceDef{{"lets-go", "Let’s go"}}, next: nextAnswer},
 	{id: "fast", mode: Working, title: "Got it. We’ll only stop if we need you.", next: nextWork},
 	{id: "apple-ask", mode: Waiting, title: "Your turn: click Install.",
-		status: "A window from Apple will pop up. It adds the {link:clt}, which include Git.", next: nextCLT},
+		status: "A window from Apple will pop up. It adds the {link:clt}, which include Git. This can take a while.", next: nextCLT},
 	{id: "apple-wait", mode: Working, title: "Adding Apple’s tools", noteTool: "clt",
 		status: "Apple’s window shows how far along it is. This can take a while.", card: "git", next: nextCLT},
 	{id: "terminal", mode: Waiting, layout: LayoutLow, title: "Your turn: paste this in Terminal.",

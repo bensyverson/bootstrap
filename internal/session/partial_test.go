@@ -81,3 +81,18 @@ func TestABrokenFinishedLineIsStillCorrupt(t *testing.T) {
 		t.Errorf("err = %v, want a CorruptError", err)
 	}
 }
+
+func TestATypedNameIsSavedGitFriendly(t *testing.T) {
+	store := startedStore(t)
+	state, err := store.Show(screen.Request{Screen: "naming"}, 0, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, err = store.RecordAnswer(state.Current.Seq, screen.Answer{Choice: "next", Name: "Pine Bakery"}, time.Now())
+	if err != nil {
+		t.Fatalf("a name with a space should become a folder name: %v", err)
+	}
+	if got, ok := state.CurrentAnswer(); !ok || got.Answer.Name != "pine-bakery" {
+		t.Errorf("saved %+v, want pine-bakery", got)
+	}
+}

@@ -271,6 +271,17 @@ func KeepRequired(tools []string) []string {
 // AllToolIDs is every tool.
 func AllToolIDs() []string { return catalog.IDs() }
 
+// FolderName turns what a person typed into a git-friendly folder name: lowercase,
+// with dashes for spaces. It refuses anything that still isn't safe, rather than
+// quietly dropping characters and naming the folder something they didn't type.
+func FolderName(typed string) (string, bool) {
+	name := strings.ToLower(strings.Join(strings.Fields(typed), "-"))
+	if !SafeFolderName(name) {
+		return "", false
+	}
+	return name, true
+}
+
 // SafeFolderName reports whether a typed name is safe for an agent to use in a
 // command: letters, numbers, dots, dashes and underscores, starting with a letter
 // or number. Spaces are refused because agents don't reliably quote.

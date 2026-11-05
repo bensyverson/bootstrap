@@ -45,7 +45,7 @@ The default `wait` timeout and the allowance are constants in `internal/session/
 
 ## Open problems found while building
 
-- **Nothing tells the agent when to leave a "your turn" screen.** The prototype's "I clicked it" and "I did it" buttons moved `apple-ask` on to `apple-wait`, and `terminal` on to `brew-wait`. With them gone, `wait clt` and `wait brew` only return once the install has finished, which is too late for an "Adding…" screen. Both screens are built, and an agent can show one after `wait` exits 3, but that's a guess about what the person has done. `SETUP.md` or the trial has to settle this.
+- **Nothing tells the agent when to leave a "your turn" screen.** The prototype's "I clicked it" and "I did it" buttons moved `apple-ask` on to `apple-wait`, and `terminal` on to `brew-wait`, and `wait clt` and `wait brew` only return once the install has finished. **Ben ruled on 2026-11-05: stay on the "your turn" screen until the install finishes**, so `apple-ask` now says it can take a while. The `apple-wait` and `brew-wait` screens stay for now, because the VM run will check whether a dependable signal exists, such as Apple's installer or Homebrew's folder appearing. If there is one, use them. If not, delete them.
 - **A sandboxed agent can't reach `~/.bootstrap` either.** Inside Claude Code's sandbox, `serve` exits 5 at `mkdir`, before it ever tries to bind, and that reads as the normal fallback (run on this Mac, 2026-11-05, with `bootstrap serve --agent claude-code --json`). But an agent that runs only `serve` outside the sandbox would then fail on `show`, because every command writes to that folder.
 
 ## Decisions the plan left open
@@ -57,6 +57,6 @@ The default `wait` timeout and the allowance are constants in `internal/session/
 - **`show` to a closed page saves the screen and exits 5**, naming `serve`. The next `serve` draws it. Exit 0 would say someone saw it.
 - **`trouble` takes `--reason` and a tool from the whole catalog.** Reasons are `network`, from the prototype, and `other`, because the network line would be wrong for any other failure. It only offers to skip a tool that can be skipped.
 - **`show tool` refuses a tool the person skipped**, so an agent can't install something they said no to.
-- **A typed name allows letters, numbers, dots, dashes and underscores**, starting with a letter or number. Spaces and non-ASCII letters are refused, because agents don't reliably quote.
+- **A typed name becomes git-friendly (Ben, 2026-11-05).** It's lowercased and spaces become dashes, so "Pine Bakery" is saved as `pine-bakery`. After that it may hold letters, numbers, dots, dashes and underscores, starting with a letter or number. Anything else, including non-ASCII letters, is refused rather than quietly dropped.
 - **A sleeping machine doesn't use up the allowance or the tab grace.** The server spots a gap of over 30 seconds between readings, which it reads every 200ms.
 - **A tab gets 30 seconds to come back**, for a reload, and the first tab gets 10 minutes, in case someone has to open the link by hand.

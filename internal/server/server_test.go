@@ -320,7 +320,6 @@ func TestAnswerRefusals(t *testing.T) {
 		{"an earlier screen", fmt.Sprintf(`{"seq":%d,"choice":"see-plan"}`, first.Current.Seq), http.StatusConflict},
 		{"an unknown choice", fmt.Sprintf(`{"seq":%d,"choice":"nope","name":"x"}`, naming.Current.Seq), http.StatusUnprocessableEntity},
 		{"an unsafe name", fmt.Sprintf(`{"seq":%d,"choice":"next","name":"../x"}`, naming.Current.Seq), http.StatusUnprocessableEntity},
-		{"a name with a space", fmt.Sprintf(`{"seq":%d,"choice":"next","name":"my project"}`, naming.Current.Seq), http.StatusUnprocessableEntity},
 		{"a command in a name", fmt.Sprintf(`{"seq":%d,"choice":"next","name":"$(rm -rf x)"}`, naming.Current.Seq), http.StatusUnprocessableEntity},
 		{"not JSON", `nope`, http.StatusBadRequest},
 		{"an unknown field", fmt.Sprintf(`{"seq":%d,"choice":"next","name":"x","extra":1}`, naming.Current.Seq), http.StatusBadRequest},

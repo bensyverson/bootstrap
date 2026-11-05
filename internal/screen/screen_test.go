@@ -110,11 +110,12 @@ func fragments(s string) []string {
 
 // Words the plan changed or added on purpose, so not expected in the prototype.
 var recordedCopyChanges = map[string]bool{
-	"Whoops! We lost your {app} session.":  true,
-	"Open it back up and type “continue”.": true,
-	OtherFailureLine:                       true,
-	" didn’t install.":                     true,
-	"Skip {tool}":                          true,
+	"Whoops! We lost your {app} session.":         true,
+	"Open it back up and type “continue”.":        true,
+	OtherFailureLine:                              true,
+	" didn’t install.":                            true,
+	"Skip {tool}":                                 true,
+	", which include Git. This can take a while.": true,
 }
 
 func TestCopyComesFromThePrototype(t *testing.T) {
