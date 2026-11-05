@@ -27,7 +27,21 @@ Ben can't wipe or buy a Mac for testing. This records what research and local ch
 |---|---|---|
 | Does an agent run the binary from a pasted link? | Mac Mini, new folder, fresh session | Almost nothing |
 | Does the full flow work from nothing? | Clean macOS VM on the Mac Mini | Nothing outside the VM |
-| Do the threads run smoothly? | Ben's wife's MacBook Air, with her OK, opening one HTML file | Nothing is installed |
+| Do the threads run smoothly? | The Mac Mini's own display, opening the page | Nothing is installed |
 | Does it work on a MacBook Neo? | A real Neo, if one turns up | Not required for shipping |
 
-A new macOS account on the Mini can't test the first-run steps, because Homebrew and the Command Line Tools are installed for the whole machine. A VM can't judge graphics performance, which is why the Air has a job.
+A new macOS account on the Mini can't test the first-run steps, because Homebrew and the Command Line Tools are installed for the whole machine. A VM can't judge graphics performance, which is why that check runs on the Mini itself.
+
+## The Mac Mini, as found
+
+Read over SSH as `agent@sally.local` on 2026-11-05, using `sw_vers`, `sysctl`, `df -h`, `du -sh` and `system_profiler SPDisplaysDataType`.
+
+- **Machine:** Macmini9,1 (Apple M1) with 8GB of memory, on macOS 26.6.2. There are two accounts, `ben@` and `agent@`.
+- **Disk:** 45GB free at first, with 33GB of that account's caches in `go-build`. After `go clean -cache` and removing `.build` folders, 78GB was free (`df -h`). The `macos-tahoe-vanilla` image is 24GB compressed and 50GB uncompressed, from its registry manifest, so it fits.
+- **Display:** `system_profiler` reports none, but only because it was off. Ben says the Mini has one, so an M1 with 8GB can judge the threads natively, and the Air isn't needed for that.
+- **Already there:** the Command Line Tools, Homebrew and, for `agent@`, Claude Code 2.1.260. So the agent trial works on this account, but only the VM can test the first-run steps.
+- **Limits on `agent@`:** `/opt/homebrew` belongs to `ben`, so `agent@` can't `brew install`, and it has no passwordless `sudo`.
+- **Tart:** 2.41.1 runs from `~agent/tart-install`, unpacked from its GitHub release rather than installed with Homebrew, so `ben@` is unchanged. The project now lives at `openai/tart`, under the Functional Source License.
+- **Not there:** OpenCode.
+
+**Tart is the efficient choice.** Apple's `container` runs Linux, so it can't test macOS. Every macOS VM tool on Apple silicon sits on the same Virtualization framework, so there's no faster engine to pick. Tart adds no always-running app.

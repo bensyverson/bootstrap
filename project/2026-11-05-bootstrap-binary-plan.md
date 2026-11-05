@@ -70,6 +70,8 @@ A false alarm has to heal itself, so the next `show` or `status` brings the page
 
 **New project folders default to `~/Projects`, and `~/git` is the other suggestion (Ben, 2026-11-05).** `~/Desktop` and `~/Documents` may sync to iCloud, which is known to be hard on Git repos, and macOS asks permission before apps read those folders. Neither behavior has been tested here, but both make those folders poor defaults.
 
+**Settled for the cards and Apple's step (Ben, 2026-11-05).** The Woodcase card shows three real renders from `woodcase-app.pen`, and the Jobs card keeps its screenshot, because it comes from a public repo. Apple's step stays separate, because it could be lengthy.
+
 **The log is private.** It sits in bootstrap's own folder, readable only by the user. The server treats a typed project name as untrusted and accepts only a safe folder name, because an agent will use it in commands.
 
 **Go standard library only, with cgo off.** So there are no new Go dependencies, and the binary needs no developer tools to run. Three.js r128 is vendored with its license, as the plan already requires.
@@ -94,7 +96,6 @@ The core and server share one module and most of their context, so one agent cou
 - **What "open it back up and type continue" really does.** A session reopened with its history understands "continue". A brand-new session in that folder doesn't, and on a new Mac there may be no `AGENTS.md` yet to tell it. This has to be tried in both apps, and it may change the line. If so, the fallback is to paste the same link, which leads to `status`.
 - **How long `wait` should block.** Claude Code's foreground limit is 2 minutes by default, and a background call can notify the agent when it ends. OpenCode's limits are unchecked. The trial should show whether the loop is calm, and what an agent does when someone walks away for an hour.
 - **Getting stuck in Terminal.** With no "I did it" button, the page has no signal that Homebrew's install failed. Past some time, `wait brew` exits 3 and the agent should ask in the chat. The VM run sets the length.
-- **Should Apple's step stay separate, and what goes on the Woodcase card?** Ben's calls, on the last leaf. The Jobs card keeps its screenshot, because it comes from a public repo (Ben, 2026-11-05).
 
 ## Tasks
 
