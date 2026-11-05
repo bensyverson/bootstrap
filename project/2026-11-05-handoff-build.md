@@ -1,5 +1,7 @@
 # Handoff: the binary is built, and the page awaits Ben's review (2026-11-05)
 
+> **Superseded, 2026-11-05,** by [the VM handoff](2026-11-05-handoff-vm.md). The review commands below still work.
+
 **Start here:** run `job orient`, then read [the binary plan](2026-11-05-bootstrap-binary-plan.md) and [the seams doc](2026-11-05-bootstrap-seams.md). This replaces [the earlier handoff](2026-11-05-handoff.md).
 
 ## Where things stand
