@@ -45,6 +45,8 @@ func (e *CorruptError) Error() string {
 // Store is bootstrap's private folder.
 type Store struct {
 	Dir string
+	// Bell, when set, rings after every write through this store, so waiters in the same process needn't poll.
+	Bell *Bell
 }
 
 // LogPath is the current session's log.
@@ -80,7 +82,9 @@ type State struct {
 
 	// Driving is a flow running the setup in the server, so the page needs nothing from the agent.
 	Driving bool
-	Step    *Step
+	// Halted is why the flow stopped before the end, until a new one drives.
+	Halted string
+	Step   *Step
 	// Finished is each step's last ending, done or skipped, in this session.
 	Finished map[StepID]StepStatus
 	Notes    []Note

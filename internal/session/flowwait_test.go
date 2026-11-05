@@ -3,6 +3,7 @@ package session
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -164,6 +165,51 @@ func TestWaitFlowAfterStop(t *testing.T) {
 	serving(t, store)
 	must(t)(store.Stop(t0))
 	if _, err := store.WaitFlow(context.Background(), 5*time.Second); !errors.Is(err, ErrEnded) {
+		t.Errorf("err = %v", err)
+	}
+}
+
+func TestHaltRecordsWhyTheFlowStopped(t *testing.T) {
+	store := driven(t)
+	state, err := store.Halt("the log can't be written", t0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if state.Halted != "the log can't be written" || state.Driving {
+		t.Errorf("halted = %q, driving = %v", state.Halted, state.Driving)
+	}
+	again, err := store.Load()
+	if err != nil || again.Halted != state.Halted {
+		t.Errorf("replayed halted = %q, err = %v", again.Halted, err)
+	}
+}
+
+func TestANewDriveClearsAHalt(t *testing.T) {
+	store := driven(t)
+	must(t)(store.Halt("broken", t0))
+	state, err := store.Drive(t0)
+	if err != nil || state.Halted != "" || !state.Driving {
+		t.Errorf("halted = %q, driving = %v, err = %v", state.Halted, state.Driving, err)
+	}
+}
+
+// A flow that stops early says so, so a wait doesn't report "still working" until the server exits.
+func TestWaitFlowReportsAHaltAtOnce(t *testing.T) {
+	store := driven(t)
+	serving(t, store)
+	must(t)(store.Halt("the log can't be written", t0))
+	began := time.Now()
+	_, err := store.WaitFlow(context.Background(), 5*time.Second)
+	if !errors.Is(err, ErrFlowStopped) || !strings.Contains(err.Error(), "the log can't be written") || time.Since(began) > time.Second {
+		t.Errorf("err = %v, after %v", err, time.Since(began))
+	}
+}
+
+// The server exits once its flow halts, and the halt says more than the page being gone.
+func TestWaitFlowPrefersAHaltToTheServerGone(t *testing.T) {
+	store := driven(t)
+	must(t)(store.Halt("broken", t0))
+	if _, err := store.WaitFlow(context.Background(), 5*time.Second); !errors.Is(err, ErrFlowStopped) {
 		t.Errorf("err = %v", err)
 	}
 }

@@ -324,6 +324,8 @@ func runChild(args []string, env Env) int {
 	if err != nil {
 		return exitEnviron
 	}
+	// The flow and the server share one bell, so an answer the server records wakes the flow at once.
+	store.Bell = session.NewBell()
 	agent, err := screen.FindAgent(c.flag("agent"))
 	if err != nil {
 		return exitUsage

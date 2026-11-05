@@ -151,6 +151,8 @@ func waitFlow(c *call, timeout time.Duration) (output, error) {
 	switch {
 	case errors.Is(err, session.ErrEnded):
 		return output{}, &failure{code: exitEnviron, message: "session ended", next: again}
+	case errors.Is(err, session.ErrFlowStopped):
+		return output{}, &failure{code: exitEnviron, message: err.Error(), next: again}
 	case errors.Is(err, session.ErrPageGone):
 		return output{}, &failure{code: exitEnviron, message: "the page is closed, so the setup isn't running", next: again}
 	case errors.Is(err, session.ErrWaitTimeout):

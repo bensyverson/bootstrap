@@ -39,6 +39,7 @@ const (
 	kindTake    kind = "take" // the agent saw the open handoff
 	kindResume  kind = "resume"
 	kindTold    kind = "told" // a wait told the agent everything up to For
+	kindHalt    kind = "halt" // the flow stopped before the end, and Text says why
 )
 
 // event is one line of the log. Only the fields for its kind are set.
@@ -73,6 +74,7 @@ func (s *State) apply(e event) {
 		s.Tabs = 0
 		// A flow belongs to the server that ran it; a new server drives only if its flow says so.
 		s.Driving = false
+		s.Halted = ""
 		if agent, err := screen.FindAgent(e.Agent); err == nil {
 			s.Agent = agent
 		}
@@ -95,7 +97,7 @@ func (s *State) apply(e event) {
 		s.Tabs = e.Tabs
 	case kindStop:
 		s.Ended = true
-	case kindDrive, kindStep, kindNote, kindHandoff, kindTake, kindResume, kindTold:
+	case kindDrive, kindStep, kindNote, kindHandoff, kindTake, kindResume, kindTold, kindHalt:
 		s.applyFlow(e)
 	case kindAgent:
 		if agent, err := screen.FindAgent(e.Agent); err == nil {
@@ -235,6 +237,7 @@ func (s Store) mutate(flags int, now time.Time, build func(State) (event, error)
 		return State{}, err
 	}
 	state.apply(e)
+	s.Bell.Ring()
 	return state, nil
 }
 

@@ -82,6 +82,9 @@ func (s Store) WaitFlow(ctx context.Context, timeout time.Duration) (Told, error
 		if state.Ended {
 			return false, ErrEnded
 		}
+		if state.Halted != "" {
+			return false, haltErr(state)
+		}
 		told = Told{State: state, Updates: updates, Open: state.Open}
 		if state.Open != nil || slices.ContainsFunc(updates, func(u Update) bool { return u.Handoff != nil }) {
 			return true, nil

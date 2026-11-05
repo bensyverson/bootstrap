@@ -106,6 +106,17 @@ The default `wait` timeout and the allowance are constants in `internal/session/
 - **The real runner is `flow.ExecRunner`** (`internal/flow/execrunner.go`). It uses os/exec with the command's timeout and `Dir`, and captures stdout and stderr together. Each command runs in its own process group, so a timeout also stops whatever the command started. A command that won't start sets `Err`. Only the command's own limit counts as `TimedOut`, not the flow ending. Its `Root` is put in front of every command's path, from `BOOTSTRAP_ROOT` like the detect seam, so the binary tests run a pretend `brew` and never touch the Mac. The installers leaf (`UyKEjV`) extends it. `flow.DefaultHomebrewPkg` is Homebrew's `releases/latest/download/Homebrew.pkg`.
 - **Not yet:** `run`'s acknowledgement doesn't say whether the person must click anything first. If the flow returns early with an error (`Server.FlowErr`), nothing in the log says so, and `wait` reports `still working` until the server exits.
 
+  > Fixed, 2026-11-05 (`6PL0Nz`): a flow that stops early now writes a `halt` to the log and takes the server down, and `wait` reports it. See "Waking at once" below.
+
+## Waking at once (`6PL0Nz`, 2026-11-05)
+
+Ben asked why the flow polled. The answer arrives as a POST to the same process the flow runs in, so the 200 ms poll only added delay after every click.
+
+- **`session.Bell`** tells waiters in one process that the log changed. `Store.Bell`, when set, rings after every successful write through that store. It says nothing about what changed: the flow still reads its state from the log, which stays the single source of truth. A nil bell is silent, so every other `Store` behaves as before.
+- **The hidden verb gives the flow and the server one bell** (`runChild` in `internal/cli/acts.go`). An answer or a tab change the server records wakes the flow at once. The flow's own writes ring it too, which wakes the server's loop, so the page gets the next screen without waiting for a tick. That is the page's stream getting cheaper from the same signal, which the leaf left open.
+- **Writes from other processes** (`resume`, `show`, `stop`) can't ring it. The flow finds them with a fallback read every second (`flow.defaultPoll`, was 200 ms). No person waits on those, and kqueue wasn't worth the platform code.
+- **A flow that stops early says so.** Unless the flow finished, the server stopped it, or the session ended, the server writes a `halt` event with the error (`Store.Halt`, `State.Halted`) and exits with `ExitFlowStopped`. Before this, the server kept a page up with no flow behind it, and `run` would have joined it. `wait` then fails with exit 5, `the setup stopped: <why>`, and `next: bootstrap run --agent …`, which picks up from the log. If the log can't take the halt either, the server still exits and `wait` reports the page closed. A new drive or a new server clears the halt.
+
 ## Cards and titles, after the live review (2026-11-05)
 
 Ben approved these live, on top of the prototype:

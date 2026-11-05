@@ -81,7 +81,10 @@ func DefaultLimits() Limits {
 // DefaultHooks are the tools whose own `hook install` the settings step runs (GGbVZ5).
 func DefaultHooks() []string { return []string{"contextfill", "jobs"} }
 
-const defaultPoll = 200 * time.Millisecond
+// defaultPoll is how often the flow reads the log for writes from other
+// processes, such as the agent's resume. The server's own writes, the person's
+// answers among them, ring the store's bell and wake the flow at once.
+const defaultPoll = time.Second
 
 // Config is what a flow needs. Probe.Cwd is the folder the agent started in, and
 // Probe.Home is where ~/Projects goes.
@@ -94,7 +97,8 @@ type Config struct {
 	// Hooks are catalog tool ids whose own hook install the settings step runs.
 	Hooks  []string
 	Limits Limits
-	// Poll is how often the flow reads the log while it waits on the page or the agent.
+	// Poll is how often the flow reads the log while it waits on the page or the
+	// agent, for writes that don't ring Store.Bell.
 	Poll time.Duration
 }
 
@@ -300,11 +304,13 @@ func (r *run) note(format string, args ...any) error {
 
 func (r *run) state() (session.State, error) { return r.f.cfg.Store.Load() }
 
-// poll reads the log until done says so, the session ends, or ctx is done.
+// poll reads the log until done says so, the session ends, or ctx is done. It
+// reads again at each ring of the store's bell, and at each tick for the rest.
 func (r *run) poll(done func(session.State) bool) error {
 	tick := time.NewTicker(r.f.cfg.Poll)
 	defer tick.Stop()
 	for {
+		rung := r.f.cfg.Store.Bell.Rung()
 		state, err := r.state()
 		if err != nil {
 			return err
@@ -318,6 +324,7 @@ func (r *run) poll(done func(session.State) bool) error {
 		select {
 		case <-r.ctx.Done():
 			return r.ctx.Err()
+		case <-rung:
 		case <-tick.C:
 		}
 	}

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net"
@@ -41,6 +42,8 @@ const (
 	ExitNoTab     ExitReason = "no tab opened"
 	ExitHourUp    ExitReason = "the agent has been gone an hour"
 	ExitLogGone   ExitReason = "the log can't be read"
+	// ExitFlowStopped is a flow that stopped before the end, which leaves the page nothing to show.
+	ExitFlowStopped ExitReason = "the flow stopped"
 )
 
 // Config sets up a server. Zero durations and a nil Now take the defaults.
@@ -143,19 +146,28 @@ func (s *Server) Close() {
 	})
 }
 
-// Run serves until there's a reason to exit.
+// Run serves until there's a reason to exit. It steps at every tick, and at once
+// when a write in this process rings the store's bell, so the page sees the
+// flow's next screen without waiting for a tick.
 func (s *Server) Run() ExitReason {
 	s.Serve()
 	defer s.Close()
-	defer s.startFlow()()
+	halted, stop := s.startFlow()
+	defer stop()
 	tick := time.NewTicker(s.cfg.Tick)
 	defer tick.Stop()
-	for range tick.C {
+	for {
+		rung := s.cfg.Store.Bell.Rung()
 		if reason := s.Step(s.cfg.Now()); reason != ExitNone {
 			return reason
 		}
+		select {
+		case <-halted:
+			return ExitFlowStopped
+		case <-rung:
+		case <-tick.C:
+		}
 	}
-	return ExitNone
 }
 
 // FlowErr is why the flow stopped early, if it did.
@@ -168,21 +180,32 @@ func (s *Server) FlowErr() error {
 // flowStopWait bounds how long an exiting server waits for its flow to notice.
 const flowStopWait = 5 * time.Second
 
-// startFlow runs the flow beside the server, and returns what stops it.
-func (s *Server) startFlow() (stop func()) {
+// startFlow runs the flow beside the server, and returns what stops it. Halted
+// closes when the flow stops early on its own, after the log says why.
+func (s *Server) startFlow() (halted <-chan struct{}, stop func()) {
 	if s.cfg.Flow == nil {
-		return func() {}
+		return nil, func() {}
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	finished := make(chan struct{})
+	early := make(chan struct{})
 	go func() {
 		defer close(finished)
 		err := s.cfg.Flow(ctx)
 		s.mu.Lock()
 		s.flowErr = err
 		s.mu.Unlock()
+		// A flow that finished, or that the server stopped, isn't a halt; nor is an
+		// ended session, which the server exits on by itself.
+		if err == nil || ctx.Err() != nil || errors.Is(err, session.ErrEnded) {
+			return
+		}
+		// Best effort: if the log can't take the halt either, the server still
+		// exits, and a wait reports the page gone instead.
+		s.cfg.Store.Halt(err.Error(), s.cfg.Now())
+		close(early)
 	}()
-	return func() {
+	return early, func() {
 		cancel()
 		select {
 		case <-finished:

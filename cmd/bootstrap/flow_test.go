@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bensyverson/bootstrap/internal/screen"
 	"github.com/bensyverson/bootstrap/internal/session"
 )
 
@@ -370,6 +371,20 @@ func TestWaitErrors(t *testing.T) {
 		w.run(t, "stop")
 		w.run(t, "wait").wantErr(t, 5, "session ended", "next: bootstrap run --agent claude-code")
 	})
+	t.Run("the flow halted", func(t *testing.T) {
+		w := newWorld(t)
+		store := w.store()
+		if _, err := store.Begin(screen.ClaudeCode, 1, time.Now()); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.Drive(time.Now()); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.Halt("the screens are missing", time.Now()); err != nil {
+			t.Fatal(err)
+		}
+		w.run(t, "wait").wantErr(t, 5, "the setup stopped: the screens are missing", "next: bootstrap run --agent claude-code")
+	})
 	t.Run("bad timeout", func(t *testing.T) {
 		newWorld(t).run(t, "wait", "--timeout", "soon").wantErr(t, 2, `--timeout "soon"`, "next: bootstrap wait --help")
 	})
@@ -393,4 +408,30 @@ func TestResumeErrors(t *testing.T) {
 		w.start(t)
 		w.run(t, "resume", "--retry").wantErr(t, 3, "nothing is waiting on the agent", "next: bootstrap wait")
 	})
+}
+
+// A handoff for an install that ran past its time shows the limit and how long it ran.
+func TestWaitShowsTheLimitPassed(t *testing.T) {
+	w := newWorld(t)
+	store := w.store()
+	if _, err := store.Begin(screen.ClaudeCode, 1, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Drive(time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	release, err := store.LockServer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer release()
+	h := session.Handoff{Kind: session.HandoffTrouble, Step: "apple", Tool: "clt", Reason: session.ReasonTimeout, What: "Apple's tools didn't arrive within 1h0m0s",
+		Evidence: session.Evidence{Limit: time.Hour, Elapsed: time.Hour + time.Second}, Ways: []session.Way{session.WayRetry}}
+	if _, err := store.HandOff(h, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	r := w.run(t, "wait")
+	if r.code != 0 || !strings.Contains(r.stdout, "limit: 1h0m0s, ran 1h0m1s\n") {
+		t.Errorf("exit %d\n%s\n%s", r.code, r.stdout, r.stderr)
+	}
 }

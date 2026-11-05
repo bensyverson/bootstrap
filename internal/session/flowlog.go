@@ -169,6 +169,10 @@ func (s *State) applyFlow(e event) {
 	switch e.Kind {
 	case kindDrive:
 		s.Driving = true
+		s.Halted = ""
+	case kindHalt:
+		s.Driving = false
+		s.Halted = e.Text
 	case kindStep:
 		step := *e.Step
 		s.Step = &step
