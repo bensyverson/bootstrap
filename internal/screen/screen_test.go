@@ -41,9 +41,12 @@ func TestSamplesMatchDescriptions(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				var got Description
 				var err error
-				if def.Screen == Lost {
+				switch def.Screen {
+				case Lost:
 					got = DescribeLost(Context{Agent: agent, Carried: 0.5})
-				} else {
+				case End:
+					got = DescribeEnd(Context{Agent: agent, Carried: 0.5})
+				default:
 					got, err = Describe(sampleRequest(def.Screen), Context{Agent: agent, Carried: 0.5})
 				}
 				if err != nil {
@@ -122,6 +125,7 @@ var recordedCopyChanges = map[string]bool{
 	"Apple’s tools, which include Git.":                                           true,
 	"Let’s talk in {app}.":                                                        true,
 	"{ai} has a question.":                                                        true,
+	"That’s all for now.":                                                         true,
 }
 
 func TestCopyComesFromThePrototype(t *testing.T) {
@@ -156,6 +160,16 @@ func TestRecordedWordsAreExact(t *testing.T) {
 	}
 	if got := plain(lost.Status); got != "Open it back up and type “continue”." {
 		t.Errorf("lost line = %q", got)
+	}
+	end := DescribeEnd(Context{Agent: OpenCode})
+	if got := plain(end.Title); got != "That’s all for now." {
+		t.Errorf("end title = %q", got)
+	}
+	if got := plain(end.Status); got != "You can close this and go back to OpenCode." {
+		t.Errorf("end line = %q", got)
+	}
+	if end.Mode != Settled || !IsSettled(End) {
+		t.Errorf("the end settles the object: %+v", end)
 	}
 }
 
@@ -389,6 +403,7 @@ func TestValidateRefusesOutsideTheClosedLists(t *testing.T) {
 		{"unknown screen", Request{Screen: "nope"}, "welcome"},
 		{"oldMac is gone", Request{Screen: "oldMac"}, "welcome"},
 		{"lost is the server's to show", Request{Screen: "lost"}, "welcome"},
+		{"the end is the server's to show", Request{Screen: "end"}, "welcome"},
 		{"tool needs a tool", Request{Screen: "tool"}, "jobs"},
 		{"unknown tool", Request{Screen: "tool", Tool: "nope"}, "jobs"},
 		{"homebrew has its own screens", Request{Screen: "tool", Tool: "homebrew"}, "jobs"},

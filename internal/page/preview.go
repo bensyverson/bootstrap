@@ -43,7 +43,7 @@ func Previews() []Preview {
 }
 
 func frameOf(d screen.Description) session.Frame {
-	return session.Frame{Screen: &d, Lost: d.Screen == screen.Lost}
+	return session.Frame{Screen: &d, Lost: d.Screen == screen.Lost, Ended: d.Screen == screen.End}
 }
 
 func statesFor(agent screen.Agent) []Preview {

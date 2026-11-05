@@ -266,6 +266,19 @@ func TestAnsweredPreviewsSayTheyAreAnswered(t *testing.T) {
 	}
 }
 
+func TestTheEndPreviewIsAnEndedFrame(t *testing.T) {
+	for _, name := range []string{"end.claude-code", "end.opencode"} {
+		i := slices.IndexFunc(Previews(), func(p Preview) bool { return p.Name == name })
+		if i < 0 {
+			t.Errorf("no preview named %s", name)
+			continue
+		}
+		if f := Previews()[i].Frame; !f.Ended || f.Lost {
+			t.Errorf("%s frame = %+v", name, f)
+		}
+	}
+}
+
 func TestARequiredToolHasNoSkipInItsPreview(t *testing.T) {
 	for _, p := range Previews() {
 		if p.Name != "trouble.required.claude-code" {

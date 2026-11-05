@@ -1,0 +1,15 @@
+{
+  "screen": "end",
+  "mode": "settled",
+  "progress": 0.5,
+  "title": [
+    {
+      "text": "That’s all for now."
+    }
+  ],
+  "status": [
+    {
+      "text": "You can close this and go back to OpenCode."
+    }
+  ]
+}

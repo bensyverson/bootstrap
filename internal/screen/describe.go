@@ -75,6 +75,12 @@ func DescribeLost(ctx Context) Description {
 	return s.describe(Request{Screen: Lost}, ctx)
 }
 
+// DescribeEnd builds the end screen, holding the progress so far.
+func DescribeEnd(ctx Context) Description {
+	s, _ := find(End)
+	return s.describe(Request{Screen: End}, ctx)
+}
+
 func (s spec) describe(req Request, ctx Context) Description {
 	tool, _ := catalog.Find(req.Tool)
 	d := Description{

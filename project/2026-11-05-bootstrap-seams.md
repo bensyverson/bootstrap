@@ -32,9 +32,9 @@ A frame is `session.Frame`: `{"seq", "lost", "answered", "ended", "screen", "gon
 - **`screen`** is a `screen.Description`, or `null` before the agent's first `show`. The page should draw only the object until one comes.
 - **`seq`** goes back in the answer, so a click can't land on the wrong screen.
 - **`lost`** arrives with `screen` already set to the lost screen, so the page draws it like any other.
-- **`ended`** is a real stop. The stream closing without it means the server went away, and that's when the page shows the lost screen on its own.
+- **`ended`** is a real stop. The stream closing without it means the server went away, and that's when the page shows the lost screen on its own. A stop on any screen but `done` (or before any screen) arrives with `screen` set to the internal `end` screen, built like `lost`: "That’s all for now." and "You can close this and go back to {app}." (Ben's words, 2026-11-05). It is settled and not answered, so the object relaxes. A stop on `done` keeps `done`.
 - **`gone`** is the lost screen's description, on every frame until `ended`, so those words are already in the page when there's no server left to ask. The page waits 2.5 seconds (`LOST_AFTER_MS` in `live.js`) in case the connection heals, as it does after a Mac wakes, and keeps retrying underneath, so a server that comes back redraws the real screen.
-- **`answered`** dims the choices and speeds the object up, since it's the agent's turn. This is the page's only state the prototype didn't have, because its buttons moved on at once.
+- **`answered`** puts the screen in its waiting state and speeds the object up, since it's the agent's turn. This is the page's only state the prototype didn't have, because its buttons moved on at once. The page enters it on the click itself, without waiting for the server: the choices fade out and a waiting line fades up in their place, on the shared 1.4 s S-curve, and the rows and the name field dim. Nothing around the choices moves. A refused answer reverses it. The line, "One moment…", is the page's own (`WAITING_LINE` in `page.js`) and is proposed, not yet approved by Ben. Previews `<screen>.answered.<agent>` show it at rest.
 
 Answer replies are `{"saved": true, "lost": false}`, or `{"error": "…"}` with 403 (refused), 409 (stale or already answered), 415, 422 (a choice or name it won't take) or 400.
 

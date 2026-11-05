@@ -173,6 +173,12 @@ func (s State) Frame(now time.Time) Frame {
 		frame.Lost, frame.Screen = true, &lost
 		return frame
 	}
+	if s.Ended && (s.Current == nil || !screen.IsSettled(s.Current.Request.Screen)) {
+		// Stopped mid-way: nothing is coming, so the page says so and the object settles.
+		end := screen.DescribeEnd(s.context())
+		frame.Screen, frame.Answered = &end, false
+		return frame
+	}
 	if s.Current != nil {
 		// The log only holds requests that passed Validate, so this can't fail for a log we wrote.
 		if desc, err := screen.Describe(s.Current.Request, s.context()); err == nil {

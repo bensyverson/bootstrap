@@ -162,10 +162,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .w14 { width: 14%; } .w29 { width: 29%; } .w37 { width: 37%; }
 .swatch { background: #F1F4F9; display: grid; align-content: center; padding: 8px; }
 
-/* After a click the choice stays, and the others step back, until the agent moves on. */
-.choices button { transition: background .35s var(--ease), transform .35s var(--ease), box-shadow .35s var(--ease), opacity .35s var(--ease); }
-.choices button:disabled { pointer-events: none; opacity: .45; }
-.choices button.picked:disabled { opacity: 1; }
+/* After a click the choices give way to the waiting line in their own cell, on the shared S-curve,
+   and what was chosen dims, until the next screen arrives. Nothing around them moves. */
+.choices { position: relative; }
+.choices button { transition: background .35s var(--ease), transform .35s var(--ease), box-shadow .35s var(--ease), opacity 1.4s var(--ease); }
+.choices button:disabled { pointer-events: none; }
+.waiting .choices button { opacity: 0; }
+.rows, .field { transition: opacity 1.4s var(--ease); }
+.waiting .rows, .waiting .field { opacity: .5; }
+/* Centered flex overflows both edges evenly, so a line wider than one button stays centered on it. */
+.waitLine { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; white-space: nowrap; font-size: clamp(18px, 1.6vw, 22px); color: var(--hint); pointer-events: none; }
+/* A screen opened at rest shows its state already reached. */
+.still, .still * { transition: none !important; }
 
 /* The preview route's list of states. A person never sees this. */
 .previews { position: absolute; inset: 0; overflow: auto; padding: 16px; columns: 18em; font-size: 14px; pointer-events: auto; }

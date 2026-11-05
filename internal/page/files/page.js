@@ -10,6 +10,8 @@ let atRest = false;
 
 /* The words here are the page's own, and belong to no screen. */
 const COPY_LABEL = "Copy", COPIED_LABEL = "Copied";
+// Proposed, not yet approved by Ben: the line a click turns the choices into while the next screen is on its way.
+const WAITING_LINE = "One moment…";
 
 /* ---------- Fonts and pictures load before the first screen, so nothing ever arrives half-painted. ---------- */
 const FONTS = [["fonts/Grand-Regular.subset.woff2", "400"], ["fonts/Grand-Medium.subset.woff2", "500"]];
@@ -72,6 +74,9 @@ function draw(frame) {
   if ((d.card || "") !== shownCard) { shownCard = d.card || ""; peek(shownCard); }
   show(d);
   setAnswered(frameAnswered);
+  firstPaint = false;
+  // Once the state at rest is styled, later changes on this panel ease like any other.
+  if (panel && panel.classList.contains("still")) { void panel.offsetWidth; panel.classList.remove("still"); }
 }
 
 function show(d) {
@@ -83,7 +88,7 @@ function show(d) {
 
   const hadFocus = panel && panel.contains(document.activeElement);
   const old = panel;
-  const next = el("section", "panel" + (d.layout === "over" ? " overlay" : "") + (d.layout === "low" ? " low" : ""));
+  const next = el("section", "panel" + (d.layout === "over" ? " overlay" : "") + (d.layout === "low" ? " low" : "") + (atRest && firstPaint ? " still" : ""));
   next.append(spansInto(el("h1"), d.title));
   if (d.note) next.append(el("p", "note", d.note));
   statusSlot = el("div", "statusSlot");
@@ -103,7 +108,7 @@ function show(d) {
   const row = el("div", "choices");
   row.append(...(d.choices || []).map(choice => {
     const b = el("button", choice.primary ? "main" : "", choice.label);
-    b.onclick = () => answer(choice, b);
+    b.onclick = () => answer(choice);
     return b;
   }));
   next.append(row);
@@ -114,7 +119,6 @@ function show(d) {
   arrive(next, SWAP_MS, R);
   panel = next;
   if (hadFocus && row.firstChild) row.firstChild.focus({ preventScroll: true });
-  firstPaint = false;
 }
 function statusLine(spans) {
   const s = spansInto(el("div", "statusBox"), spans);
@@ -144,23 +148,32 @@ function rowFor(t) {
 }
 
 /* ---------- Answers ---------- */
+/* A click answers itself at once: the choices give way to a waiting line in their own place, so nothing
+   around them moves, and it holds until the next screen arrives. A refused answer brings them back. */
 function setAnswered(on) {
   if (!panel) return;
-  panel.querySelectorAll(".choices button").forEach(b => { b.disabled = on; if (!on) b.classList.remove("picked"); });
+  panel.classList.toggle("waiting", on);
+  panel.querySelectorAll(".choices button").forEach(b => { b.disabled = on; });
   panel.querySelectorAll(".row input").forEach(b => { b.disabled = on || b.dataset.required === "true"; });
   const f = panel.querySelector(".field");
   if (f) f.readOnly = on;
+  const row = panel.querySelector(".choices"), line = row && row.querySelector(".waitLine:not(.gone)");
+  if (!row || !row.querySelector("button") || on === !!line) return;
+  const lift = calm ? 0 : 12;
+  if (line) { line.classList.add("gone"); depart(line, SWAP_MS, 0, lift); return; }
+  const next = el("div", "waitLine", WAITING_LINE);
+  next.setAttribute("role", "status");
+  row.append(next);
+  arrive(next, SWAP_MS, 0, lift);
 }
-async function answer(choice, button) {
+async function answer(choice) {
   const body = { seq, choice: choice.id };
   if (shown.rows) body.tools = [...panel.querySelectorAll(".row input:checked")].map(b => b.dataset.id);
   if (shown.field) body.name = panel.querySelector(".field").value;
-  button.classList.add("picked");
   setAnswered(true);
   let reply = { ok: false };
   try { reply = await sendAnswer(body); } catch (e) { /* The stream notices a server that's gone. */ }
   if (reply.ok) return;
-  button.classList.remove("picked");
   setAnswered(frameAnswered);
   if (reply.refusal) swapStatus([{ text: reply.refusal }]);
 }

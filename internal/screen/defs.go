@@ -16,12 +16,17 @@ var Samples embed.FS
 // Lost is shown by the server on its own, never by an agent.
 const Lost ID = "lost"
 
+// End is shown by the server on its own when a session stops before done.
+const End ID = "end"
+
 // Words the lost screen and off-network trouble use. They live together so the
 // agent trial can change them in one place.
 const (
 	LostTitle        = "Whoops! We lost your {app} session."
 	LostLine         = "Open it back up and type “continue”."
 	OtherFailureLine = "Something went wrong. {ai} can take a look."
+	EndTitle         = "That’s all for now."
+	EndLine          = "You can close this and go back to {app}."
 )
 
 // Next steps the ack on a screen teaches.
@@ -137,6 +142,7 @@ var specs = []spec{
 	{id: "fixing", mode: Working, title: "{ai} is on it.", status: "Looking at what went wrong", next: nextWork},
 	{id: "chat", mode: Waiting, title: "Let’s talk in {app}.", status: "{ai} has a question.", chat: true, next: nextChat},
 	{id: Lost, mode: Waiting, title: LostTitle, status: LostLine, internal: true},
+	{id: End, mode: Settled, title: EndTitle, status: EndLine, internal: true},
 }
 
 // TodoWords starts every word Ben hasn't written yet.

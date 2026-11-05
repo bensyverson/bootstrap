@@ -19,4 +19,5 @@ trouble mode=waiting tools=clt,homebrew,git,agents,jobs,contextfill,sleepy,peep,
 fixing mode=working next="do the work, then bootstrap show <screen>"
 chat mode=waiting next="ask in the chat, then bootstrap show <screen> when they reply"
 lost mode=waiting appears=on-its-own
+end mode=settled appears=on-its-own
 next: bootstrap serve
