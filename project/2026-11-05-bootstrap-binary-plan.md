@@ -68,6 +68,8 @@ A false alarm has to heal itself, so the next `show` or `status` brings the page
 
 **`detect` says what kind of folder this is, and the agent decides what to do (Ben, 2026-11-05).** People often start in a folder that isn't a project: the home folder, `~/Desktop`, `~/Documents`, `~/Downloads`, or one with a generic name like "Claude" or "Claude Code". `detect` reports the kind, and whether the folder holds files or a Git repo. The agent then offers to make a project folder and restart the session there, without moving anything that's already in the folder. A Git repo wins over a generic name, so a real project that happens to be called "Claude" isn't flagged. The list of generic names lives with the catalog, so adding one needs no code change.
 
+**New project folders default to `~/Projects`, and `~/git` is the other suggestion (Ben, 2026-11-05).** `~/Desktop` and `~/Documents` may sync to iCloud, which is known to be hard on Git repos, and macOS asks permission before apps read those folders. Neither behavior has been tested here, but both make those folders poor defaults.
+
 **The log is private.** It sits in bootstrap's own folder, readable only by the user. The server treats a typed project name as untrusted and accepts only a safe folder name, because an agent will use it in commands.
 
 **Go standard library only, with cgo off.** So there are no new Go dependencies, and the binary needs no developer tools to run. Three.js r128 is vendored with its license, as the plan already requires.
@@ -92,8 +94,7 @@ The core and server share one module and most of their context, so one agent cou
 - **What "open it back up and type continue" really does.** A session reopened with its history understands "continue". A brand-new session in that folder doesn't, and on a new Mac there may be no `AGENTS.md` yet to tell it. This has to be tried in both apps, and it may change the line. If so, the fallback is to paste the same link, which leads to `status`.
 - **How long `wait` should block.** Claude Code's foreground limit is 2 minutes by default, and a background call can notify the agent when it ends. OpenCode's limits are unchecked. The trial should show whether the loop is calm, and what an agent does when someone walks away for an hour.
 - **Getting stuck in Terminal.** With no "I did it" button, the page has no signal that Homebrew's install failed. Past some time, `wait brew` exits 3 and the agent should ask in the chat. The VM run sets the length.
-- **Where a new project folder goes.** `~/Desktop` and `~/Documents` may sync to iCloud, which is known to be hard on Git repos, and macOS asks permission before apps read those folders. So they're poor defaults, even when the user started there. `~/Projects` looks right, but that's Ben's call, and neither the iCloud nor the permission behavior has been tested here.
-- **Should Apple's step stay separate, and what goes on the Woodcase and Jobs cards?** Ben's calls, on the last leaf.
+- **Should Apple's step stay separate, and what goes on the Woodcase card?** Ben's calls, on the last leaf. The Jobs card keeps its screenshot, because it comes from a public repo (Ben, 2026-11-05).
 
 ## Tasks
 
