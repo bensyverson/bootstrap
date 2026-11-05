@@ -13,3 +13,7 @@ Format: one dated H2 headline, then one paragraph. If an entry needs more than t
 ## 2026-11-05 Headless Sleepy never ticks animation frames
 
 `requestAnimationFrame` never fires in `sleepy`, and a probe that awaits it hangs. Web animations also sit at their first frame, so a page that fades in screenshots as blank. Draw once directly and test stills through a link that opens a screen at rest (`#tools-jobs` in the prototype). Live motion can only be judged in a real browser.
+
+## 2026-11-05 `GIT_CONFIG_GLOBAL=/dev/null` commits under a made-up email
+
+The handoffs' sandbox tip for running `agents` (`GIT_CONFIG_GLOBAL=/dev/null`) also hides `user.email`, so a `git commit` made with it falls back to `ben@<hostname>` without any warning. It nearly reached a pushed release of `agents`. Use the override only for `agents` itself; run `git commit`, and any release script that commits, unsandboxed with the real config, and check `git log -1 --format='%ae'` before pushing.

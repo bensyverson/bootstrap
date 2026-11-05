@@ -73,7 +73,7 @@ Each step skips what's already done, so running it again is safe. Every install 
 
    `git init`, `.gitignore` and a first commit, each with consent. Create no remote and install no hooks.
 4. **`gh`.** Detect it and suggest it if missing, but never get stuck on it, because local Git works without an account. If they say yes, explain what Git and GitHub are and why we use them, then walk them through an account and `gh auth login` in a real terminal.
-5. **Project.** Detect the stack, or ask what the project is if the folder is empty. Enable the default modules plus what's detected (`go`, `swift`, `swiftui`, `python`, `web`). Ask about what can't be detected: `stage-pilot` or `stage-build`, and whether to add `images`. Create `local/` and its `.gitignore` entry, and run `job init` and `job gitignore`.
+5. **Project.** Detect the stack, or ask what the project is if the folder is empty. Enable the default modules plus what's detected (`go`, `swift`, `swiftui`, `python`, `web`). Ask about what can't be detected: `stage-pilot` or `stage-build`, and whether to add `images`. Run `agents init`; if it stops on a `CLAUDE.md` of the project's own, run `agents migrate`, then `agents init` again. Create `local/` and its `.gitignore` entry. Unless `.jobs.db` already exists, run `job init --as claude` (or `--as opencode`), then `job gitignore`. See [the init findings](2026-11-05-init-existing-project-findings.md).
 6. **Install path.** If the project will install something, offer to add the default path to `PATH`: `~/go/bin` for Go and `~/.swiftpm/bin` for Swift.
 7. **Machine settings.** Offer each one separately (below).
 
