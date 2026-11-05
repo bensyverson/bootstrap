@@ -14,7 +14,7 @@
 1. **Done: the release agent is integrated.**
 2. **Done: the chat screen.** Its rules are in [the seams doc](2026-11-05-bootstrap-seams.md). Ben hasn't seen it on the page yet.
 3. **Done: Ben approved the page.**
-4. **VM run (`Y6LsGy`):** run Apple's step and Homebrew. Ben clicks Install over Screen Sharing. It also has to answer whether a dependable signal exists for the "your turn" screens. If so, use `apple-wait` and `brew-wait`; if not, delete them. And it should check whether Homebrew's file appears before its installer finishes. Also try the threads on the Mini's own display.
+4. **VM run (`Y6LsGy`):** the first pass is in [the findings](2026-11-05-vm-run-findings.md): Apple blocks the Homebrew paste, and the `.pkg` works. Next is a fresh clone, with "Still open" as its list. Ben clicks over Screen Sharing. It also has to answer whether a dependable signal exists for the "your turn" screens. If so, use `apple-wait` and `brew-wait`; if not, delete them. And it should check whether Homebrew's file appears before its installer finishes. Also try the threads on the Mini's own display.
 5. **Trial release (`vHAiCj`):** ask Ben before publishing. He wants everything that can be approved locally approved first. Copy `/Users/ben/git/goodall/.env` to the Mini for OpenCode only when the trial needs it, never into the repo or the VM, and never print its values.
 6. **The rest:** remaining screens and real cards (`6jPdjy`), `g0RIoY` then `W2yASt`, `GGbVZ5`, `DhuGEt`, `t5FAqu`, `9WWQm2`.
 

@@ -16,6 +16,9 @@ The link is the repo URL. A test fetch of `github.com/bensyverson/agents` (WebFe
 - **`SETUP.md`** is the playbook. The agent handles the judgment: detecting the stack, asking questions, and filling in the `AGENTS.md` head.
 - **`Brewfile`** installs the tools. Existing commands do the rest: `agents init` and `job init`.
 
+  > **Correction, 2026-11-05:** on a new account `brew bundle` refuses the tap until `brew trust bensyverson/tap` has run. See [the VM run](2026-11-05-vm-run-findings.md).
+
+
 An agent may rightly treat a page's instructions as untrusted. Stating the changes and asking first is the design, not a workaround. How agents treat a bare link is untested until the acceptance leaf.
 
 ## The interface
@@ -41,6 +44,9 @@ The agent opens a rich local page served by `bootstrap`, a small signed and nota
 - **`/remote-control`:** offered as the last step, because the Homebrew install needs someone at the Mac. Which accounts can use it is unchecked.
 - **Pro mode:** the first run offers "skip the tour next time" and saves that in bootstrap's own preferences file. After that there's no browser and no explanations, only the questions it can't detect and a short summary. The setup can also install a `/new-project` command that fetches the latest `SETUP.md`, so `SETUP.md` has a machine part that runs once and a project part that runs every time.
 
+  > **Correction, 2026-11-05 (Ben):** the `/new-project` command is now a user-level skill named `new-project`, so saying "start a new project" can trigger it as well as the slash command. It only fetches the latest `SETUP.md` and follows it. It's an optional row in the "Here's what you get" list rather than a later offer. The hint about using it goes on the page and in the chat.
+
+
 ## Required and skippable tools
 
 - **Required:** Homebrew, Git, `agents`, `job`, `contextfill`.
@@ -57,6 +63,9 @@ Each step skips what's already done, so running it again is safe. Every install 
    > **Addition, Ben, 2026-11-05.** The same goes for `~/Desktop`, `~/Documents`, `~/Downloads` and generically named folders like "Claude" or "Claude Code". `bootstrap detect` reports the folder's kind. See [the binary plan](2026-11-05-bootstrap-binary-plan.md).
 
 1. **Homebrew.** If it's missing, explain it and offer a walkthrough. The user runs the official brew.sh command in a real terminal, because it can ask for their Mac password and the `!` prefix takes no keyboard input. It also sets up Apple's Command Line Tools, which can take a while. Then use `/opt/homebrew/bin/brew` directly and confirm with `brew --version`, since the running session may not see the new `PATH`. If they decline, stop before touching their files and explain what's missing.
+
+   > **Correction, 2026-11-05:** pasting the brew.sh command no longer works for this audience: macOS 26.6.2 answers with "Possible Malware, Paste Blocked". The agent should open Homebrew's signed `.pkg` instead. See [the VM run](2026-11-05-vm-run-findings.md).
+
 2. **Tools.** `agents`, `job`, `contextfill`, `sleepy`, `peep` and `woodcase`.
 3. **Git.** Check for it after step 1. On a Mac without the Command Line Tools, `/usr/bin/git` is a stub, so `command -v git` passes and running it opens Apple's install dialog. Check for `/Library/Developer/CommandLineTools/usr/bin/git`, the same file Homebrew checks.
 

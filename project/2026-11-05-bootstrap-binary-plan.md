@@ -101,6 +101,9 @@ The core and server share one module and most of their context, so one agent cou
 - **How long `wait` should block.** Claude Code's foreground limit is 2 minutes by default, and a background call can notify the agent when it ends. OpenCode's limits are unchecked. The trial should show whether the loop is calm, and what an agent does when someone walks away for an hour.
 - **Getting stuck in Terminal.** With no "I did it" button, the page has no signal that Homebrew's install failed. Past some time, `wait brew` exits 3 and the agent should ask in the chat. The VM run sets the length.
 
+  > **Correction, 2026-11-05:** this assumed people paste Homebrew's command into Terminal, and Apple now blocks that with a malware warning. The `terminal` screen is due to be replaced by Homebrew's `.pkg`. See [the VM run](2026-11-05-vm-run-findings.md).
+
+
 ## Tasks
 
 Imported into `job` on 2026-11-05 under `VNF9sG`; the tracker is the current version.
