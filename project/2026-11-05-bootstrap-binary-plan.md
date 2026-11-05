@@ -41,6 +41,8 @@ The first draft broke several of the rules in `modules/cli-design.md`, so this v
 
 **The agent drives, and the binary only displays.** The agent picks a screen by name and the binary fills in the words. The alternative was putting the flow inside the binary and having it tell the agent what to do next. That would move the judgment out of the agent and duplicate `SETUP.md`, and [the plan](2026-11-05-setup-link-plan.md) says judgment stays with the agent.
 
+> **Reversed, Ben, 2026-11-05.** The agent trial showed a full agent turn per click and a weak model that never ran `wait`. The server now drives the setup, and the agent starts it, narrates, and takes over on handoffs. See [the server-driven flow](2026-11-05-server-driven-flow.md).
+
 **Screens and statuses are closed lists.** An unknown screen, tool or status exits with code 2 and lists the valid ones, so an agent can't invent wording even by accident. The trouble screen takes a reason from a list too, such as `network`.
 
 **The binary works out progress.** The agent never passes a percentage. Position comes from the screen, the tool and what the user chose, so the object's color can't drift from the truth.

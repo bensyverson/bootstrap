@@ -1,6 +1,6 @@
-# Proposal: the server drives the setup (2026-11-05)
+# The server drives the setup (2026-11-05)
 
-**Status: a proposal for Ben's approval.** It reverses a recorded decision in [the binary plan](2026-11-05-bootstrap-binary-plan.md), "The agent drives, and the binary only displays". If approved, that decision gets a marked correction pointing here.
+**Status: the reversal is approved (Ben, 2026-11-05: "Yes, let's reverse this. I don't think we can rely on the latency and inconsistency of the model driving each step.").** It replaces a recorded decision in [the binary plan](2026-11-05-bootstrap-binary-plan.md), "The agent drives, and the binary only displays", which now carries a correction pointing here. The folder and GitHub answers under "Settled since" are proposals Ben raised as questions; confirm them before building.
 
 Ben, 2026-11-05: "Could we just have the agent kick off the install process, and then have our Go server drive it until it exits?" and, on the costs, "We already got dinged by auto mode anyway. Maybe we just build in verbose output and/or great error messages that tell the agent how to recover."
 
@@ -58,16 +58,15 @@ The server runs the [setup order](2026-11-05-setup-link-plan.md#setup-order) as 
 | Step | Server | Agent |
 |---|---|---|
 | Consent | | Explains what changes and asks before downloading anything. |
-| 0. Folder | Detects the kind, asks on the page, makes the folder | Restarts the session in the new folder, since only the person and the agent can do that |
 | Apple's tools | Disk check, `xcode-select --install`, raises Apple's window, watches the `clt` signals | |
 | Homebrew | Downloads the `.pkg`, checks it's signed by 927JGANW46 and notarized, opens it, watches for `brew` | |
 | Tools | `brew trust`, then each chosen tool by full path, one screen and card each | |
 | Git | Repo, `.gitignore`, first commit, each asked on the page | |
-| `gh` and GitHub | Asks on the page | Walks the person through the account and `gh auth login` in the chat |
-| Project | Asks the stage questions, runs `agents init` (and `agents migrate` when asked), `local/`, `job init --as <agent>`, `job gitignore` | |
+| `gh` and GitHub | Asks; opens `github.com/signup` if needed; runs `gh auth login --web`, shows its one-time code on the page, waits for it to exit | |
+| Project | Asks for a project name and makes `~/Projects/<name>` unless the starting folder is already a project; asks the stage questions, runs `agents init` (and `agents migrate` when asked), `local/`, `job init --as <agent>`, `job gitignore` | |
 | Machine settings | Asks, then runs each tool's own `hook install` | |
 | Phone | Asks | Explains `/remote-control` |
-| Done | Shows done, stops when the tab closes | Summarizes in the chat |
+| Done | Shows done, with how to open the project | Summarizes in the chat, and tells the person to open a new Terminal window in the project folder |
 
 **Handoffs** are the rows with work on the agent's side, plus `trouble` and anything the server doesn't recognize, such as an unexpected exit code or a step that took far longer than allowed. When unsure, the server hands off; it never guesses.
 
@@ -98,8 +97,8 @@ The server runs the [setup order](2026-11-05-setup-link-plan.md#setup-order) as 
 - **Homebrew's `.pkg` URL and version move.** The server finds the latest release, so it needs the network, and it must check the signer and notarization rather than a pinned checksum.
 - **More trust is asked up front.** The consent wording has to say plainly that the program installs what the person picks.
 
-## Open, for Ben
+## Settled since
 
-1. Approve the reversal, and with it this split between the server and the agent.
-2. Step 0: should the server make the new folder, with the agent then telling the person to restart there? Or should the agent keep the whole step?
-3. GitHub: keep the account and `gh auth login` walkthrough in the chat, as above?
+1. **The reversal is approved** (Ben, 2026-11-05).
+2. **The folder step moves from first to the start of the project part** (Ben asked whether it must come first; it needn't). The installs are machine-wide, and only the project steps care where they run. The server asks for a name on the existing `naming` screen and makes `~/Projects/<name>`, unless the starting folder is already a project, a Git repo, in which case it sets up in place. It runs every project command in that folder, so the agent never restarts mid-setup. The person's next session starts there: open a new Terminal window, which the [VM runs](2026-11-05-vm-run-findings.md) already require so `brew` is found by name, then `cd` and start the agent. Nothing in the starting folder moves.
+3. **GitHub moves into the software** (Ben: "Could we move the Github onboarding to the software?"). Only making the account needs the person in a browser, so the page opens `github.com/signup`, with "I've made my account" and "I already have one". That's an honest button, because nothing on the Mac can see an account. The server then runs `gh auth login --hostname github.com --web --git-protocol https --skip-ssh-key`, shows the one-time code on the page with a button to `github.com/login/device`, waits for `gh` to exit, and confirms with `gh auth status`. **Untested:** `gh` run by a background process with no terminal. Check it in the VM before building.

@@ -58,6 +58,8 @@ Some modules name skippable tools: `web.md` relies on `sleepy`, and `images.md` 
 
 Each step skips what's already done, so running it again is safe. Every install says what the tool is and why it's being installed before it happens.
 
+> **Correction, Ben, 2026-11-05.** The `bootstrap` server now runs these steps, not the agent, and step 0 moves to the start of the project part (step 5), since only the project steps care where they run. GitHub (step 4) moves into the software too. See [the server-driven flow](2026-11-05-server-driven-flow.md).
+
 0. **Where are we?** On a new Mac, Claude Code may well be running in the home folder. Never run `git init` or `agents init` there: offer to create a project folder and have the user restart the session in it.
 
    > **Addition, Ben, 2026-11-05.** The same goes for `~/Desktop`, `~/Documents`, `~/Downloads` and generically named folders like "Claude" or "Claude Code". `bootstrap detect` reports the folder's kind. See [the binary plan](2026-11-05-bootstrap-binary-plan.md).
