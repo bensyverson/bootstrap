@@ -13,7 +13,7 @@
 
 ## In flight
 
-- **`DhuGEt`, the machine-neutral shared rules,** waits on Ben's review. The edits are in `/Users/ben/git/agents-md/.claude/worktrees/dhuget` on branch `wt/dhuget`, uncommitted: `core.md` (33%/40% are defaults, a line named by the hook wins, wrap-up starts at the line), `web.md` and `images.md` (offer `brew install bensyverson/tap/<tool>` when a tool is missing, and don't block), and `harness.md` (the sandbox section applies only when the sandbox is on; a missing `contextfill`). Its `AGENTS.md` was re-rendered. Once Ben approves, commit from that worktree with the agent's proposed message (in this session's transcript, or write a new one), then merge to `main` in `agents-md`, push, and remove the worktree. Rolling the new pin across repos is out of scope.
+Nothing. `DhuGEt` (the machine-neutral shared rules) was approved by Ben and pushed as `agents-md` `47fc9c1`; repos pick it up with `agents update`. `nobedan`'s unpushed commits stay unpushed (Ben: "No need to push nobedan").
 
 ## Next, in order
 
