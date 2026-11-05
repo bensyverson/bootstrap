@@ -188,6 +188,8 @@ func (s *State) applyFlow(e event) {
 			// A handoff is a new promise that the agent will look, like a new screen.
 			s.Deadline = e.At.Add(DefaultAllowance)
 		}
+	case kindTold:
+		s.renew(e.At)
 	case kindTake:
 		if s.Open != nil {
 			s.Open.Taken = true

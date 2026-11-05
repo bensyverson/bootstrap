@@ -102,7 +102,7 @@ func (s served) openTab(t *testing.T) func() {
 func alive(pid int) bool { return syscall.Kill(pid, 0) == nil }
 
 func TestStatusWithNoSession(t *testing.T) {
-	newWorld(t).run(t, "status").wantErr(t, 5, "no session", "next: bootstrap detect, then bootstrap serve")
+	newWorld(t).run(t, "status").wantErr(t, 5, "no session", "next: bootstrap run --agent <app>")
 }
 
 func TestShowWithNoSession(t *testing.T) {

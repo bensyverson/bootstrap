@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -59,21 +60,11 @@ var serveCommand = command{
 		if err != nil {
 			return output{}, err
 		}
-		exe, err := c.env.Exe()
+		opts, err := c.startOptions(store, agent, "serve")
 		if err != nil {
-			return output{}, &failure{code: exitEnviron, message: "can't start the page: " + err.Error(), next: fallbackNext}
+			return output{}, err
 		}
-		port := 0
-		if raw := c.env.Getenv(envPort); raw != "" {
-			if port, err = strconv.Atoi(raw); err != nil {
-				return output{}, &failure{code: exitUsage, message: fmt.Sprintf("%s %q isn't a port", envPort, raw), next: "bootstrap serve --help"}
-			}
-		}
-		open := c.env.Getenv(envOpen)
-		if open == "" {
-			open = defaultOpen
-		}
-		started, err := server.Start(server.StartOptions{Store: store, Agent: agent, Exe: exe, Env: c.env.Environ(), Port: port, OpenPath: open})
+		started, err := server.Start(opts)
 		if err != nil {
 			return output{}, serveFailure(err)
 		}
@@ -182,13 +173,23 @@ type answerValue struct {
 }
 
 var waitCommand = command{
-	name: "wait", class: "Act", usage: "wait <answer|clt|brew> [--timeout 90s] [--json]",
-	about:   "Returns what the person chose on the current screen, or what happened to Apple's tools or Homebrew: started (clt only, when the person clicks Agree), arrived, or canceled (exit 4). Answers to earlier screens are never returned. Running out of time is exit 3: run wait again.",
-	example: "bootstrap wait answer --timeout 90s",
+	name: "wait", class: "Act", usage: "wait [<answer|clt|brew>] [--timeout 90s] [--json]",
+	about: "With no target, after bootstrap run: blocks until the setup needs you, then prints what happened since your last wait, to pass on to the person, and what to do next. " +
+		"Running out of time is exit 3, with the same rows: run wait again. " +
+		"With a target, for an agent driving the page itself: returns what the person chose on the current screen, or what happened to Apple's tools or Homebrew: started (clt only, when the person clicks Agree), arrived, or canceled (exit 4). Answers to earlier screens are never returned.",
+	example: "bootstrap wait",
 	flags:   []string{"timeout"},
 	run: func(c *call) (output, error) {
+		timeout := session.DefaultWaitTimeout
+		if raw := c.flag("timeout"); raw != "" {
+			parsed, err := time.ParseDuration(raw)
+			if err != nil || parsed <= 0 {
+				return output{}, &failure{code: exitUsage, message: fmt.Sprintf("--timeout %q isn't a length of time, like 90s", raw), next: "bootstrap wait --help"}
+			}
+			timeout = parsed
+		}
 		if len(c.args) == 0 {
-			return output{}, &failure{code: exitUsage, message: "wait needs a target", valid: waitTargets, next: "bootstrap wait --help"}
+			return waitFlow(c, timeout)
 		}
 		target := c.args[0]
 		if len(c.args) > 1 {
@@ -197,14 +198,6 @@ var waitCommand = command{
 		_, isArrival := arrivalTargets[target]
 		if target != "answer" && !isArrival {
 			return output{}, &failure{code: exitUsage, message: fmt.Sprintf("unknown wait target %q", target), valid: waitTargets, next: "bootstrap wait --help"}
-		}
-		timeout := session.DefaultWaitTimeout
-		if raw := c.flag("timeout"); raw != "" {
-			parsed, err := time.ParseDuration(raw)
-			if err != nil || parsed <= 0 {
-				return output{}, &failure{code: exitUsage, message: fmt.Sprintf("--timeout %q isn't a length of time, like 90s", raw), next: "bootstrap wait --help"}
-			}
-			timeout = parsed
 		}
 		store, err := c.store()
 		if err != nil {
@@ -323,7 +316,7 @@ func waitForExit(store session.Store, pid int) bool {
 // runChild is the background server, launched by serve. Its one report goes to
 // stdout, which is a pipe to the serve that started it.
 func runChild(args []string, env Env) int {
-	c, err := parse(command{name: hiddenVerb, flags: []string{"agent", "port"}}, args, env)
+	c, err := parse(command{name: hiddenVerb, flags: []string{"agent", "port"}, switches: []string{strings.TrimPrefix(server.FlowArg, "--")}}, args, env)
 	if err != nil {
 		return exitUsage
 	}
@@ -339,6 +332,14 @@ func runChild(args []string, env Env) int {
 	if err != nil {
 		return exitUsage
 	}
-	server.RunChild(server.ChildOptions{Store: store, Agent: agent, Port: port, Page: page.Files()}, os.Stdout)
+	opts := server.ChildOptions{Store: store, Agent: agent, Port: port, Page: page.Files()}
+	if c.switched(strings.TrimPrefix(server.FlowArg, "--")) {
+		f, err := c.newFlow(store)
+		if err != nil {
+			return exitEnviron
+		}
+		opts.Flow = f.Run
+	}
+	server.RunChild(opts, os.Stdout)
 	return exitOK
 }

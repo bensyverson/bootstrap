@@ -14,6 +14,8 @@ type ServerInfo struct {
 	PID  int    `json:"pid"`
 	URL  string `json:"url"`
 	Port int    `json:"port"`
+	// Flow says the server runs the setup itself, as run starts it; serve's doesn't.
+	Flow bool `json:"flow,omitempty"`
 }
 
 func (s Store) infoPath() string { return filepath.Join(s.Dir, "server.json") }

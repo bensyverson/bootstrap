@@ -144,7 +144,7 @@ func TestPrimer(t *testing.T) {
 		t.Errorf("exit %d, stderr %q", r.code, r.stderr)
 	}
 	golden(t, "primer.txt", r.stdout)
-	for _, verb := range []string{"detect", "tools", "screens", "status", "serve", "show", "wait", "stop"} {
+	for _, verb := range []string{"detect", "tools", "screens", "status", "run", "wait", "resume", "serve", "show", "stop"} {
 		if !strings.Contains(r.stdout, "bootstrap "+verb) {
 			t.Errorf("primer lacks %s", verb)
 		}
@@ -183,7 +183,7 @@ func TestPrimerNeedsNoNetwork(t *testing.T) {
 
 func TestEveryVerbHasHelpWithAnExample(t *testing.T) {
 	w := newWorld(t)
-	for _, verb := range []string{"detect", "tools", "screens", "status", "serve", "show", "wait", "stop"} {
+	for _, verb := range []string{"detect", "tools", "screens", "status", "run", "wait", "resume", "serve", "show", "stop"} {
 		t.Run(verb, func(t *testing.T) {
 			r := w.run(t, verb, "--help")
 			if r.code != 0 || r.stderr != "" {
@@ -202,7 +202,7 @@ func TestEveryVerbHasHelpWithAnExample(t *testing.T) {
 }
 
 func TestUnknownVerb(t *testing.T) {
-	newWorld(t).run(t, "nope").wantErr(t, 2, `unknown command "nope"`, "valid: detect, tools, screens, status, serve, show, wait, stop", "next: bootstrap")
+	newWorld(t).run(t, "nope").wantErr(t, 2, `unknown command "nope"`, "valid: detect, tools, screens, status, run, wait, resume, serve, show, stop", "next: bootstrap")
 }
 
 func TestUnknownFlag(t *testing.T) {
@@ -386,7 +386,6 @@ func TestOutOfClosedLists(t *testing.T) {
 		{"negative expect", []string{"show", "welcome", "--expect", "-5m"}, []string{`--expect "-5m"`, "next: bootstrap show --help"}},
 		{"no screen", []string{"show"}, []string{"needs a screen", "valid: welcome", "next: bootstrap screens"}},
 		{"unknown wait", []string{"wait", "nope"}, []string{`unknown wait target "nope"`, "valid: answer, clt, brew", "next: bootstrap wait --help"}},
-		{"no wait target", []string{"wait"}, []string{"needs a target", "valid: answer, clt, brew"}},
 		{"bad timeout", []string{"wait", "clt", "--timeout", "soon"}, []string{`--timeout "soon"`, "next: bootstrap wait --help"}},
 		{"unknown agent", []string{"serve", "--agent", "nope"}, []string{`unknown agent "nope"`, "valid: claude-code, opencode", "next: bootstrap serve --help"}},
 		{"unknown agent on tools", []string{"tools", "--agent", "nope"}, []string{`unknown agent "nope"`, "valid: claude-code, opencode"}},

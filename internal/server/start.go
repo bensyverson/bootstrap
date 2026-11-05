@@ -23,6 +23,9 @@ import (
 // HiddenVerb is how serve re-launches itself in the background.
 const HiddenVerb = "__server"
 
+// FlowArg tells the hidden verb to run the setup inside the server.
+const FlowArg = "--flow"
+
 const (
 	startTimeout = 10 * time.Second
 	openTimeout  = 10 * time.Second
@@ -48,6 +51,8 @@ type StartOptions struct {
 	Port int
 	// OpenPath is the program that opens a URL in the browser.
 	OpenPath string
+	// Flow launches a server that runs the setup itself (FlowArg on the hidden verb).
+	Flow bool
 }
 
 // Started is what serve reports.
@@ -127,7 +132,11 @@ func reuse(opts StartOptions) (Started, error) {
 }
 
 func launch(opts StartOptions) (Started, error) {
-	cmd := exec.Command(opts.Exe, HiddenVerb, "--agent", opts.Agent.ID, "--port", strconv.Itoa(opts.Port))
+	args := []string{HiddenVerb, "--agent", opts.Agent.ID, "--port", strconv.Itoa(opts.Port)}
+	if opts.Flow {
+		args = append(args, FlowArg)
+	}
+	cmd := exec.Command(opts.Exe, args...)
 	cmd.Env = opts.Env
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	stdout, err := cmd.StdoutPipe()
@@ -222,7 +231,7 @@ func RunChild(opts ChildOptions, out io.WriteCloser) {
 		say(report{Error: err.Error()})
 		return
 	}
-	if err := opts.Store.WriteServerInfo(session.ServerInfo{PID: pid, URL: srv.URL(), Port: srv.Port()}); err != nil {
+	if err := opts.Store.WriteServerInfo(session.ServerInfo{PID: pid, URL: srv.URL(), Port: srv.Port(), Flow: opts.Flow != nil}); err != nil {
 		say(report{Error: err.Error()})
 		return
 	}

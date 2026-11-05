@@ -72,19 +72,22 @@ type failure struct {
 	url     string
 	pid     int
 	browser string
+	// updates are the flow's work a wait read before it ran out of time.
+	updates []session.Update
 }
 
 func (f *failure) Error() string { return f.message }
 
 type errorBody struct {
-	Error   string   `json:"error"`
-	Exit    int      `json:"exit"`
-	Valid   []string `json:"valid,omitempty"`
-	State   string   `json:"state,omitempty"`
-	URL     string   `json:"url,omitempty"`
-	PID     int      `json:"pid,omitempty"`
-	Browser string   `json:"browser,omitempty"`
-	Next    string   `json:"next"`
+	Error   string           `json:"error"`
+	Exit    int              `json:"exit"`
+	Valid   []string         `json:"valid,omitempty"`
+	State   string           `json:"state,omitempty"`
+	URL     string           `json:"url,omitempty"`
+	PID     int              `json:"pid,omitempty"`
+	Browser string           `json:"browser,omitempty"`
+	Updates []session.Update `json:"updates,omitempty"`
+	Next    string           `json:"next"`
 }
 
 // command is one verb: its help, its flags and what it does.
@@ -95,7 +98,9 @@ type command struct {
 	about   string
 	example string
 	flags   []string
-	run     func(c *call) (output, error)
+	// switches are flags that take no value.
+	switches []string
+	run      func(c *call) (output, error)
 }
 
 // call is one invocation of a verb.
@@ -107,9 +112,15 @@ type call struct {
 
 func (c *call) flag(name string) string { return c.options[name] }
 
+// switched reports whether a switch was given.
+func (c *call) switched(name string) bool {
+	_, ok := c.options[name]
+	return ok
+}
+
 // verbs lists the commands in the order the primer gives them.
 func verbs() []command {
-	return []command{detectCommand, toolsCommand, screensCommand, statusCommand, serveCommand, showCommand, waitCommand, stopCommand}
+	return []command{detectCommand, toolsCommand, screensCommand, statusCommand, runCommand, waitCommand, resumeCommand, serveCommand, showCommand, stopCommand}
 }
 
 func verbNames() []string {
@@ -168,7 +179,7 @@ func parse(verb command, args []string, env Env) (*call, error) {
 	help := "bootstrap " + verb.name + " --help"
 	c := &call{env: env, options: map[string]string{}}
 	valid := []string{}
-	for _, f := range append(slices.Clone(verb.flags), "json") {
+	for _, f := range append(slices.Concat(verb.flags, verb.switches), "json") {
 		valid = append(valid, "--"+f)
 	}
 	valid = append(valid, "--help")
@@ -180,6 +191,13 @@ func parse(verb command, args []string, env Env) (*call, error) {
 		}
 		name, value, hasValue := strings.Cut(strings.TrimLeft(arg, "-"), "=")
 		if name == "json" {
+			continue
+		}
+		if slices.Contains(verb.switches, name) {
+			if hasValue {
+				return nil, &failure{code: exitUsage, message: "--" + name + " takes no value", next: help}
+			}
+			c.options[name] = ""
 			continue
 		}
 		if !slices.Contains(verb.flags, name) {
@@ -209,7 +227,7 @@ func encode(w io.Writer, value any) {
 func report(env Env, asJSON bool, err error) int {
 	f := asFailure(err)
 	if asJSON {
-		encode(env.Stdout, errorBody{Error: f.message, Exit: f.code, Valid: f.valid, State: f.state, URL: f.url, PID: f.pid, Browser: f.browser, Next: f.next})
+		encode(env.Stdout, errorBody{Error: f.message, Exit: f.code, Valid: f.valid, State: f.state, URL: f.url, PID: f.pid, Browser: f.browser, Updates: f.updates, Next: f.next})
 		return f.code
 	}
 	fmt.Fprintf(env.Stderr, "error: %s\n", f.message)

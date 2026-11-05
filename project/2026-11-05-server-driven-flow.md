@@ -39,6 +39,8 @@ next:  bootstrap wait
 
 If the budget runs out, it exits 3 with the same rows and "still working, run wait again". The default budget stays under the shortest tool timeout we know of; Claude Code allows 10 minutes at most.
 
+> **Corrected 2026-11-05 (`VBA13e`):** the limit that matters is the *default*, not the maximum. An agent that doesn't pass a timeout gets 2 minutes in both apps: Claude Code's Bash tool defaults to 120000 ms (its maximum is 600000 ms), and OpenCode's shell tool defaults to `DEFAULT_TIMEOUT_MS = 2 * 60 * 1_000` with no maximum (0 turns it off), changed by `OPENCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS` (read with `gh api` from `anomalyco/opencode`, `packages/core/src/tool/plugin/shell.ts` and `packages/web/src/content/docs/cli.mdx`, on `dev`). A weak model won't pass one, so `wait` keeps the 90-second default (`session.DefaultWaitTimeout`). The rows as built are in [the seams doc](2026-11-05-bootstrap-seams.md#the-agents-verbs-vba13e-2026-11-05): `note` for a line to retell and `step` for a step's progress, rather than `event`.
+
 **A handoff is an error that teaches** (`project/agents/cli-design.md`, "Errors that teach"). `wait` exits 0 with a `handoff` row that names what happened, the evidence, and the commands for each way forward:
 
 ```

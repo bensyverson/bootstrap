@@ -1,0 +1,27 @@
+$ bootstrap wait
+step plan started 1 of 13
+note person chose skip-tour on welcome
+step plan done 1 of 13
+step apple done 2 of 13
+step homebrew done 3 of 13
+step tools started 4 of 13
+handoff trouble step=tools tool=sleepy reason=exit
+what: brew install bensyverson/tap/sleepy exited 1
+command: brew install bensyverson/tap/sleepy (exit 1)
+log: $DIR/steps/sleepy.log
+output, last lines:
+  | Error: sleepy: no bottle available
+state handed-off step=tools 4 of 13
+next: read the log, fix what you can, then bootstrap resume --retry
+next: or, to go on without sleepy: bootstrap resume --skip
+next: or, to talk it over: ask the person in the chat (the page says "Let’s talk in Claude Code."), then bootstrap resume --retry or --skip
+$ bootstrap resume --retry
+resumed way=retry step=tools tool=sleepy
+next: bootstrap wait
+$ bootstrap wait --timeout 2s (exit 3, stderr)
+error: still working, run wait again
+note installed sleepy 0.2.0
+step tools done 4 of 13
+step folder started 5 of 13
+state working step=folder 5 of 13 screen=naming
+next: bootstrap wait

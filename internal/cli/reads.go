@@ -12,9 +12,9 @@ import (
 	"github.com/bensyverson/bootstrap/internal/session"
 )
 
-const primer = `bootstrap sets up a new Mac with a coding agent. The agent runs these commands
-and does every install. A local web page shows the person what's happening and
-collects their choices.
+const primer = `bootstrap sets up a new Mac with a coding agent. The agent starts the setup,
+which installs what the person picks on a local web page, and tells the person
+what's happening. The agent steps in when the setup hands something over.
 
 Run first: bootstrap status
 
@@ -24,13 +24,19 @@ Read (needs no session, except status)
   bootstrap screens                every screen, with its statuses and reasons
   bootstrap status                 the session: the current screen and every answer
 
-Act
+Act: the setup runs itself, and you narrate
+  bootstrap run [--agent <app>]    start the setup and its page in the background
+  bootstrap wait [--timeout 90s]   block until the setup needs you; print what
+                                   happened since your last wait, and what's next
+  bootstrap resume --retry|--skip  answer a handoff from wait
+  bootstrap stop                   end the session
+
+Act: driving the page yourself (tests and the chat fallback's preview)
   bootstrap serve [--agent <app>]  start the page in the background and open it
   bootstrap show <screen> [<tool>] [--status <s>] [--reason <r>] [--expect 20m]
                                    move the page to a screen
   bootstrap wait <answer|clt|brew> [--timeout 90s]
                                    return the answer or the arrival
-  bootstrap stop                   end the session
 
 Every command takes --json for a stable shape, and --help for an example.
 
@@ -210,6 +216,11 @@ func withChosen(a statusAnswer) statusAnswer {
 
 func nextAfter(state session.State, running bool) string {
 	switch {
+	case state.Driving && running:
+		return "bootstrap wait"
+	case state.Driving:
+		// The flow picks up from the log, so a new run carries on.
+		return "bootstrap run --agent " + state.Agent.ID
 	case !running:
 		return "bootstrap serve"
 	case state.Current == nil:
@@ -236,7 +247,7 @@ var statusCommand = command{
 		before, err := store.Load()
 		switch {
 		case errors.Is(err, session.ErrNoSession):
-			return output{}, &failure{code: exitEnviron, message: "no session", next: "bootstrap detect, then bootstrap serve"}
+			return output{}, &failure{code: exitEnviron, message: "no session", next: runWithApp}
 		case err != nil:
 			return output{}, err
 		case before.Ended:

@@ -38,6 +38,7 @@ const (
 	kindHandoff kind = "handoff"
 	kindTake    kind = "take" // the agent saw the open handoff
 	kindResume  kind = "resume"
+	kindTold    kind = "told" // a wait told the agent everything up to For
 )
 
 // event is one line of the log. Only the fields for its kind are set.
@@ -94,7 +95,7 @@ func (s *State) apply(e event) {
 		s.Tabs = e.Tabs
 	case kindStop:
 		s.Ended = true
-	case kindDrive, kindStep, kindNote, kindHandoff, kindTake, kindResume:
+	case kindDrive, kindStep, kindNote, kindHandoff, kindTake, kindResume, kindTold:
 		s.applyFlow(e)
 	case kindAgent:
 		if agent, err := screen.FindAgent(e.Agent); err == nil {
@@ -135,16 +136,25 @@ func finished(body []byte) []byte {
 
 func replay(path string, body []byte) (State, error) {
 	var state State
+	err := walk(path, body, state.apply)
+	if err != nil {
+		return State{}, err
+	}
+	return state, nil
+}
+
+// walk calls each with every whole event in the log, in order.
+func walk(path string, body []byte, each func(event)) error {
 	scanner := bufio.NewScanner(bytes.NewReader(finished(body)))
 	scanner.Buffer(make([]byte, 0, 64*1024), 16*1024*1024)
 	for line := 1; scanner.Scan(); line++ {
 		var e event
 		if err := json.Unmarshal(scanner.Bytes(), &e); err != nil {
-			return State{}, &CorruptError{Path: path, Line: line}
+			return &CorruptError{Path: path, Line: line}
 		}
-		state.apply(e)
+		each(e)
 	}
-	return state, scanner.Err()
+	return scanner.Err()
 }
 
 func ensureDir(dir string) error {
