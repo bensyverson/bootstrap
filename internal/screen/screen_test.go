@@ -130,6 +130,31 @@ var recordedCopyChanges = map[string]bool{
 	"Let’s talk in {app}.":                                                        true,
 	"{ai} has a question.":                                                        true,
 	"That’s all for now.":                                                         true,
+	// Ben approved these from the live preview, 2026-11-05.
+	"And your email?":                        true,
+	"Git adds it to every version you save.": true,
+	"Git puts a name and email on every version you save. We’ll use {email}, a private address from GitHub, so your real email stays hidden.": true,
+	"Git saves every version of your work, so you can always go back.":                                                                        true,
+	"GitHub’s sign-up page is open in your browser. Come back here when you’re done.":                                                         true,
+	"It goes into your project’s history, so anyone you share the project with can see it.":                                                   true,
+	"I’ve made my account":      true,
+	"Make your GitHub account.": true,
+	"Open GitHub":               true,
+	"Open GitHub, sign in if it asks, and type this code. This page moves on by itself when you’re done.": true,
+	"Open the sign-up page":                  true,
+	"Should Git keep track of this project?": true,
+	"Sign your work as {name}?":              true,
+	"They warn {ai} before a session runs too long, and keep its plans in Jobs.": true,
+	"Turn on {ai}’s helpers?":                true,
+	"What name should Git put on your work?": true,
+	"Yes, I have an account":                 true,
+	"Yes, help me make one":                  true,
+	"Yes, turn them on":                      true,
+	"Yes, use Git":                           true,
+	"Yes, use these":                         true,
+	"Your email":                             true,
+	"Your name":                              true,
+	"Your turn: enter this code on GitHub.":  true,
 }
 
 func TestCopyComesFromThePrototype(t *testing.T) {
@@ -458,9 +483,8 @@ func TestStatusDefaultsToTheFirst(t *testing.T) {
 // ship unnoticed, and the prototype check skips them. Approving a screen's words
 // takes it off this list.
 func TestDraftScreens(t *testing.T) {
-	want := []ID{"git-ask", "github", "github-signup", "github-code", "identity", "identity-name", "identity-email", "settings"}
-	if got := Drafts(); !slices.Equal(got, want) {
-		t.Errorf("drafts = %v, want %v", got, want)
+	if got := Drafts(); len(got) != 0 {
+		t.Errorf("drafts = %v: every screen's words are approved", got)
 	}
 	gitAsk := slices.IndexFunc(Definitions(), func(d Definition) bool { return d.Screen == "git-ask" })
 	if gitAsk < 0 {

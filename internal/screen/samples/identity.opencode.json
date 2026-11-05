@@ -15,13 +15,13 @@
   ],
   "choices": [
     {
+      "id": "skip",
+      "label": "Skip"
+    },
+    {
       "id": "use-these",
       "label": "Yes, use these",
       "primary": true
-    },
-    {
-      "id": "skip",
-      "label": "Skip"
     }
   ]
 }

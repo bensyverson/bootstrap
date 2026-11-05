@@ -162,7 +162,7 @@ func TestGitHubOffersToMakeAnAccount(t *testing.T) {
 	for _, c := range d.Choices {
 		ids = append(ids, c.ID)
 	}
-	if !slices.Equal(ids, []string{"yes", "make-one", "not-now"}) {
+	if !slices.Equal(ids, []string{"not-now", "make-one", "yes"}) {
 		t.Errorf("choices = %v", ids)
 	}
 	signup, err := Describe(Request{Screen: "github-signup"}, Context{Agent: ClaudeCode})

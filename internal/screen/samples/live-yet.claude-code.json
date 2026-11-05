@@ -10,8 +10,7 @@
   "choices": [
     {
       "id": "not-yet",
-      "label": "Not yet",
-      "primary": true
+      "label": "Not yet"
     },
     {
       "id": "yes",

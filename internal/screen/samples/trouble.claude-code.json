@@ -14,17 +14,17 @@
   ],
   "choices": [
     {
-      "id": "retry",
-      "label": "Try again",
-      "primary": true
+      "id": "ask",
+      "label": "Ask Claude"
     },
     {
       "id": "skip",
       "label": "Skip Sleepy"
     },
     {
-      "id": "ask",
-      "label": "Ask Claude"
+      "id": "retry",
+      "label": "Try again",
+      "primary": true
     }
   ]
 }

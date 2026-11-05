@@ -14,13 +14,13 @@
   ],
   "choices": [
     {
+      "id": "not-now",
+      "label": "Not now"
+    },
+    {
       "id": "yes",
       "label": "Yes, use Git",
       "primary": true
-    },
-    {
-      "id": "not-now",
-      "label": "Not now"
     }
   ]
 }

@@ -10,8 +10,7 @@
   "choices": [
     {
       "id": "website",
-      "label": "A website",
-      "primary": true
+      "label": "A website"
     },
     {
       "id": "app",

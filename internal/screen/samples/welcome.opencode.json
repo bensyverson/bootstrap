@@ -9,13 +9,13 @@
   ],
   "choices": [
     {
+      "id": "skip-tour",
+      "label": "Skip the tour"
+    },
+    {
       "id": "see-plan",
       "label": "See the plan",
       "primary": true
-    },
-    {
-      "id": "skip-tour",
-      "label": "Skip the tour"
     }
   ]
 }

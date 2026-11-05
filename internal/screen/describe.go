@@ -154,10 +154,18 @@ func (s spec) describe(req Request, ctx Context) Description {
 		if c.id == "skip" && tool.Required {
 			continue
 		}
-		d.Choices = append(d.Choices, Choice{ID: c.id, Label: fillTool(c.label, tool, ctx.Agent), Primary: i == 0})
+		d.Choices = append(d.Choices, Choice{ID: c.id, Label: fillTool(c.label, tool, ctx.Agent), Primary: i == 0 && !s.asListed})
 	}
 	for i, l := range s.links {
-		d.Choices = append(d.Choices, Choice{ID: l.id, Label: fillTool(l.label, tool, ctx.Agent), URL: l.url, Primary: i == 0 && len(s.choices) == 0})
+		link := Choice{ID: l.id, Label: fillTool(l.label, tool, ctx.Agent), URL: l.url, Primary: i == 0 && len(s.choices) == 0}
+		at := slices.IndexFunc(d.Choices, func(c Choice) bool { return l.before != "" && c.ID == l.before })
+		if at < 0 {
+			at = len(d.Choices)
+		}
+		d.Choices = slices.Insert(d.Choices, at, link)
+	}
+	if !s.asListed {
+		slices.Reverse(d.Choices)
 	}
 	if s.rows {
 		kept := chosenOrAll(ctx.Chosen)

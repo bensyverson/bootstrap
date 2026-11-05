@@ -14,13 +14,13 @@
   ],
   "choices": [
     {
+      "id": "later",
+      "label": "Do it later"
+    },
+    {
       "id": "app-store",
       "label": "Open the App Store",
       "primary": true
-    },
-    {
-      "id": "later",
-      "label": "Do it later"
     }
   ]
 }

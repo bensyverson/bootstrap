@@ -9,13 +9,13 @@
   ],
   "choices": [
     {
+      "id": "not-now",
+      "label": "Not now"
+    },
+    {
       "id": "yes",
       "label": "Show me how",
       "primary": true
-    },
-    {
-      "id": "not-now",
-      "label": "Not now"
     }
   ]
 }

@@ -93,7 +93,13 @@ type spec struct {
 	next     string
 	internal bool
 	chat     bool
-	// links are buttons that open a page and answer nothing, after the choices.
+	// asListed shows answers of equal weight in the order written, with no main
+	// button. Otherwise the
+	// page shows them as a Mac does: the main one, written first, on the far
+	// right, and the way out on the far left (Ben, 2026-11-05).
+	asListed bool
+	// links are buttons that open a page and answer nothing, after the choices
+	// unless a link names the choice it goes before.
 	links []linkDef
 	// detail is what the flow fills in from what it learned, beyond the closed lists.
 	detail detail
@@ -103,6 +109,8 @@ type spec struct {
 
 type linkDef struct {
 	id, label, url string
+	// before is the choice this link sits in front of; empty puts it last.
+	before string
 }
 
 // detail is what a screen takes from the flow, checked in Validate.
@@ -142,11 +150,11 @@ var specs = []spec{
 		card:   "homebrew", next: nextBrew},
 	{id: "tool", mode: Working, title: "Adding {tool-link}", tool: installTool, cardTool: true,
 		statuses: []option{{"downloading", "Downloading {tool}"}, {"installing", "Installing {tool}"}}, next: nextWork},
-	{id: "making", mode: Waiting, title: "What are you working on?",
+	{id: "making", asListed: true, mode: Waiting, title: "What are you working on?",
 		choices: []choiceDef{{"website", "A website"}, {"app", "A Mac or iPhone app"}, {"code", "Some code"}, {"other", "Something else"}}, next: nextAnswer},
 	{id: "xcode", mode: Waiting, title: "This one needs Xcode.", status: "It’s free, and it’s big. The App Store will take a while.",
 		choices: []choiceDef{{"app-store", "Open the App Store"}, {"later", "Do it later"}}, next: nextAnswer},
-	{id: "live-yet", mode: Waiting, title: "Do people use it yet?",
+	{id: "live-yet", asListed: true, mode: Waiting, title: "Do people use it yet?",
 		choices: []choiceDef{{"not-yet", "Not yet"}, {"yes", "Yes"}}, next: nextAnswer},
 	{id: "naming", mode: Waiting, layout: LayoutLow, title: "What should we call this project?", status: "We’ll make a folder with this name.",
 		field: &Field{Label: "Project name", Value: "my-project"}, choices: []choiceDef{{"next", "Next"}}, next: nextAnswer},
@@ -154,28 +162,28 @@ var specs = []spec{
 		statuses: []option{{"folder", "Making your folder"}, {"git", "Turning on Git"}, {"rules", "Teaching {ai} how you work"}}, next: nextWork},
 	{id: "git-ask", mode: Waiting, title: "Should Git keep track of this project?",
 		status:  "Git saves every version of your work, so you can always go back.",
-		choices: []choiceDef{{"yes", "Yes, use Git"}, {"not-now", "Not now"}}, next: nextAnswer, draft: true},
+		choices: []choiceDef{{"yes", "Yes, use Git"}, {"not-now", "Not now"}}, next: nextAnswer},
 	{id: "github", mode: Waiting, title: "Want a place to keep your work online?", status: "GitHub is free. You can always do this later.",
-		choices: []choiceDef{{"yes", "Yes, I have an account"}, {"make-one", "Yes, help me make one"}, {"not-now", "Not now"}}, next: nextAnswer, draft: true},
+		choices: []choiceDef{{"yes", "Yes, I have an account"}, {"make-one", "Yes, help me make one"}, {"not-now", "Not now"}}, next: nextAnswer},
 	{id: "github-signup", mode: Waiting, title: "Make your GitHub account.",
 		status:  "GitHub’s sign-up page is open in your browser. Come back here when you’re done.",
 		choices: []choiceDef{{"made-it", "I’ve made my account"}, {"not-now", "Not now"}},
-		links:   []linkDef{{"signup", "Open the sign-up page", "https://github.com/signup"}}, next: nextAnswer, draft: true},
+		links:   []linkDef{{"signup", "Open the sign-up page", "https://github.com/signup", "not-now"}}, next: nextAnswer},
 	{id: "github-code", mode: Waiting, layout: LayoutLow, title: "Your turn: enter this code on GitHub.",
 		status: "Open GitHub, sign in if it asks, and type this code. This page moves on by itself when you’re done.",
-		links:  []linkDef{{"device", "Open GitHub", "https://github.com/login/device"}}, detail: codeDetail, next: nextWork, draft: true},
+		links:  []linkDef{{"device", "Open GitHub", "https://github.com/login/device", ""}}, detail: codeDetail, next: nextWork},
 	{id: "identity", mode: Waiting, layout: LayoutLow, title: "Sign your work as {name}?",
 		status:  "Git puts a name and email on every version you save. We’ll use {email}, a private address from GitHub, so your real email stays hidden.",
-		choices: []choiceDef{{"use-these", "Yes, use these"}, {"skip", "Skip"}}, detail: identityDetail, next: nextAnswer, draft: true},
+		choices: []choiceDef{{"use-these", "Yes, use these"}, {"skip", "Skip"}}, detail: identityDetail, next: nextAnswer},
 	{id: "identity-name", mode: Waiting, layout: LayoutLow, title: "What name should Git put on your work?",
 		status: "Git adds it to every version you save.",
-		field:  &Field{Label: "Your name", Kind: FieldName}, choices: []choiceDef{{"next", "Next"}, {"skip", "Skip"}}, next: nextAnswer, draft: true},
+		field:  &Field{Label: "Your name", Kind: FieldName}, choices: []choiceDef{{"next", "Next"}, {"skip", "Skip"}}, next: nextAnswer},
 	{id: "identity-email", mode: Waiting, layout: LayoutLow, title: "And your email?",
 		status: "It goes into your project’s history, so anyone you share the project with can see it.",
-		field:  &Field{Label: "Your email", Kind: FieldEmail}, choices: []choiceDef{{"next", "Next"}, {"skip", "Skip"}}, next: nextAnswer, draft: true},
+		field:  &Field{Label: "Your email", Kind: FieldEmail}, choices: []choiceDef{{"next", "Next"}, {"skip", "Skip"}}, next: nextAnswer},
 	{id: "settings", mode: Waiting, title: "Turn on {ai}’s helpers?",
 		status:  "They warn {ai} before a session runs too long, and keep its plans in Jobs.",
-		choices: []choiceDef{{"yes", "Yes, turn them on"}, {"not-now", "Not now"}}, next: nextAnswer, draft: true},
+		choices: []choiceDef{{"yes", "Yes, turn them on"}, {"not-now", "Not now"}}, next: nextAnswer},
 	{id: "phone", mode: Waiting, title: "Want to use {ai} from your phone?",
 		choices: []choiceDef{{"yes", "Show me how"}, {"not-now", "Not now"}}, next: nextAnswer},
 	{id: "done", mode: Settled, title: "All set!", status: "You can close this and go back to {app}.", next: nextStop},

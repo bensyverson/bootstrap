@@ -20,13 +20,13 @@
   },
   "choices": [
     {
+      "id": "skip",
+      "label": "Skip"
+    },
+    {
       "id": "next",
       "label": "Next",
       "primary": true
-    },
-    {
-      "id": "skip",
-      "label": "Skip"
     }
   ]
 }

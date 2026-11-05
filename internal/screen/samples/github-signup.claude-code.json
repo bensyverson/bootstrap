@@ -14,11 +14,6 @@
   ],
   "choices": [
     {
-      "id": "made-it",
-      "label": "I’ve made my account",
-      "primary": true
-    },
-    {
       "id": "not-now",
       "label": "Not now"
     },
@@ -26,6 +21,11 @@
       "id": "signup",
       "label": "Open the sign-up page",
       "url": "https://github.com/signup"
+    },
+    {
+      "id": "made-it",
+      "label": "I’ve made my account",
+      "primary": true
     }
   ]
 }

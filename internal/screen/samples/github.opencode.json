@@ -14,17 +14,17 @@
   ],
   "choices": [
     {
-      "id": "yes",
-      "label": "Yes, I have an account",
-      "primary": true
+      "id": "not-now",
+      "label": "Not now"
     },
     {
       "id": "make-one",
       "label": "Yes, help me make one"
     },
     {
-      "id": "not-now",
-      "label": "Not now"
+      "id": "yes",
+      "label": "Yes, I have an account",
+      "primary": true
     }
   ]
 }
