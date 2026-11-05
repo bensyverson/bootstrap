@@ -20,6 +20,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - [VM runs](project/2026-11-05-vm-run-findings.md) — Apple blocks the Homebrew paste, the `.pkg` works, and Apple's step has a click signal
 - [Agent trial](project/2026-11-05-agent-trial-findings.md) — Claude Code and OpenCode given only the link: auto mode's block, the click delay, and a weak model that never waits
 - [The server drives the setup](project/2026-11-05-server-driven-flow.md) — the agent starts one run and supervises (approved)
+- [Building the server-driven flow](project/2026-11-05-server-driven-build-plan.md) — the order and the leaves, imported under `CAwBVg`
 - [project/backlog.md](project/backlog.md) and [project/gotchas.md](project/gotchas.md) — work parked, and traps to know
 
 <!-- agents:begin core@cfc86c -->
