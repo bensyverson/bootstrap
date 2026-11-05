@@ -1,0 +1,351 @@
+#!/usr/bin/env bash
+# release — build, sign, notarize and pin a version of the bootstrap binary, and, as a
+# separate explicit step, publish it on GitHub. Resumes wherever an earlier run stopped.
+#
+# Usage:
+#     scripts/release <X.Y.Z> [--dry-run]              build, sign, notarize, verify, pin
+#     scripts/release <X.Y.Z> --publish [--dry-run]    then commit, tag, push and upload
+#
+# Without --publish nothing leaves this Mac except the notarization upload to Apple,
+# and nothing is committed. Every step checks whether it is already done:
+#
+#     1. build ./cmd/bootstrap for darwin/arm64 with cgo off, the version stamped in,
+#        into local/release/v<X.Y.Z>/, and read the stamp back with --version
+#                                          (unless that folder holds a build of this source)
+#     2. sign it with the hardened runtime and a secure timestamp     (unless it is signed)
+#     3. notarize it: a bare binary goes up zipped, and can't be stapled, so Gatekeeper
+#        checks its ticket online                       (unless this file was notarized)
+#     4. verify: codesign shows our team, the runtime flag and a timestamp, and
+#        spctl accepts it as notarized (as a file, not an app)                                          (always)
+#     5. write bootstrap.sha256 beside it, and pin the version and sha256 in SETUP.md
+#                                                                               (always)
+# With --publish, after those:
+#     6. commit SETUP.md's pin, push main, tag v<X.Y.Z> (annotated) and push it
+#                                                                (unless origin has the tag)
+#     7. create the GitHub release on bensyverson/bootstrap with the binary and its
+#        .sha256, or upload whichever of them it lacks                (unless it has both)
+#     8. download the public file with curl and check its sha256, and check the raw
+#        SETUP.md at the tag and on main pins it                                (always)
+#
+# "This source" is go.mod, go.sum, cmd/, internal/ and catalog/ as they are on disk,
+# untracked files included, plus `go version`. A change there rebuilds; a change
+# anywhere else (docs, scripts) keeps the build. A version that is already tagged is
+# never rebuilt: if this source would build a different file, that is a conflict.
+#
+# --publish needs an origin, main checked out and not behind origin/main, no uncommitted
+# change but SETUP.md's pin, no untracked file in the source, and a public repo.
+# --dry-run prints the plan and changes nothing.
+#
+# Exits 0 on success, 2 on a usage error, 3 when a precondition fails or the state
+# conflicts (nothing has changed then), and 5 when a step fails. Needs the Bash sandbox
+# disabled: the Go build cache, the keychain for signing and notarizing, and the pushes.
+set -euo pipefail
+
+identity="Developer ID Application: Syverson Industries LLC (QJ3Q58XVEE)"
+team="QJ3Q58XVEE"
+notary_profile="woodcase-notary"
+github_repo="bensyverson/bootstrap"
+version_var="github.com/bensyverson/bootstrap/internal/cli.Version"
+source_paths=(go.mod go.sum cmd internal catalog)
+
+die() {
+    echo "release: $2" >&2
+    exit "$1"
+}
+say() { echo "==> $*"; }
+
+version=""
+dry_run=false
+publish=false
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --dry-run) dry_run=true; shift ;;
+        --publish) publish=true; shift ;;
+        -h|--help) sed -n '2,/^set -euo/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -*) die 2 "unknown flag '$1' (try --help)" ;;
+        *)
+            [[ -z "$version" ]] || die 2 "one version only (got '$version' and '$1')"
+            version="$1"
+            shift
+            ;;
+    esac
+done
+[[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die 2 "give the version as X.Y.Z (got '${version}'); see --help"
+
+repo="$(cd "$(dirname "$0")/.." && pwd -P)"
+tag="v${version}"
+dir="${repo}/local/release/${tag}"
+bin="${dir}/bootstrap"
+download_url="https://github.com/${github_repo}/releases/download/${tag}/bootstrap"
+raw_url="https://raw.githubusercontent.com/${github_repo}"
+setup_md="${repo}/SETUP.md"
+
+# --- The pin in SETUP.md --------------------------------------------------------------
+
+# pin_version / pin_sha <file>: the one version in a download URL, and the one sha256,
+# that the file pins; empty unless there is exactly one of each.
+pin_version() {
+    local found
+    found="$(grep -oE 'releases/download/v[0-9]+\.[0-9]+\.[0-9]+/bootstrap' "$1" | sort -u)" || true
+    [[ -n "$found" && "$(wc -l <<<"$found")" -eq 1 ]] || return 0
+    found="${found#releases/download/v}"
+    echo "${found%/bootstrap}"
+}
+pin_sha() {
+    local found
+    found="$(grep -oE '[0-9a-f]{64}' "$1" | sort -u)" || true
+    [[ -n "$found" && "$(wc -l <<<"$found")" -eq 1 ]] || return 0
+    echo "$found"
+}
+
+[[ -f "$setup_md" ]] || die 3 "no SETUP.md in ${repo}; it is where the release pins its version and sha256"
+old_version="$(pin_version "$setup_md")"
+old_sha="$(pin_sha "$setup_md")"
+[[ -n "$old_version" && -n "$old_sha" ]] ||
+    die 3 "SETUP.md must hold exactly one releases/download/v<X.Y.Z>/bootstrap URL and one sha256 to pin; it has $(grep -cE 'releases/download/' "$setup_md" || true) URL line(s)"
+
+[[ "$(uname -m)" == arm64 ]] || die 3 "build on an Apple silicon Mac: the release runs the binary to read its stamp back"
+
+# --- Preconditions: nothing below this block changes anything until they all hold. ----
+
+# fingerprint: a hash of the source as it is on disk, and the Go that builds it.
+fingerprint() {
+    (
+        cd "$repo"
+        go version
+        git ls-files -z -co --exclude-standard -- "${source_paths[@]}" |
+            while IFS= read -r -d '' f; do
+                [[ -f "$f" ]] && shasum -a 256 -- "$f"
+            done
+    ) | shasum -a 256 | cut -d' ' -f1
+}
+sha_of() { shasum -a 256 "$1" | cut -d' ' -f1; }
+
+has_origin=false
+git -C "$repo" remote get-url origin >/dev/null 2>&1 && has_origin=true
+
+if $publish; then
+    $has_origin ||
+        die 3 "no origin to publish to. Create it, then rerun: gh repo create ${github_repo} --public --source ${repo} --remote origin --push"
+    [[ "$(git -C "$repo" symbolic-ref --short HEAD 2>/dev/null)" == main ]] || die 3 "${repo} is not on main"
+    dirty="$(git -C "$repo" status --porcelain --untracked-files=no | grep -v '^ M SETUP.md$' || true)"
+    [[ -z "$dirty" ]] || die 3 "${repo} has uncommitted changes besides SETUP.md's pin; commit them first:
+${dirty}"
+    untracked="$(cd "$repo" && git ls-files -o --exclude-standard -- "${source_paths[@]}")"
+    [[ -z "$untracked" ]] || die 3 "untracked source would go into the build but not the tag; commit or remove it:
+${untracked}"
+    git -C "$repo" fetch -q origin main || die 3 "could not fetch origin main"
+    git -C "$repo" merge-base --is-ancestor origin/main HEAD || die 3 "${repo} is behind origin/main; pull first"
+    visibility="$(gh repo view "$github_repo" --json visibility -q .visibility)" ||
+        die 3 "could not read ${github_repo} with gh; check gh auth status"
+    [[ "$visibility" == PUBLIC ]] ||
+        die 3 "${github_repo} is ${visibility}, and the setup link needs it public: gh repo edit ${github_repo} --visibility public --accept-visibility-change-consequences"
+fi
+
+current_fp="$(fingerprint)"
+built=false
+[[ -x "$bin" && -f "${dir}/source" && "$(cat "${dir}/source")" == "$current_fp" ]] && built=true
+
+# A tagged version is fixed: its SETUP.md pins one file, and this run may only finish
+# publishing that same file.
+tag_ref=""
+if git -C "$repo" rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+    tag_ref="refs/tags/${tag}"
+elif $has_origin; then
+    remote_tags="$(git -C "$repo" ls-remote --tags origin "refs/tags/${tag}")" || die 3 "could not list origin's tags"
+    if [[ -n "$remote_tags" ]]; then
+        git -C "$repo" fetch -q origin "refs/tags/${tag}" || die 3 "could not fetch ${tag} from origin"
+        tag_ref="FETCH_HEAD"
+    fi
+fi
+on_origin=false
+if [[ -n "$tag_ref" ]]; then
+    tagged_setup="$(mktemp "${TMPDIR:-/tmp}/bootstrap-release.XXXXXX")"
+    trap 'rm -f "$tagged_setup"' EXIT
+    git -C "$repo" show "${tag_ref}:SETUP.md" >"$tagged_setup" 2>/dev/null || true
+    tagged_sha="$(pin_sha "$tagged_setup")"
+    if ! $built || [[ "$(sha_of "$bin")" != "$tagged_sha" ]]; then
+        die 3 "${tag} is already tagged, pinning ${tagged_sha:-nothing}, and this source would build a different file.
+To check the published file: curl -fsSL ${download_url} | shasum -a 256
+To release this source: scripts/release <a newer version>"
+    fi
+    if $has_origin && [[ -n "$(git -C "$repo" ls-remote --tags origin "refs/tags/${tag}")" ]]; then
+        on_origin=true
+    fi
+fi
+
+if $dry_run; then
+    if $built; then
+        say "would reuse the build of this source in ${dir}"
+    else
+        say "would build ./cmd/bootstrap for darwin/arm64 with cgo off, stamped ${version}, into ${dir}"
+    fi
+    say "would sign it as ${identity}, with the hardened runtime and a timestamp (unless it is)"
+    say "would notarize it with the ${notary_profile} profile (unless this file was)"
+    say "would verify it with codesign and spctl"
+    say "would pin ${tag} and its sha256 in SETUP.md, and write bootstrap.sha256 beside it"
+    if $publish; then
+        say "would publish: commit the pin, push main, tag ${tag} and push it (unless origin has it)"
+        say "would publish: upload bootstrap and bootstrap.sha256 to ${github_repo}'s ${tag} release"
+        say "would check ${download_url} and the raw SETUP.md with curl"
+    fi
+    exit 0
+fi
+
+# --- 1. Build -----------------------------------------------------------------------------
+
+if ! $built; then
+    if [[ -e "$dir" ]]; then
+        say "The source changed since ${dir} was built; rebuilding"
+        rm -rf "$dir"
+    fi
+    mkdir -p "$dir"
+    say "Building ${version} for darwin/arm64"
+    (cd "$repo" && CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 \
+        go build -trimpath -ldflags "-s -w -X ${version_var}=${version}" -o "$bin" ./cmd/bootstrap) ||
+        die 5 "the build failed"
+    stamp="$("$bin" --version)" || die 5 "the built binary would not run: ${bin} --version"
+    [[ "$stamp" == "bootstrap ${version}" ]] ||
+        die 5 "the build says '${stamp}', not 'bootstrap ${version}'; is ${version_var} still the version?"
+    echo "$current_fp" >"${dir}/source"
+fi
+
+# --- 2. Sign ------------------------------------------------------------------------------
+
+# signed: whether the file carries our Developer ID signature, rather than the ad-hoc
+# one Go's linker gives every darwin/arm64 binary.
+signed() {
+    local info
+    info="$(codesign -dvv "$bin" 2>&1)" || return 1
+    grep -qxF "TeamIdentifier=${team}" <<<"$info" && grep -qxF "Authority=${identity}" <<<"$info"
+}
+
+if ! signed; then
+    say "Signing as ${identity}"
+    codesign --force --options runtime --timestamp --sign "$identity" "$bin" || die 5 "could not sign ${bin}"
+    codesign --verify --strict "$bin" || die 5 "the signature on ${bin} does not verify"
+fi
+
+# --- 3. Notarize --------------------------------------------------------------------------
+
+sha="$(sha_of "$bin")"
+notarized_record="${dir}/notarized"
+if [[ -f "$notarized_record" && "$(cut -d' ' -f1 "$notarized_record")" == "$sha" ]]; then
+    say "Notarized earlier: $(cut -d' ' -f2- "$notarized_record")"
+else
+    say "Notarizing (this waits for Apple)"
+    zip="${dir}/bootstrap.zip"
+    rm -f "$zip"
+    ditto -c -k --keepParent "$bin" "$zip" || die 5 "could not zip ${bin}"
+    result="$(xcrun notarytool submit "$zip" --keychain-profile "$notary_profile" --wait --output-format json)" ||
+        die 5 "notarytool failed: ${result:-no output}"
+    rm -f "$zip"
+    status="$(plutil -extract status raw -o - - <<<"$result" 2>/dev/null)" || status="unknown"
+    id="$(plutil -extract id raw -o - - <<<"$result" 2>/dev/null)" || id="unknown"
+    [[ "$status" == Accepted ]] ||
+        die 5 "notarization ${status} (id ${id}); see: xcrun notarytool log ${id} --keychain-profile ${notary_profile}"
+    echo "${sha} ${status} (id ${id})" >"$notarized_record"
+    say "Notarization: ${status} (id ${id})"
+fi
+
+# --- 4. Verify ----------------------------------------------------------------------------
+
+say "Verifying the signature and Gatekeeper's verdict"
+codesign --verify --strict "$bin" || die 5 "the signature on ${bin} does not verify"
+info="$(codesign -dvv "$bin" 2>&1)" || die 5 "codesign could not read ${bin}"
+got_team="$(sed -n 's/^TeamIdentifier=//p' <<<"$info")"
+[[ "$got_team" == "$team" ]] || die 5 "${bin} is signed by team ${got_team:-none}, not ${team}"
+grep -qxF "Authority=${identity}" <<<"$info" || die 5 "${bin} is not signed by ${identity}"
+grep -qE '^CodeDirectory .*flags=0x[0-9a-f]+\([^)]*runtime' <<<"$info" || die 5 "${bin} lacks the hardened runtime"
+grep -q '^Timestamp=' <<<"$info" || die 5 "${bin} has no secure timestamp"
+# `-t exec` assesses apps, and rejects any bare tool as "does not seem to be an app";
+# this form asks only whether the file's own signature is notarized Developer ID.
+verdict="$(spctl -a -vvv -t open --context context:primary-signature "$bin" 2>&1)" ||
+    die 5 "spctl rejected ${bin}. Gatekeeper checks a bare binary's notarization online, so check the network, then rerun:
+${verdict}"
+grep -qF "source=Notarized Developer ID" <<<"$verdict" ||
+    die 5 "spctl accepted ${bin}, but not as notarized:
+${verdict}"
+
+# --- 5. Checksum and pin ------------------------------------------------------------------
+
+echo "${sha}  bootstrap" >"${bin}.sha256"
+if [[ "$old_version" != "$version" || "$old_sha" != "$sha" ]]; then
+    say "Pinning ${tag} and ${sha} in SETUP.md"
+    sed -e "s|releases/download/v${old_version//./\\.}/bootstrap|releases/download/${tag}/bootstrap|g" \
+        -e "s|${old_sha}|${sha}|g" "$setup_md" >"${setup_md}.new"
+    mv "${setup_md}.new" "$setup_md"
+    [[ "$(pin_version "$setup_md")" == "$version" && "$(pin_sha "$setup_md")" == "$sha" ]] ||
+        die 5 "could not pin ${tag} and its sha256 in SETUP.md"
+fi
+
+if ! $publish; then
+    say "bootstrap ${version} is built, signed, notarized, verified and pinned"
+    echo "    file:   ${bin}"
+    echo "    sha256: ${sha}"
+    echo "next: scripts/release ${version} --publish   (the integrator's step: it commits, tags, pushes and uploads)"
+    exit 0
+fi
+
+# --- 6. Commit the pin, tag, push ---------------------------------------------------------
+
+if [[ -z "$tag_ref" ]]; then
+    if ! git -C "$repo" diff --quiet -- SETUP.md; then
+        say "Committing the pin"
+        git -C "$repo" commit -q -m "Pins bootstrap ${version} in SETUP.md" -- SETUP.md || die 5 "could not commit SETUP.md"
+    fi
+    git -C "$repo" show HEAD:SETUP.md >"${dir}/SETUP.committed"
+    [[ "$(pin_sha "${dir}/SETUP.committed")" == "$sha" ]] || die 5 "HEAD's SETUP.md does not pin ${sha}"
+    rm -f "${dir}/SETUP.committed"
+    say "Pushing main and tagging ${tag}"
+    git -C "$repo" push -q origin main || die 5 "could not push main; rerun to resume"
+    git -C "$repo" tag -a "$tag" -m "bootstrap ${version}" || die 5 "could not tag ${tag}"
+fi
+if ! $on_origin; then
+    git -C "$repo" push -q origin "refs/tags/${tag}" || die 5 "could not push ${tag}; rerun to resume"
+fi
+
+# --- 7. The GitHub release ----------------------------------------------------------------
+
+if assets="$(gh release view "$tag" --repo "$github_repo" --json assets -q '.assets[].name' 2>/dev/null)"; then
+    missing=()
+    for f in bootstrap bootstrap.sha256; do
+        grep -qxF "$f" <<<"$assets" || missing+=("${dir}/${f}")
+    done
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        say "Uploading what the ${tag} release lacks"
+        gh release upload "$tag" "${missing[@]}" --repo "$github_repo" || die 5 "could not upload to ${tag}; rerun to resume"
+    fi
+else
+    say "Creating the ${tag} release on ${github_repo}"
+    gh release create "$tag" --repo "$github_repo" --verify-tag --title "bootstrap ${version}" \
+        --notes "A trial release. SETUP.md pins this file's sha256; check it, and the signature, before running it." \
+        "$bin" "${bin}.sha256" || die 5 "could not create the ${tag} release; rerun to resume"
+fi
+
+# --- 8. Check what the public gets --------------------------------------------------------
+
+say "Checking the public download"
+fetched="${dir}/public-download"
+for attempt in 1 2 3 4 5; do
+    curl -fsSL -o "$fetched" "$download_url" && break
+    [[ $attempt -lt 5 ]] || die 5 "could not download ${download_url}; rerun to check again"
+    sleep 3
+done
+public_sha="$(sha_of "$fetched")"
+rm -f "$fetched"
+[[ "$public_sha" == "$sha" ]] || die 5 "${download_url} has sha256 ${public_sha}, which does not match ${sha}"
+
+# raw.githubusercontent.com caches for a few minutes, so main's copy may lag the push.
+for ref in "$tag" main; do
+    url="${raw_url}/${ref}/SETUP.md"
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+        page="$(curl -fsSL "$url" 2>/dev/null)" && grep -qF "$sha" <<<"$page" && break
+        [[ $attempt -lt 10 ]] || die 5 "${url} does not pin ${sha} yet; rerun to check again"
+        sleep 30
+    done
+done
+
+say "Released bootstrap ${version}"
+echo "    ${download_url}"
+echo "    ${raw_url}/main/SETUP.md"

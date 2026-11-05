@@ -1,0 +1,537 @@
+#!/usr/bin/env bash
+# test-release — regression test for scripts/release.
+#
+# Builds a throwaway copy of this repo's shape under $TMPDIR (go.mod, a cmd, an internal
+# package, SETUP.md with a placeholder pin, scripts/release copied in), pushing to a
+# local bare remote. Stub `go`, `codesign`, `xcrun`, `spctl`, `gh` and `curl` go first
+# on PATH, so nothing is built, signed, notarized, published or downloaded for real.
+# Then checks every state a release can be found in: nothing done, built, signed,
+# notarized, pinned, committed, tagged, released and checked — plus the refusals (bad
+# usage, no pin in SETUP.md, a wrong stamp, a rejected notarization, a Gatekeeper
+# rejection, another team's signature, no origin, a private repo, a dirty tree, a tag
+# that pins another file) and a dry run that touches nothing. Exits non-zero on the
+# first failed assertion.
+#
+# Runs sandboxed: it needs git, and nothing from the network.
+set -euo pipefail
+
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+release_src="${script_dir}/release"
+
+# Resolved, since the release names its files by the repo's physical path.
+work="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/bootstrap-release-test.XXXXXX")" && pwd -P)"
+trap 'rm -rf "$work"' EXIT
+
+export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 XDG_CONFIG_HOME="${work}/xdg"
+export GIT_AUTHOR_NAME=Test GIT_AUTHOR_EMAIL=test@example.com
+export GIT_COMMITTER_NAME=Test GIT_COMMITTER_EMAIL=test@example.com
+
+identity="Developer ID Application: Syverson Industries LLC (QJ3Q58XVEE)"
+zero_sha="0000000000000000000000000000000000000000000000000000000000000000"
+
+fail() {
+    echo "FAIL [${case_name:-setup}]: $1" >&2
+    [[ -f "${work}/out" ]] && sed 's/^/    | /' "${work}/out" >&2
+    exit 1
+}
+
+# --- Stubs ------------------------------------------------------------------------------
+
+stubs="${work}/stubs"
+mkdir -p "$stubs"
+# go build writes a script that answers --version with the stamped version, so the
+# release can read the stamp back. STUB_STAMP overrides what it answers.
+cat >"${stubs}/go" <<'EOF'
+#!/usr/bin/env bash
+echo "go $* CGO_ENABLED=${CGO_ENABLED:-} GOOS=${GOOS:-} GOARCH=${GOARCH:-}" >>"$STUB_LOG"
+case "$1" in
+    version) echo "go version go1.27 darwin/arm64" ;;
+    build)
+        out="" stamp=""
+        shift
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                -o) out="$2"; shift 2 ;;
+                -ldflags) stamp="${2##*Version=}"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+        printf '#!/bin/sh\necho "bootstrap %s"\n' "${STUB_STAMP:-$stamp}" >"$out"
+        chmod +x "$out"
+        ;;
+esac
+EOF
+# codesign keeps each file's signer in a sidecar, so a signature survives a rerun and
+# goes away with a rebuild. Before signing, a file looks like Go's ad-hoc signature.
+cat >"${stubs}/codesign" <<'EOF'
+#!/usr/bin/env bash
+echo "codesign $*" >>"$STUB_LOG"
+file="${!#}"
+case "$1" in
+    --force)
+        while [[ $# -gt 1 ]]; do [[ "$1" == --sign ]] && echo "$2" >"${file}.stub-sig"; shift; done ;;
+    --verify) [[ -z "${STUB_VERIFY_FAIL:-}" ]] ;;
+    -dvv)
+        if [[ -f "${file}.stub-sig" ]]; then
+            {
+                echo "Executable=${file}"
+                echo "CodeDirectory v=20500 size=100 flags=0x10000(runtime) hashes=1+7 location=embedded"
+                echo "Authority=$(cat "${file}.stub-sig")"
+                echo "Authority=Developer ID Certification Authority"
+                echo "Timestamp=Nov 5, 2026 at 3:00:00 PM"
+                echo "TeamIdentifier=${STUB_TEAM:-QJ3Q58XVEE}"
+            } >&2
+        else
+            {
+                echo "Executable=${file}"
+                echo "CodeDirectory v=20400 size=100 flags=0x20002(adhoc,linker-signed) hashes=1+0 location=embedded"
+                echo "Signature=adhoc"
+                echo "TeamIdentifier=not set"
+            } >&2
+        fi
+        ;;
+esac
+EOF
+cat >"${stubs}/xcrun" <<'EOF'
+#!/usr/bin/env bash
+echo "xcrun $*" >>"$STUB_LOG"
+printf '{"id":"sub-1","status":"%s","message":"Processing complete"}\n' "${STUB_NOTARY_STATUS:-Accepted}"
+EOF
+cat >"${stubs}/spctl" <<'EOF'
+#!/usr/bin/env bash
+echo "spctl $*" >>"$STUB_LOG"
+if [[ -n "${STUB_SPCTL_REJECT:-}" ]]; then
+    echo "${!#}: rejected" >&2
+    echo "source=Unnotarized Developer ID" >&2
+    exit 3
+fi
+echo "${!#}: accepted" >&2
+echo "source=Notarized Developer ID" >&2
+echo "origin=${STUB_ORIGIN:-Developer ID Application: Syverson Industries LLC (QJ3Q58XVEE)}" >&2
+EOF
+# gh: the repo is public unless STUB_GH_VISIBILITY says otherwise; a release exists only
+# when STUB_GH_ASSETS lists its assets (one per line).
+cat >"${stubs}/gh" <<'EOF'
+#!/usr/bin/env bash
+echo "gh $*" >>"$STUB_LOG"
+case "$1 $2" in
+    "repo view") echo "${STUB_GH_VISIBILITY:-PUBLIC}" ;;
+    "release view")
+        [[ -n "${STUB_GH_ASSETS+set}" ]] || exit 1
+        printf '%s\n' "$STUB_GH_ASSETS"
+        ;;
+esac
+EOF
+# curl serves the release's binary from STUB_PUBLIC_FILE and a raw SETUP.md from the
+# bare remote at the ref the URL names.
+cat >"${stubs}/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "curl $*" >>"$STUB_LOG"
+out="" url=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -o) out="$2"; shift 2 ;;
+        -*) shift ;;
+        *) url="$1"; shift ;;
+    esac
+done
+case "$url" in
+    https://github.com/*/releases/download/*/bootstrap) body="$(cat "$STUB_PUBLIC_FILE")" ;;
+    https://raw.githubusercontent.com/*/SETUP.md)
+        ref="${url#https://raw.githubusercontent.com/*/*/}"
+        ref="${ref%/SETUP.md}"
+        body="$(git -C "$STUB_REMOTE" show "${ref}:SETUP.md")" || exit 22
+        ;;
+    *) exit 22 ;;
+esac
+if [[ -n "$out" ]]; then printf '%s\n' "$body" >"$out"; else printf '%s\n' "$body"; fi
+EOF
+chmod +x "${stubs}"/*
+export PATH="${stubs}:${PATH}"
+
+# --- Fixture ----------------------------------------------------------------------------
+
+# setup: a fresh repo shaped like this one, committed and pushed to a bare origin.
+setup() {
+    rm -rf "${work}/case"
+    local root="${work}/case"
+    mkdir -p "$root"
+    remote="${root}/bootstrap.git"
+    git init -q --bare -b main "$remote"
+
+    repo="${root}/bootstrap"
+    git init -q -b main "$repo"
+    mkdir -p "${repo}/scripts" "${repo}/cmd/bootstrap" "${repo}/internal/cli"
+    cp "$release_src" "${repo}/scripts/release"
+    echo "module example.com/bootstrap" >"${repo}/go.mod"
+    echo "package main" >"${repo}/cmd/bootstrap/main.go"
+    echo "package cli" >"${repo}/internal/cli/cli.go"
+    echo "local/" >"${repo}/.gitignore"
+    cat >"${repo}/SETUP.md" <<EOF
+# Setup
+
+curl -fsSL -o bootstrap https://github.com/bensyverson/bootstrap/releases/download/v0.0.0/bootstrap
+echo "${zero_sha}  bootstrap" | shasum -a 256 -c
+EOF
+    git -C "$repo" add -A
+    git -C "$repo" commit -q -m "Initial"
+    git -C "$repo" remote add origin "$remote"
+    git -C "$repo" push -q origin main
+
+    export STUB_LOG="${root}/stub.log"
+    : >"$STUB_LOG"
+    export STUB_REMOTE="$remote"
+    build_dir="${repo}/local/release/v0.1.0"
+    export STUB_PUBLIC_FILE="${build_dir}/bootstrap"
+    unset STUB_STAMP STUB_VERIFY_FAIL STUB_TEAM STUB_NOTARY_STATUS STUB_SPCTL_REJECT STUB_ORIGIN
+    unset STUB_GH_VISIBILITY STUB_GH_ASSETS
+}
+
+# release <expected exit> <args…>: runs the repo's script from a subdirectory.
+release() {
+    local expected="$1" status=0
+    shift
+    (cd "${repo}/internal" && "${repo}/scripts/release" "$@") >"${work}/out" 2>&1 </dev/null || status=$?
+    [[ "$status" == "$expected" ]] || fail "exit ${status}, expected ${expected}"
+}
+
+assert_out() { grep -qF -- "$1" "${work}/out" || fail "output lacks: $1"; }
+refute_out() { ! grep -qF -- "$1" "${work}/out" || fail "output has: $1"; }
+assert_log() { grep -qF -- "$1" "$STUB_LOG" || fail "no stub call: $1 (log: $(tr '\n' ';' <"$STUB_LOG"))"; }
+refute_log() { ! grep -qF -- "$1" "$STUB_LOG" || fail "unexpected stub call: $1"; }
+built_sha() { shasum -a 256 "${build_dir}/bootstrap" | cut -d' ' -f1; }
+remote_tag() { git -C "$remote" rev-parse -q --verify "refs/tags/v$1^{commit}" || true; }
+
+assert_pinned() {
+    local sha
+    sha="$(built_sha)"
+    grep -qF "releases/download/v0.1.0/bootstrap" "${repo}/SETUP.md" || fail "SETUP.md not pinned to v0.1.0"
+    grep -qF "${sha}  bootstrap" "${repo}/SETUP.md" || fail "SETUP.md not pinned to ${sha}"
+    ! grep -qF "v0.0.0" "${repo}/SETUP.md" || fail "the old version is left in SETUP.md"
+    ! grep -qF "$zero_sha" "${repo}/SETUP.md" || fail "the old sha256 is left in SETUP.md"
+}
+
+assert_unpinned() {
+    grep -qF "v0.0.0" "${repo}/SETUP.md" || fail "SETUP.md was pinned"
+    grep -qF "$zero_sha" "${repo}/SETUP.md" || fail "SETUP.md was pinned"
+}
+
+# --- Usage ------------------------------------------------------------------------------
+
+case_name="usage: no version"
+setup
+release 2
+assert_out "X.Y.Z"
+
+case_name="usage: malformed version"
+setup
+release 2 1.2
+assert_out "X.Y.Z"
+
+case_name="usage: unknown flag"
+setup
+release 2 0.1.0 --bogus
+assert_out "--bogus"
+
+case_name="usage: two versions"
+setup
+release 2 0.1.0 0.1.1
+
+case_name="help needs nothing set up"
+setup
+release 0 --help
+assert_out "--publish"
+assert_out "--dry-run"
+[[ -z "$(cat "$STUB_LOG")" ]] || fail "help ran a tool"
+
+case_name="no pin in SETUP.md"
+setup
+echo "# Setup" >"${repo}/SETUP.md"
+release 3 0.1.0
+assert_out "SETUP.md"
+refute_log "go build"
+
+case_name="no SETUP.md"
+setup
+rm "${repo}/SETUP.md"
+release 3 0.1.0
+assert_out "SETUP.md"
+
+# --- Build, sign, notarize, verify, pin -------------------------------------------------
+
+case_name="dry run changes nothing"
+setup
+release 0 0.1.0 --dry-run
+assert_out "would build"
+assert_out "would sign"
+assert_out "would notarize"
+assert_out "would pin"
+refute_out "would publish"
+[[ ! -e "${repo}/local" ]] || fail "dry run made the build folder"
+assert_unpinned
+refute_log "go build"
+refute_log "codesign"
+refute_log "xcrun"
+
+case_name="dry run with --publish lists the publishing steps"
+setup
+release 0 0.1.0 --dry-run --publish
+assert_out "would publish"
+assert_out "bensyverson/bootstrap"
+refute_log "gh release"
+refute_log "go build"
+[[ -z "$(remote_tag 0.1.0)" ]] || fail "dry run tagged"
+
+case_name="full local release: builds, signs, notarizes, verifies and pins"
+setup
+release 0 0.1.0
+assert_log "go build -trimpath -ldflags -s -w -X github.com/bensyverson/bootstrap/internal/cli.Version=0.1.0 -o ${build_dir}/bootstrap ./cmd/bootstrap CGO_ENABLED=0 GOOS=darwin GOARCH=arm64"
+assert_log "codesign --force --options runtime --timestamp --sign ${identity} ${build_dir}/bootstrap"
+assert_log "xcrun notarytool submit "
+assert_log "--keychain-profile woodcase-notary --wait --output-format json"
+assert_log "spctl -a -vvv -t open --context context:primary-signature ${build_dir}/bootstrap"
+[[ "$(cat "${build_dir}/bootstrap.sha256")" == "$(built_sha)  bootstrap" ]] || fail "bootstrap.sha256 is wrong"
+assert_pinned
+assert_out "$(built_sha)"
+assert_out "Accepted"
+assert_out "next: scripts/release 0.1.0 --publish"
+refute_log "gh "
+refute_log "curl"
+[[ "$(git -C "$repo" rev-list --count HEAD)" == 1 ]] || fail "a local release committed"
+[[ -z "$(remote_tag 0.1.0)" ]] || fail "a local release tagged"
+[[ "$(grep -n 'notarytool' "$STUB_LOG" | cut -d: -f1)" -gt "$(grep -n 'codesign --force' "$STUB_LOG" | cut -d: -f1)" ]] ||
+    fail "notarized before signing"
+
+case_name="a local release needs no origin"
+setup
+git -C "$repo" remote remove origin
+release 0 0.1.0
+assert_pinned
+
+case_name="resume: a finished build only re-verifies"
+setup
+release 0 0.1.0
+: >"$STUB_LOG"
+release 0 0.1.0
+refute_log "go build"
+refute_log "codesign --force"
+refute_log "notarytool"
+assert_log "codesign -dvv"
+assert_log "spctl -a -vvv -t open --context context:primary-signature"
+assert_pinned
+
+case_name="resume: signed but not notarized submits without re-signing"
+setup
+export STUB_NOTARY_STATUS=Invalid
+release 5 0.1.0
+unset STUB_NOTARY_STATUS
+: >"$STUB_LOG"
+release 0 0.1.0
+refute_log "go build"
+refute_log "codesign --force"
+assert_log "notarytool submit"
+assert_pinned
+
+case_name="resume: a change to the source rebuilds and re-notarizes"
+setup
+release 0 0.1.0
+echo "// changed" >>"${repo}/internal/cli/cli.go"
+: >"$STUB_LOG"
+release 0 0.1.0
+assert_out "source changed"
+assert_log "go build"
+assert_log "codesign --force"
+assert_log "notarytool submit"
+assert_pinned
+
+case_name="resume: a new untracked source file rebuilds"
+setup
+release 0 0.1.0
+echo "package cli" >"${repo}/internal/cli/extra.go"
+: >"$STUB_LOG"
+release 0 0.1.0
+assert_log "go build"
+
+case_name="resume: a change outside the source keeps the build"
+setup
+release 0 0.1.0
+echo "more" >>"${repo}/README.md"
+: >"$STUB_LOG"
+release 0 0.1.0
+refute_log "go build"
+
+case_name="a later version re-pins SETUP.md"
+setup
+release 0 0.1.0
+release 0 0.1.1
+grep -qF "releases/download/v0.1.1/bootstrap" "${repo}/SETUP.md" || fail "not pinned to v0.1.1"
+! grep -qF "v0.1.0" "${repo}/SETUP.md" || fail "v0.1.0 left in SETUP.md"
+grep -qF "$(shasum -a 256 "${repo}/local/release/v0.1.1/bootstrap" | cut -d' ' -f1)  bootstrap" "${repo}/SETUP.md" ||
+    fail "not pinned to v0.1.1's sha256"
+
+case_name="a stamp that doesn't match stops before signing"
+setup
+export STUB_STAMP=dev
+release 5 0.1.0
+assert_out "bootstrap dev"
+refute_log "codesign --force"
+assert_unpinned
+
+case_name="a rejected notarization stops before pinning and names the log"
+setup
+export STUB_NOTARY_STATUS=Invalid
+release 5 0.1.0
+assert_out "Invalid"
+assert_out "xcrun notarytool log sub-1 --keychain-profile woodcase-notary"
+refute_log "spctl"
+assert_unpinned
+
+case_name="a Gatekeeper rejection stops before pinning"
+setup
+export STUB_SPCTL_REJECT=1
+release 5 0.1.0
+assert_out "spctl"
+assert_unpinned
+
+case_name="another team's signature stops before pinning"
+setup
+export STUB_TEAM=ZZZZZZZZZZ
+release 5 0.1.0
+assert_out "ZZZZZZZZZZ"
+assert_unpinned
+
+case_name="a signature that doesn't verify stops before notarizing"
+setup
+export STUB_VERIFY_FAIL=1
+release 5 0.1.0
+refute_log "notarytool"
+assert_unpinned
+
+# --- Publish ------------------------------------------------------------------------------
+
+case_name="publish: no origin stops before building"
+setup
+git -C "$repo" remote remove origin
+release 3 0.1.0 --publish
+assert_out "origin"
+assert_out "gh repo create bensyverson/bootstrap"
+refute_log "go build"
+
+case_name="publish: a private repo stops before building and says how to open it"
+setup
+export STUB_GH_VISIBILITY=PRIVATE
+release 3 0.1.0 --publish
+assert_out "gh repo edit bensyverson/bootstrap --visibility public"
+refute_log "go build"
+
+case_name="publish: a dirty tree stops before building"
+setup
+echo "// edit" >>"${repo}/internal/cli/cli.go"
+release 3 0.1.0 --publish
+assert_out "uncommitted"
+refute_log "go build"
+
+case_name="publish: an untracked source file stops before building"
+setup
+echo "package cli" >"${repo}/internal/cli/extra.go"
+release 3 0.1.0 --publish
+assert_out "internal/cli/extra.go"
+refute_log "go build"
+
+case_name="publish: off main stops"
+setup
+git -C "$repo" checkout -q -b side
+release 3 0.1.0 --publish
+assert_out "main"
+
+case_name="publish: behind origin stops"
+setup
+git clone -q "$remote" "${work}/case/other"
+git -C "${work}/case/other" commit -q --allow-empty -m "Elsewhere"
+git -C "${work}/case/other" push -q origin main
+release 3 0.1.0 --publish
+assert_out "behind"
+
+case_name="publish: full release commits the pin, tags, uploads and checks the public file"
+setup
+release 0 0.1.0 --publish
+sha="$(built_sha)"
+git -C "$remote" log -1 --format=%s main | grep -qF "Pins bootstrap 0.1.0 in SETUP.md" || fail "pin not committed and pushed"
+[[ -n "$(remote_tag 0.1.0)" ]] || fail "v0.1.0 not pushed"
+[[ "$(git -C "$remote" cat-file -t v0.1.0)" == tag ]] || fail "v0.1.0 is not annotated"
+git -C "$remote" show v0.1.0:SETUP.md | grep -qF "${sha}  bootstrap" || fail "the tag doesn't pin the built file"
+[[ -z "$(git -C "$repo" status --porcelain)" ]] || fail "repo left dirty"
+assert_log "gh release create v0.1.0 --repo bensyverson/bootstrap --verify-tag --title bootstrap 0.1.0"
+assert_log "${build_dir}/bootstrap ${build_dir}/bootstrap.sha256"
+assert_log "curl -fsSL -o "
+assert_log "https://github.com/bensyverson/bootstrap/releases/download/v0.1.0/bootstrap"
+assert_log "https://raw.githubusercontent.com/bensyverson/bootstrap/v0.1.0/SETUP.md"
+assert_log "https://raw.githubusercontent.com/bensyverson/bootstrap/main/SETUP.md"
+assert_out "Released bootstrap 0.1.0"
+[[ "$(grep -n 'gh release create' "$STUB_LOG" | cut -d: -f1)" -gt "$(grep -n 'spctl' "$STUB_LOG" | cut -d: -f1)" ]] ||
+    fail "uploaded before verifying"
+
+case_name="publish: a pin already committed is not committed again"
+setup
+release 0 0.1.0
+git -C "$repo" commit -q -am "Pins it by hand"
+git -C "$repo" push -q origin main
+release 0 0.1.0 --publish
+[[ "$(git -C "$remote" log -1 --format=%s main)" == "Pins it by hand" ]] || fail "made an empty pin commit"
+[[ "$(remote_tag 0.1.0)" == "$(git -C "$repo" rev-parse HEAD)" ]] || fail "tag not on the pin commit"
+
+case_name="publish: resume after the tag reuses it"
+setup
+release 0 0.1.0 --publish
+tagged="$(remote_tag 0.1.0)"
+export STUB_GH_ASSETS=$'bootstrap\nbootstrap.sha256'
+: >"$STUB_LOG"
+release 0 0.1.0 --publish
+[[ "$(remote_tag 0.1.0)" == "$tagged" ]] || fail "the tag moved"
+refute_log "gh release create"
+refute_log "gh release upload"
+refute_log "notarytool"
+assert_log "releases/download/v0.1.0/bootstrap"
+
+case_name="publish: a release missing its checksum gets only that uploaded"
+setup
+release 0 0.1.0 --publish
+export STUB_GH_ASSETS="bootstrap"
+: >"$STUB_LOG"
+release 0 0.1.0 --publish
+assert_log "gh release upload v0.1.0 ${build_dir}/bootstrap.sha256 --repo bensyverson/bootstrap"
+refute_log "--clobber"
+refute_log "gh release create"
+
+case_name="publish: a public file that doesn't match fails the check"
+setup
+echo "something else" >"${work}/case/other-file"
+export STUB_PUBLIC_FILE="${work}/case/other-file"
+release 5 0.1.0 --publish
+assert_out "does not match"
+
+case_name="conflict: the tag pins another file"
+setup
+release 0 0.1.0 --publish
+# A different build of the same version, as on another machine.
+echo "// changed" >>"${repo}/internal/cli/cli.go"
+git -C "$repo" commit -q -am "Later work"
+git -C "$repo" push -q origin main
+: >"$STUB_LOG"
+release 3 0.1.0
+assert_out "v0.1.0 is already tagged"
+refute_log "go build"
+refute_log "notarytool"
+
+case_name="conflict: a tag on origin that isn't here is still seen"
+setup
+release 0 0.1.0 --publish
+git -C "$repo" tag -d v0.1.0 >/dev/null
+echo "// changed" >>"${repo}/internal/cli/cli.go"
+git -C "$repo" commit -q -am "Later work"
+: >"$STUB_LOG"
+release 3 0.1.0
+assert_out "v0.1.0 is already tagged"
+refute_log "go build"
+
+echo "PASS: scripts/release"

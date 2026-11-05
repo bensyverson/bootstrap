@@ -17,3 +17,7 @@ Format: one dated H2 headline, then one paragraph. If an entry needs more than t
 ## 2026-11-05 `GIT_CONFIG_GLOBAL=/dev/null` commits under a made-up email
 
 The handoffs' sandbox tip for running `agents` (`GIT_CONFIG_GLOBAL=/dev/null`) also hides `user.email`, so a `git commit` made with it falls back to `ben@<hostname>` without any warning. It nearly reached a pushed release of `agents`. Use the override only for `agents` itself; run `git commit`, and any release script that commits, unsandboxed with the real config, and check `git log -1 --format='%ae'` before pushing.
+
+## 2026-11-05 `spctl -a -t exec` rejects every bare command-line tool
+
+It assesses apps, so a signed and notarized `bootstrap` comes back "rejected (the code is valid but does not seem to be an app)", which reads as a failed notarization. Check a bare binary with `spctl -a -vvv -t open --context context:primary-signature <file>` and look for `source=Notarized Developer ID`. See [the binary plan](2026-11-05-bootstrap-binary-plan.md), "Verifying the download".

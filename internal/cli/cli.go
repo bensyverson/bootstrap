@@ -29,6 +29,9 @@ const (
 	fallbackNext = "tell the person in one sentence that the page can't open, then set up in the chat"
 )
 
+// Version is the release's version, stamped at link time by scripts/release.
+var Version = "dev"
+
 // Environment variables. All but the agent's are seams for tests and for the fallback path.
 const (
 	envDir  = "BOOTSTRAP_DIR"
@@ -124,6 +127,10 @@ func Run(args []string, env Env) int {
 	}
 	if len(args) == 0 || args[0] == "--help" || args[0] == "-h" || args[0] == "help" {
 		fmt.Fprint(env.Stdout, primer)
+		return exitOK
+	}
+	if len(args) == 1 && args[0] == "--version" {
+		fmt.Fprintf(env.Stdout, "bootstrap %s\n", Version)
 		return exitOK
 	}
 	asJSON := slices.Contains(args, "--json")

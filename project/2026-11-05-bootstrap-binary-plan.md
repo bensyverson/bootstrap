@@ -88,6 +88,8 @@ A false alarm has to heal itself, so the next `show` or `status` brings the page
 
 **Verifying the download uses only stock tools.** `shasum` and `/usr/bin/codesign` both exist in stock macOS, and `otool -L` shows `codesign` doesn't link `xcselect`, so it shouldn't need the developer tools. That was read on this Mac, which has Xcode, so the VM has to confirm it. As far as I know, a bare binary can't have its notarization stapled, so `spctl` would need a network check. The release leaf checks this.
 
+> **Settled, 2026-11-05, by the release leaf (`vHAiCj`), on Ben's Mac (macOS 27.0):** `scripts/release` builds, signs and notarizes with the `woodcase-notary` profile, the same identity and profile as woodcase. Apple accepted v0.1.0 (submission `61986a2c-5f4b-41b3-8bce-763a317bc8f2`). A bare binary can't be stapled: `xcrun stapler staple` on it fails with "Error 73". **`spctl -a -t exec -vv` is the wrong check for a bare tool**: it rejected the notarized file with "the code is valid but does not seem to be an app", because `exec` assesses apps. `spctl -a -vvv -t open --context context:primary-signature` accepts it as `source=Notarized Developer ID`, rejects the same build signed but not notarized as `source=Unnotarized Developer ID`, and rejects the unsigned build. `SETUP.md` and the script use that form. The oldest macOS is 15 (Ben's ruling), checked by `SETUP.md` before the download; the binary doesn't refuse an older one itself. Whether `codesign` and `spctl` run with no developer tools still needs a clean Mac.
+
 ## Order
 
 1. **Core** and **server** come first, because everything else depends on those commands.
