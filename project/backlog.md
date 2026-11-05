@@ -21,3 +21,9 @@ Un-park it if someone who has been through the setup asks how Ben tracks time, o
 `cappy` belongs in the supporting tools, but its README says it is planned and not yet built, so there is nothing to install. Ben ruled it can wait.
 
 Un-park it when `cappy` has a first release in the tap.
+
+## 2026-11-05: A `say` verb for the agent's own words on the page
+
+`bootstrap say` would let the agent put free text on the setup page. It's parked because the page's words are closed lists on purpose: they stay short and simple, and an agent's guess would read as a fact from the setup itself. The chat is already where the agent can say anything, and the "Let's talk in {app}" screen sends people there. Everything happening in the main session is Ben's ruling.
+
+Un-park it if the VM run or the agent trial keeps hitting moments where the page is too vague to be useful and a new reviewed screen or status wouldn't fix it. Try showing data the binary can check first, like elapsed time. **If it's ever built (Ben, 2026-11-05),** it must appear as a message clearly from Claude or OpenCode, never as a normal title.
