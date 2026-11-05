@@ -119,8 +119,9 @@ var recordedCopyChanges = map[string]bool{
 	"Your turn: click through the installer.":     true,
 	"This adds ":                                  true,
 	", which installs other software for you. It will ask for your Mac password.": true,
-	"Let’s talk in {app}.": true,
-	"{ai} has a question.": true,
+	"Apple’s tools, which include Git.":                                           true,
+	"Let’s talk in {app}.":                                                        true,
+	"{ai} has a question.":                                                        true,
 }
 
 func TestCopyComesFromThePrototype(t *testing.T) {
@@ -336,6 +337,13 @@ func TestSpecificScreens(t *testing.T) {
 	}
 	if _, err := Describe(Request{Screen: "terminal"}, ctx); err == nil {
 		t.Error("the paste screen is gone")
+	}
+	if _, err := Describe(Request{Screen: "brew-wait"}, ctx); err == nil {
+		t.Error("Homebrew's .pkg has no start signal, so brew-wait is gone")
+	}
+	clt, _ := catalog.Find("clt")
+	if clt.Say != "Apple’s tools, which include Git." {
+		t.Errorf("Homebrew doesn't need Apple's tools: %q", clt.Say)
 	}
 	done, _ := Describe(Request{Screen: "done"}, ctx)
 	if done.Mode != Settled {

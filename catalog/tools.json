@@ -4,7 +4,7 @@
       "id": "clt",
       "name": "Command Line Tools",
       "url": "https://developer.apple.com/xcode/resources/",
-      "say": "Apple’s tools that Git and Homebrew need.",
+      "say": "Apple’s tools, which include Git.",
       "required": true,
       "own_step": true,
       "detect": ["/Library/Developer/CommandLineTools/usr/bin/git"],

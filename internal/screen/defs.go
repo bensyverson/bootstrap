@@ -102,8 +102,6 @@ var specs = []spec{
 		status: "Apple’s window shows how far along it is. This can take a while.", card: "git", next: nextCLT},
 	{id: "brew-ask", mode: Waiting, title: "Your turn: click through the installer.",
 		status: "This adds {link:homebrew}, which installs other software for you. It will ask for your Mac password.", next: nextBrew},
-	{id: "brew-wait", mode: Working, title: "Adding {link:homebrew}", noteTool: "homebrew",
-		status: "Follow along in Terminal.", card: "homebrew", next: nextBrew},
 	{id: "tool", mode: Working, title: "Adding {tool-link}", tool: installTool, cardTool: true,
 		statuses: []option{{"downloading", "Downloading {tool}"}, {"installing", "Installing {tool}"}}, next: nextWork},
 	{id: "making", mode: Waiting, title: "What are you working on?",

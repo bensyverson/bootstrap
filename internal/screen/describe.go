@@ -194,8 +194,6 @@ func Progress(req Request, chosen []string, carried float64) float64 {
 		p = 0.5 / steps
 	case "brew-ask":
 		p = 1 / steps
-	case "brew-wait":
-		p = 1.5 / steps
 	case "tool":
 		i := slices.Index(order, req.Tool)
 		if i < 0 {
@@ -216,7 +214,7 @@ func Progress(req Request, chosen []string, carried float64) float64 {
 
 // PathOrder is the main path's screens in order, for a set of chosen tools.
 func PathOrder(chosen []string) []Request {
-	requests := []Request{{Screen: "welcome"}, {Screen: "list"}, {Screen: "fast"}, {Screen: "apple-ask"}, {Screen: "apple-wait"}, {Screen: "brew-ask"}, {Screen: "brew-wait"}}
+	requests := []Request{{Screen: "welcome"}, {Screen: "list"}, {Screen: "fast"}, {Screen: "apple-ask"}, {Screen: "apple-wait"}, {Screen: "brew-ask"}}
 	for _, id := range installOrder(chosen) {
 		requests = append(requests, Request{Screen: "tool", Tool: id, Status: "downloading"}, Request{Screen: "tool", Tool: id, Status: "installing"})
 	}
