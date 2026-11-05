@@ -22,12 +22,18 @@ The server has three routes, and every request needs `?token=` from the printed 
 - **`GET /events`** streams one `data: <frame>` line per change, and sends the current frame on connect.
 - **`POST /answer`** takes `{"seq": 7, "choice": "lets-go", "tools": ["sleepy"], "name": "my-project"}` as `application/json`.
 
-A frame is `session.Frame`: `{"seq", "lost", "answered", "ended", "screen"}`.
+- **`GET /preview`** serves the same page, which then draws a state from `/preview.json` (`page.Previews()`) instead of the stream. `/preview#tool.jobs.installing.claude-code` opens one state at rest for stills. A later change of address, or the arrow keys, walks the states with the real transitions. Plain `/preview` lists them. Previews never touch the session, so they don't count as a tab: leave a real tab open if a sweep will outlast the 10-minute first-tab grace.
+
+Every response carries a Content-Security-Policy (`page.Policy`): `default-src 'none'`, and `'self'` for scripts, styles, fonts, images and connections. The token can't reach static tags, so `index.html` holds one inline loader that adds `location.search` to each file, and the policy allows it by a hash worked out from the file when the server starts. So editing the loader needs no second edit. Fonts load through `FontFace` for the same reason, and cards are `<template data-card="…">` elements in `index.html`, so swapping one touches nothing else. Nothing may use a style attribute or `innerHTML`, and `internal/page/page_test.go` checks both.
+
+A frame is `session.Frame`: `{"seq", "lost", "answered", "ended", "screen", "gone"}`.
 
 - **`screen`** is a `screen.Description`, or `null` before the agent's first `show`. The page should draw only the object until one comes.
 - **`seq`** goes back in the answer, so a click can't land on the wrong screen.
 - **`lost`** arrives with `screen` already set to the lost screen, so the page draws it like any other.
 - **`ended`** is a real stop. The stream closing without it means the server went away, and that's when the page shows the lost screen on its own.
+- **`gone`** is the lost screen's description, on every frame until `ended`, so those words are already in the page when there's no server left to ask. The page waits 2.5 seconds (`LOST_AFTER_MS` in `live.js`) in case the connection heals, as it does after a Mac wakes, and keeps retrying underneath, so a server that comes back redraws the real screen.
+- **`answered`** dims the choices and speeds the object up, since it's the agent's turn. This is the page's only state the prototype didn't have, because its buttons moved on at once.
 
 Answer replies are `{"saved": true, "lost": false}`, or `{"error": "…"}` with 403 (refused), 409 (stale or already answered), 415, 422 (a choice or name it won't take) or 400.
 

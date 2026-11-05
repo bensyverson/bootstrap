@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bensyverson/bootstrap/internal/page"
 	"github.com/bensyverson/bootstrap/internal/session"
 )
 
@@ -60,6 +61,7 @@ type Server struct {
 	http     *http.Server
 	origin   string
 	host     string
+	policy   string
 
 	mu           sync.Mutex
 	clients      map[chan []byte]bool
@@ -99,6 +101,7 @@ func New(cfg Config) (*Server, error) {
 		listener:   listener,
 		host:       fmt.Sprintf("127.0.0.1:%d", port),
 		origin:     fmt.Sprintf("http://127.0.0.1:%d", port),
+		policy:     page.Policy(cfg.Page),
 		clients:    map[chan []byte]bool{},
 		lastStep:   now,
 		emptySince: now,

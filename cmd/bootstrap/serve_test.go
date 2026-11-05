@@ -182,7 +182,7 @@ func TestRefusalsOnTheRealServer(t *testing.T) {
 	}
 	defer resp2.Body.Close()
 	body, _ := io.ReadAll(resp2.Body)
-	if resp2.StatusCode != 200 || !strings.Contains(string(body), "/events") {
+	if resp2.StatusCode != 200 || !strings.Contains(string(body), "live.js") {
 		t.Errorf("with the token: %d\n%s", resp2.StatusCode, body)
 	}
 }

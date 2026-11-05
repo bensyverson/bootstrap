@@ -79,13 +79,16 @@ type State struct {
 	Progress float64
 }
 
-// Frame is what the server sends the page. Screen is nil before the agent's first show.
+// Frame is what the server sends the page. Screen is nil before the agent's first
+// show. Gone is what the page draws by itself if the stream closes without Ended,
+// when there's no server left to ask for the words.
 type Frame struct {
 	Seq      int                 `json:"seq"`
 	Lost     bool                `json:"lost"`
 	Answered bool                `json:"answered"`
 	Ended    bool                `json:"ended"`
 	Screen   *screen.Description `json:"screen"`
+	Gone     *screen.Description `json:"gone,omitempty"`
 }
 
 // CurrentAnswer returns the answer to the screen on the page, if it has one.
@@ -135,6 +138,10 @@ func (s State) Frame(now time.Time) Frame {
 	if s.Current != nil {
 		frame.Seq = s.Current.Seq
 		_, frame.Answered = s.CurrentAnswer()
+	}
+	if !s.Ended {
+		gone := screen.DescribeLost(s.context())
+		frame.Gone = &gone
 	}
 	if s.Lost(now) {
 		lost := screen.DescribeLost(s.context())

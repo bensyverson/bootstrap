@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bensyverson/bootstrap/internal/page"
 	"github.com/bensyverson/bootstrap/internal/screen"
 	"github.com/bensyverson/bootstrap/internal/session"
 )
@@ -48,6 +49,7 @@ func (s *Server) guard(next http.Handler) http.Handler {
 		w.Header().Set("Referrer-Policy", "no-referrer")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Security-Policy", s.policy)
 		origin := r.Header.Get("Origin")
 		token := r.URL.Query().Get("token")
 		var refusal string
@@ -73,13 +75,21 @@ func (s *Server) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/events", s.handleEvents)
 	mux.HandleFunc("/answer", s.handleAnswer)
+	mux.HandleFunc("/preview.json", s.handlePreviews)
 	mux.HandleFunc("/", s.handlePage)
 	return mux
 }
 
+// handlePreviews lists what the preview route can draw, which is the page at
+// /preview. It never touches the session, so a preview can't stand in for a tab.
+func (s *Server) handlePreviews(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(page.Previews())
+}
+
 func (s *Server) handlePage(w http.ResponseWriter, r *http.Request) {
 	name := strings.TrimPrefix(r.URL.Path, "/")
-	if name == "" {
+	if name == "" || name == "preview" {
 		name = "index.html"
 	}
 	if !fs.ValidPath(name) {

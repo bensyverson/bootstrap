@@ -1,11 +1,78 @@
 <!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
-<title>bootstrap</title>
-<!-- A placeholder until the real page is ported. It shows the frames the server sends. -->
-<pre id="frame">Waiting for the first screen</pre>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bootstrap</title>
+</head>
+<body>
+<div id="stage"><div id="glow"></div><canvas id="gl" aria-hidden="true"></canvas></div>
+<main id="words"></main>
+<div id="pct" aria-hidden="true"></div>
+<div id="peek" aria-hidden="true"></div>
+
+<!-- The best part of each tool. A description names one by its data-card, so swapping a card's contents touches nothing else. -->
+<template data-card="homebrew"><div class="pad term"><pre class="small">$ brew install sleepy
+<i>==&gt;</i> Fetching sleepy
+<i>==&gt;</i> Downloading sleepy-0.4.0.bottle.tar.gz
+######################################## 100.0%
+<i>==&gt;</i> Pouring sleepy-0.4.0.bottle.tar.gz
+<b>🍺  /opt/homebrew/Cellar/sleepy/0.4.0: 12 files</b>
+$ brew install woodcase
+<i>==&gt;</i> Downloading woodcase-0.1.5.bottle.tar.gz
+##########################                 64.2%</pre></div></template>
+<template data-card="git"><div class="gitcard"><svg viewBox="0 0 400 190" role="img"><rect width="400" height="190" fill="#fff"/>
+    <path d="M26 24V166" stroke="#6C8CFF" stroke-width="3" fill="none"/>
+    <path d="M26 112C26 88 58 96 58 72V54C58 40 26 46 26 24" stroke="#17A673" stroke-width="3" fill="none"/>
+    <g fill="#6C8CFF"><circle cx="26" cy="24" r="6"/><circle cx="26" cy="112" r="6"/><circle cx="26" cy="166" r="6"/></g>
+    <g fill="#17A673"><circle cx="58" cy="54" r="6"/><circle cx="58" cy="78" r="6"/></g>
+    <g font-family="ui-monospace,Menlo,monospace" font-size="12.5" fill="#33445F">
+      <text x="84" y="28">Merges the sign-up page</text><text x="84" y="58">Saves new users</text>
+      <text x="84" y="82">Draws the sign-up page</text><text x="84" y="116">Fixes the menu on phones</text>
+      <text x="84" y="170">Starts the project</text></g></svg></div></template>
+<template data-card="agents"><div class="pad prose"><h6>AGENTS.md</h6>
+    <p><strong>Understand the why.</strong> If the goal behind a request isn’t clear, ask before solving.</p>
+    <p><strong>Diverge, then converge.</strong> First brainstorm options, weigh them against the user’s goals, recommend one, confirm, then execute.</p>
+    <p><strong>Critique before declaring done.</strong> Re-read the original request: is the need actually met?</p></div></template>
+<template data-card="jobs"><img alt="" decoding="sync" data-src="cards/jobs.jpg"></template>
+<template data-card="contextfill"><div class="pad meter"><div class="good"><span>Just started<em>14%</em></span><p class="bar"><u class="w14"></u><s></s></p><span class="verdict">Plenty of room</span></div><div class="near"><span>Going well<em>29%</em></span><p class="bar"><u class="w29"></u><s></s></p><span class="verdict">Almost time to wrap up</span></div><div class="past"><span>Long session<em>37%</em></span><p class="bar"><u class="w37"></u><s></s></p><span class="verdict">Finish up and hand off</span></div></div></template>
+<template data-card="sleepy"><div class="two"><img alt="" decoding="sync" data-src="cards/demo.jpg"><pre class="padsm tiny">$ sleepy ax
+main
+ heading "Pine Bakery"
+ paragraph
+  text "Fresh bread…"
+ form
+  textbox "Email"
+  button "Join the list"</pre></div></template>
+<template data-card="peep"><div class="two even"><img alt="" decoding="sync" data-src="cards/demo.jpg"><img alt="" decoding="sync" data-src="cards/demo2.jpg"></div><span class="tag">$ peep compare a.png b.png<br><b>MAE: 1.6</b>   R 2.6  G 1.9  B 2.0</span></template>
+<template data-card="woodcase"><div class="two"><div class="swatch"><img alt="" decoding="sync" data-src="cards/design.jpg"></div><pre class="padsm tiny">&lt;div className="flex
+  flex-col gap-3.5"
+ style={{
+  width: 340,
+  borderRadius: 18,
+  padding: 28,
+ }}&gt;
+ &lt;p&gt;Pine Bakery&lt;/p&gt;</pre></div></template>
+
 <script>
-const events = new EventSource("/events" + location.search);
-events.onmessage = message => {
-  document.getElementById("frame").textContent = JSON.stringify(JSON.parse(message.data), null, 2);
-};
+// Every request needs the token, which only this script can read from the address,
+// so it adds it to each file. This is the one inline script: its hash is in the policy.
+(() => {
+  const withToken = file => "/" + file + location.search;
+  const sheet = document.createElement("link");
+  sheet.rel = "stylesheet";
+  sheet.href = withToken("page.css");
+  sheet.onload = () => {
+    const boot = location.pathname === "/preview" ? "preview.js" : "live.js";
+    for (const file of ["vendor/three.min.js", "threads.js", "page.js", boot]) {
+      const script = document.createElement("script");
+      script.async = false;
+      script.src = withToken(file);
+      document.head.append(script);
+    }
+  };
+  document.head.append(sheet);
+})();
 </script>
+</body>
+</html>
