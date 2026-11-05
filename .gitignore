@@ -1,0 +1,13 @@
+# job
+# Jobs cache and its sidecars — disposable, rebuilt from .jobs/log
+.jobs.db*
+# This machine's replica id, identity and focus
+.jobs/local.json
+
+# Private working files; never committed
+local/
+
+# Agent worktrees
+.claude/worktrees/
+
+.DS_Store
