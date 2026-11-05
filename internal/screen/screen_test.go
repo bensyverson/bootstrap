@@ -333,6 +333,9 @@ func TestSpecificScreens(t *testing.T) {
 	if got := plain(brew.Status); got != "This adds Homebrew, which installs other software for you. It will ask for your Mac password." {
 		t.Errorf("brew-ask line = %q", got)
 	}
+	if brew.Card != "homebrew" {
+		t.Errorf("Homebrew has no other screen to show its card: %+v", brew)
+	}
 	if len(brew.Choices) != 0 || brew.Code != "" || brew.Mode != Waiting {
 		t.Errorf("Apple blocks a pasted command, so there's nothing to paste: %+v", brew)
 	}

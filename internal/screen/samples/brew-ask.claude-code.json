@@ -18,5 +18,6 @@
     {
       "text": ", which installs other software for you. It will ask for your Mac password."
     }
-  ]
+  ],
+  "card": "homebrew"
 }
