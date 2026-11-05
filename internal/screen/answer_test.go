@@ -95,3 +95,21 @@ func TestAppleAskSaysItCanTakeAWhile(t *testing.T) {
 		t.Errorf("status = %q", plain(desc.Status))
 	}
 }
+
+// Ben's ruling: the title is the news, and the instruction rides under it.
+func TestDoneSplitsItsTitleFromItsInstruction(t *testing.T) {
+	agent, err := FindAgent("claude-code")
+	if err != nil {
+		t.Fatal(err)
+	}
+	desc, err := Describe(Request{Screen: "done"}, Context{Agent: agent})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := plain(desc.Title); got != "All set!" {
+		t.Errorf("title = %q", got)
+	}
+	if got := plain(desc.Status); got != "You can close this and go back to Claude Code." {
+		t.Errorf("status = %q", got)
+	}
+}

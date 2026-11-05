@@ -121,7 +121,7 @@ var specs = []spec{
 		choices: []choiceDef{{"yes", "Yes, help me"}, {"not-now", "Not now"}}, next: nextAnswer},
 	{id: "phone", mode: Waiting, title: "Want to use {ai} from your phone?",
 		choices: []choiceDef{{"yes", "Show me how"}, {"not-now", "Not now"}}, next: nextAnswer},
-	{id: "done", mode: Settled, title: "All set! You can close this and go back to {app}.", next: nextStop},
+	{id: "done", mode: Settled, title: "All set!", status: "You can close this and go back to {app}.", next: nextStop},
 	{id: "trouble", mode: Waiting, title: "{tool} didn’t install.", tool: anyTool,
 		reasons: []option{{"network", "Your Mac couldn’t reach the download. Check your Wi-Fi."}, {"other", OtherFailureLine}},
 		choices: []choiceDef{{"retry", "Try again"}, {"skip", "Skip {tool}"}, {"ask", "Ask {ai}"}}, next: nextAnswer},
