@@ -18,6 +18,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - [Clean Mac research](project/2026-11-05-clean-mac-research.md) and [what's stock on macOS](project/2026-11-05-stock-macos-runtimes.md) — what's settled, and where the rest gets tested
 - [What `agents init` and `job init` do to an existing project](project/2026-11-05-init-existing-project-findings.md) — the cases, and the new `agents migrate` for a project's own `CLAUDE.md`
 - [VM runs](project/2026-11-05-vm-run-findings.md) — Apple blocks the Homebrew paste, the `.pkg` works, and Apple's step has a click signal
+- [Agent trial](project/2026-11-05-agent-trial-findings.md) — Claude Code and OpenCode given only the link: auto mode's block, the click delay, and a weak model that never waits
 - [project/backlog.md](project/backlog.md) and [project/gotchas.md](project/gotchas.md) — work parked, and traps to know
 
 <!-- agents:begin core@cfc86c -->
