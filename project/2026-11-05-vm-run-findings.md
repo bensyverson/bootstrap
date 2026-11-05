@@ -1,6 +1,6 @@
 # VM runs: Homebrew's paste is blocked, its `.pkg` works, and Apple's step has a click signal (2026-11-05)
 
-**The headline:** on macOS 26.6.2, Apple blocks a pasted Homebrew command with a malware warning, so the `terminal` screen can't stay as designed. Homebrew's signed `.pkg` works on a bare Mac, and our tools pour from it even without Apple's tools. Apple's step still matters, because without it plain `git` is Apple's placeholder. The step has a signal for the moment someone clicks Agree, so `apple-wait` stays. Three runs, described below: the first VM (`clean`), a fresh clone (`fresh`), and a third clone (`clt3`) that checked `wait clt` against Apple's real install and showed that a running agent can't find `brew` by name.
+**The headline:** on macOS 26.6.2, Apple blocks a pasted Homebrew command with a malware warning, so the `terminal` screen can't stay as designed. Homebrew's signed `.pkg` works on a bare Mac, and our tools pour from it even without Apple's tools. Apple's step still matters, because without it plain `git` is Apple's placeholder. The step has a signal for the moment someone clicks Agree, so `apple-wait` stays. Four runs, described below: the first VM (`clean`); a fresh clone (`fresh`); a third clone (`clt3`), which checked `wait clt` against Apple's real install and showed that a running agent can't find `brew` by name; and `spike`, which ran every step from a detached process, as the server will.
 
 > **Correction, 2026-11-05:** the first version of this doc said `apple-wait` had no signal to start from and should go. The second run found one, below.
 
@@ -85,6 +85,27 @@ Claude Code 2.1.318 was installed with `curl -fsSL https://claude.ai/install.sh 
 The `PATH` comes from the Terminal window's login shell, which reads `/etc/paths.d` only when it starts. Restarting the agent in the same window doesn't help. Every time, Claude suggested adding `eval "$(/opt/homebrew/bin/brew shellenv)"` to `~/.zprofile`, which the `.pkg` makes unnecessary.
 
 **Homebrew's signature.** `pkgutil --check-signature` on the `.pkg` from `https://github.com/Homebrew/brew/releases/download/7.0.12/Homebrew.pkg`: signed by "Developer ID Installer: Patrick Linnane (927JGANW46)", notarized by Apple, timestamped 2026-11-02. Patrick Linnane is a Homebrew maintainer. So 927JGANW46 is what Homebrew's own releases are signed with, shown by the release itself rather than by a statement in Homebrew's docs. Because it is one maintainer's Developer ID, it could change.
+
+## Fourth run (`spike`): every step from a detached process
+
+This answers leaf `Fg5Kre`: with [the server driving the setup](2026-11-05-server-driven-flow.md), every install runs from `bootstrap`'s background server, not from the agent's shell. The server re-launches itself with `Setsid: true` (`internal/server/start.go`), so its children have no terminal. Does each step still work?
+
+**Setup.** A new clone, `spike`, of the same image, with Gatekeeper on (`sudo spctl --global-enable`; `spctl --status` said `assessments enabled`), and no Apple tools or Homebrew. Passwordless sudo was left on for the harness only. The installers asked for their own passwords in their own windows. Each step ran through `~/spike/det <name> <command>`, a launcher that matches the server: `sudo launchctl asuser 501 sudo -u admin perl -MPOSIX -e '…setsid…'`, run from ssh, with stdin from `/dev/null` and output in `~/spike/<name>.log`. A probe through it printed `not a tty`, and `ps` showed no terminal. Ben clicked over VNC.
+
+| Step | Command, launched detached | Result |
+|---|---|---|
+| Apple's tools | `xcode-select --install`, then `open -a "/System/Library/CoreServices/Install Command Line Developer Tools.app"` | **Works.** The installer started (pid 935), and `lsappinfo front` named it the front app. Ben clicked Install and Agree; two folders appeared in `/Library/Updates`, and Git's file arrived by 22:33:30. |
+| Homebrew | `curl -fsSL -o … https://github.com/Homebrew/brew/releases/latest/download/Homebrew.pkg`, `pkgutil --check-signature`, `spctl -a -vv -t install`, `open Homebrew.pkg` | **Works.** It was 7.0.12, sha256 `a9825310…`, the same file as before. `pkgutil` reported "Developer ID Installer: Patrick Linnane (927JGANW46)" and "Notarization: trusted by the Apple notary service". `spctl` again said `rejected`, with `source=Notarized Developer ID`, exit 3. The installer came to the front on its own, and `/opt/homebrew/bin/brew` appeared at 22:34:17. |
+| Tools | `/opt/homebrew/bin/brew tap bensyverson/tap`, `brew trust bensyverson/tap`, `brew install gh bensyverson/tap/{job,agents,contextfill}` | **Works,** in 16 s. "Trusted tap", then all four poured as bottles. |
+| Project | `git init`, `agents init`, `job init --as claude` and `job gitignore`, in a new `~/Projects/spike-proj` | **Works,** in about a second, with all exits 0. |
+| GitHub | `gh auth login --hostname github.com --web --git-protocol https --skip-ssh-key` | **Works.** With no terminal, `gh` skips its "Press Enter" prompt. It prints `! One-time code (D7BA-CFE2) copied to clipboard` and the URL, opens no browser, and polls. Ben entered the code at github.com/login/device, and it printed "Logged in as bensyverson" at 22:38:05. |
+
+**Two traps:**
+
+- **`gh auth status` over plain ssh says "Failed to log in",** even though the same command from the GUI session says "Logged in … (keyring)". The token is in the login keychain, which an ssh session can't read. The server runs in the GUI session, so it isn't affected, but don't trust an ssh check of it. The VM was signed out afterward with `gh auth logout`. That doesn't revoke the "GitHub CLI" grant on Ben's account, which his own Mac's `gh` shares.
+- **The VM's disk, again.** The vanilla image has 18.7 GB free and Apple's step wants 19.18 GB. `tart set --disk-size 80` adds space behind the recovery partition, which SIP won't let `diskutil` move or delete (`apfs deleteContainer` and `resizeContainer` both refused). Clearing caches, `~/Library/Application Support/com.apple.wallpaper` (445 MB), `/private/var/folders/*/*/C` and `log erase --all` reached 19.25 GB free.
+
+**What this means for the installer leaf (`UyKEjV`):** no step has to become a handoff for lack of a terminal. Check the `.pkg` with `pkgutil --check-signature`, which reports both the signer and the notarization, rather than `spctl`, which this VM rejects. `releases/latest/download/Homebrew.pkg` needs no API call. Read `gh`'s code from its output (`One-time code (XXXX-XXXX)`) and show it on the page. Not tested: `agents migrate` and the tools' `hook install`, which haven't shipped yet. Also not tested: one admin password dialog for both installs (`osascript … with administrator privileges` running `softwareupdate -i` and `installer -pkg`), which Ben has been offered.
 
 ## What this means
 

@@ -21,3 +21,7 @@ The handoffs' sandbox tip for running `agents` (`GIT_CONFIG_GLOBAL=/dev/null`) a
 ## 2026-11-05 `spctl -a -t exec` rejects every bare command-line tool
 
 It assesses apps, so a signed and notarized `bootstrap` comes back "rejected (the code is valid but does not seem to be an app)", which reads as a failed notarization. Check a bare binary with `spctl -a -vvv -t open --context context:primary-signature <file>` and look for `source=Notarized Developer ID`. See [the binary plan](2026-11-05-bootstrap-binary-plan.md), "Verifying the download".
+
+## 2026-11-05 A vanilla Tart VM is about 0.5 GB short for Apple's tools
+
+`ghcr.io/cirruslabs/macos-tahoe-vanilla` has 18.7 GB free, and Apple's Command Line Tools refuse to start below 19.18 GB. `tart set --disk-size` doesn't help: the new space lands behind the recovery partition, which SIP won't let `diskutil` move or delete. Clear `~/Library/Caches`, `~/Library/Application Support/com.apple.wallpaper`, `/private/var/folders/*/*/C`, then run `sudo log erase --all` before starting Apple's step. That reached 19.25 GB. See [the VM runs](2026-11-05-vm-run-findings.md), "Fourth run".
