@@ -1,0 +1,21 @@
+{
+  "screen": "tool",
+  "mode": "working",
+  "progress": 0.333,
+  "title": [
+    {
+      "text": "Adding "
+    },
+    {
+      "text": "Jobs",
+      "url": "https://github.com/bensyverson/jobs"
+    }
+  ],
+  "note": "Lets Claude manage big projects.",
+  "status": [
+    {
+      "text": "Installing Jobs"
+    }
+  ],
+  "card": "jobs"
+}

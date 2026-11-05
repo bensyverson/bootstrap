@@ -1,0 +1,24 @@
+bootstrap sets up a new Mac with a coding agent. The agent runs these commands
+and does every install. A local web page shows the person what's happening and
+collects their choices.
+
+Run first: bootstrap status
+
+Read (needs no session, except status)
+  bootstrap detect                 the chip, macOS, this folder, what's installed
+  bootstrap tools                  what each tool is, and whether it can be skipped
+  bootstrap screens                every screen, with its statuses and reasons
+  bootstrap status                 the session: the current screen and every answer
+
+Act
+  bootstrap serve [--agent <app>]  start the page in the background and open it
+  bootstrap show <screen> [<tool>] [--status <s>] [--reason <r>] [--expect 20m]
+                                   move the page to a screen
+  bootstrap wait <answer|clt|brew> [--timeout 90s]
+                                   return the answer or the arrival
+  bootstrap stop                   end the session
+
+Every command takes --json for a stable shape, and --help for an example.
+
+Exit codes: 0 ok, 2 usage, 3 timeout (run wait again), 4 target failure,
+5 environment (no session, or the page can't start).

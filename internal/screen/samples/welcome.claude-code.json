@@ -1,0 +1,21 @@
+{
+  "screen": "welcome",
+  "mode": "waiting",
+  "progress": 0,
+  "title": [
+    {
+      "text": "Let’s give Claude Code the good stuff."
+    }
+  ],
+  "choices": [
+    {
+      "id": "see-plan",
+      "label": "See the plan",
+      "primary": true
+    },
+    {
+      "id": "skip-tour",
+      "label": "Skip the tour"
+    }
+  ]
+}

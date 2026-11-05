@@ -1,0 +1,11 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>bootstrap</title>
+<!-- A placeholder until the real page is ported. It shows the frames the server sends. -->
+<pre id="frame">Waiting for the first screen</pre>
+<script>
+const events = new EventSource("/events" + location.search);
+events.onmessage = message => {
+  document.getElementById("frame").textContent = JSON.stringify(JSON.parse(message.data), null, 2);
+};
+</script>

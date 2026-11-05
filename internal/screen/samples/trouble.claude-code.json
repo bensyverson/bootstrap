@@ -1,0 +1,30 @@
+{
+  "screen": "trouble",
+  "mode": "waiting",
+  "progress": 0.5,
+  "title": [
+    {
+      "text": "Sleepy didn’t install."
+    }
+  ],
+  "status": [
+    {
+      "text": "Your Mac couldn’t reach the download. Check your Wi-Fi."
+    }
+  ],
+  "choices": [
+    {
+      "id": "retry",
+      "label": "Try again",
+      "primary": true
+    },
+    {
+      "id": "skip",
+      "label": "Skip Sleepy"
+    },
+    {
+      "id": "ask",
+      "label": "Ask Claude"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "screen": "making",
+  "mode": "waiting",
+  "progress": 0.889,
+  "title": [
+    {
+      "text": "What are you working on?"
+    }
+  ],
+  "choices": [
+    {
+      "id": "website",
+      "label": "A website",
+      "primary": true
+    },
+    {
+      "id": "app",
+      "label": "A Mac or iPhone app"
+    },
+    {
+      "id": "code",
+      "label": "Some code"
+    },
+    {
+      "id": "other",
+      "label": "Something else"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "screen": "live-yet",
+  "mode": "waiting",
+  "progress": 0.889,
+  "title": [
+    {
+      "text": "Do people use it yet?"
+    }
+  ],
+  "choices": [
+    {
+      "id": "not-yet",
+      "label": "Not yet",
+      "primary": true
+    },
+    {
+      "id": "yes",
+      "label": "Yes"
+    }
+  ]
+}

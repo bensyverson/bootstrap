@@ -1,0 +1,10 @@
+clt required step=own name="Command Line Tools" url=https://developer.apple.com/xcode/resources/ say="Apple’s tools that Git and Homebrew need."
+homebrew required step=own name=Homebrew url=https://brew.sh say="Installs software packages."
+git required step=own name=Git url=https://git-scm.com say="Saves your work, with version control."
+agents required step=tool name=Agents url=https://github.com/bensyverson/agents say="Teaches OpenCode how you work."
+jobs required step=tool name=Jobs url=https://github.com/bensyverson/jobs say="Lets OpenCode manage big projects."
+contextfill required step=tool name=Contextfill url=https://github.com/bensyverson/contextfill say="Keeps sessions from going too long."
+sleepy skippable step=tool name=Sleepy url=https://github.com/bensyverson/sleepyhollow say="Lets OpenCode see websites."
+peep skippable step=tool name=Peep url=https://github.com/bensyverson/PixelPeeper say="Lets OpenCode analyze pictures."
+woodcase skippable step=tool name=Woodcase url=https://github.com/bensyverson/woodcase say="Lets OpenCode draw designs."
+next: bootstrap screens

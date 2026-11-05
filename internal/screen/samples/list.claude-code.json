@@ -1,0 +1,92 @@
+{
+  "screen": "list",
+  "mode": "waiting",
+  "layout": "over",
+  "progress": 0,
+  "title": [
+    {
+      "text": "Here’s what you get."
+    }
+  ],
+  "rows": [
+    {
+      "id": "clt",
+      "name": "Command Line Tools",
+      "url": "https://developer.apple.com/xcode/resources/",
+      "say": "Apple’s tools that Git and Homebrew need.",
+      "required": true,
+      "checked": true
+    },
+    {
+      "id": "homebrew",
+      "name": "Homebrew",
+      "url": "https://brew.sh",
+      "say": "Installs software packages.",
+      "required": true,
+      "checked": true
+    },
+    {
+      "id": "git",
+      "name": "Git",
+      "url": "https://git-scm.com",
+      "say": "Saves your work, with version control.",
+      "required": true,
+      "checked": true
+    },
+    {
+      "id": "agents",
+      "name": "Agents",
+      "url": "https://github.com/bensyverson/agents",
+      "say": "Teaches Claude how you work.",
+      "required": true,
+      "checked": true
+    },
+    {
+      "id": "jobs",
+      "name": "Jobs",
+      "url": "https://github.com/bensyverson/jobs",
+      "say": "Lets Claude manage big projects.",
+      "required": true,
+      "checked": true
+    },
+    {
+      "id": "contextfill",
+      "name": "Contextfill",
+      "url": "https://github.com/bensyverson/contextfill",
+      "say": "Keeps sessions from going too long.",
+      "required": true,
+      "checked": true
+    },
+    {
+      "id": "sleepy",
+      "name": "Sleepy",
+      "url": "https://github.com/bensyverson/sleepyhollow",
+      "say": "Lets Claude see websites.",
+      "required": false,
+      "checked": true
+    },
+    {
+      "id": "peep",
+      "name": "Peep",
+      "url": "https://github.com/bensyverson/PixelPeeper",
+      "say": "Lets Claude analyze pictures.",
+      "required": false,
+      "checked": true
+    },
+    {
+      "id": "woodcase",
+      "name": "Woodcase",
+      "url": "https://github.com/bensyverson/woodcase",
+      "say": "Lets Claude draw designs.",
+      "required": false,
+      "checked": true
+    }
+  ],
+  "choices": [
+    {
+      "id": "lets-go",
+      "label": "Let’s go",
+      "primary": true
+    }
+  ]
+}

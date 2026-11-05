@@ -1,0 +1,10 @@
+{
+  "screen": "done",
+  "mode": "settled",
+  "progress": 1,
+  "title": [
+    {
+      "text": "All set! You can close this and go back to Claude Code."
+    }
+  ]
+}

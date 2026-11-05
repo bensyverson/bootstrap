@@ -22,6 +22,8 @@ The agent runs these commands. Each prints terse rows by default, and a stable s
 
 A typical stretch: `show list`, `wait answer`, then `show tool jobs --status installing`, `brew install …` by the agent, and on to the next tool.
 
+> **Addition, 2026-11-05.** `show` also takes `--reason`, for the trouble screen. What the core and server leaves settled is in [the seams doc](2026-11-05-bootstrap-seams.md).
+
 ## What the house CLI rules changed
 
 The first draft broke several of the rules in `modules/cli-design.md`, so this version differs from it:

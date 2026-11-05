@@ -1,0 +1,27 @@
+{
+  "screen": "naming",
+  "mode": "waiting",
+  "layout": "low",
+  "progress": 0.889,
+  "title": [
+    {
+      "text": "What should we call this project?"
+    }
+  ],
+  "status": [
+    {
+      "text": "We’ll make a folder with this name."
+    }
+  ],
+  "field": {
+    "label": "Project name",
+    "value": "my-project"
+  },
+  "choices": [
+    {
+      "id": "next",
+      "label": "Next",
+      "primary": true
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "screen": "lost",
+  "mode": "waiting",
+  "progress": 0.5,
+  "title": [
+    {
+      "text": "Whoops! We lost your OpenCode session."
+    }
+  ],
+  "status": [
+    {
+      "text": "Open it back up and type “continue”."
+    }
+  ]
+}

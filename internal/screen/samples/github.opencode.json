@@ -1,0 +1,26 @@
+{
+  "screen": "github",
+  "mode": "waiting",
+  "progress": 1,
+  "title": [
+    {
+      "text": "Want a place to keep your work online?"
+    }
+  ],
+  "status": [
+    {
+      "text": "GitHub is free. You can always do this later."
+    }
+  ],
+  "choices": [
+    {
+      "id": "yes",
+      "label": "Yes, help me",
+      "primary": true
+    },
+    {
+      "id": "not-now",
+      "label": "Not now"
+    }
+  ]
+}

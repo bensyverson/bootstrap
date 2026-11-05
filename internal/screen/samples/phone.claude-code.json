@@ -1,0 +1,21 @@
+{
+  "screen": "phone",
+  "mode": "waiting",
+  "progress": 1,
+  "title": [
+    {
+      "text": "Want to use Claude from your phone?"
+    }
+  ],
+  "choices": [
+    {
+      "id": "yes",
+      "label": "Show me how",
+      "primary": true
+    },
+    {
+      "id": "not-now",
+      "label": "Not now"
+    }
+  ]
+}

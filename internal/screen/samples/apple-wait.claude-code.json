@@ -1,0 +1,17 @@
+{
+  "screen": "apple-wait",
+  "mode": "working",
+  "progress": 0.056,
+  "title": [
+    {
+      "text": "Adding Apple’s tools"
+    }
+  ],
+  "note": "Apple’s tools that Git and Homebrew need.",
+  "status": [
+    {
+      "text": "Apple’s window shows how far along it is. This can take a while."
+    }
+  ],
+  "card": "git"
+}

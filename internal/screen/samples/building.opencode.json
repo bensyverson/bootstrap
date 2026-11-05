@@ -1,0 +1,15 @@
+{
+  "screen": "building",
+  "mode": "working",
+  "progress": 0.92,
+  "title": [
+    {
+      "text": "Setting up your project"
+    }
+  ],
+  "status": [
+    {
+      "text": "Making your folder"
+    }
+  ]
+}

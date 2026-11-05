@@ -1,0 +1,85 @@
+{
+  "tools": [
+    {
+      "id": "clt",
+      "name": "Command Line Tools",
+      "url": "https://developer.apple.com/xcode/resources/",
+      "say": "Apple’s tools that Git and Homebrew need.",
+      "required": true,
+      "own_step": true,
+      "detect": ["/Library/Developer/CommandLineTools/usr/bin/git"]
+    },
+    {
+      "id": "homebrew",
+      "name": "Homebrew",
+      "url": "https://brew.sh",
+      "say": "Installs software packages.",
+      "required": true,
+      "own_step": true,
+      "detect": ["/opt/homebrew/bin/brew"]
+    },
+    {
+      "id": "git",
+      "name": "Git",
+      "url": "https://git-scm.com",
+      "say": "Saves your work, with version control.",
+      "required": true,
+      "own_step": true,
+      "detect": ["/Library/Developer/CommandLineTools/usr/bin/git", "/opt/homebrew/bin/git"]
+    },
+    {
+      "id": "agents",
+      "name": "Agents",
+      "url": "https://github.com/bensyverson/agents",
+      "say": "Teaches {ai} how you work.",
+      "required": true,
+      "own_step": false,
+      "detect": ["/opt/homebrew/bin/agents", "~/go/bin/agents", "~/.swiftpm/bin/agents"]
+    },
+    {
+      "id": "jobs",
+      "name": "Jobs",
+      "url": "https://github.com/bensyverson/jobs",
+      "say": "Lets {ai} manage big projects.",
+      "required": true,
+      "own_step": false,
+      "detect": ["/opt/homebrew/bin/job", "~/go/bin/job", "~/.swiftpm/bin/job"]
+    },
+    {
+      "id": "contextfill",
+      "name": "Contextfill",
+      "url": "https://github.com/bensyverson/contextfill",
+      "say": "Keeps sessions from going too long.",
+      "required": true,
+      "own_step": false,
+      "detect": ["/opt/homebrew/bin/contextfill", "~/go/bin/contextfill", "~/.swiftpm/bin/contextfill"]
+    },
+    {
+      "id": "sleepy",
+      "name": "Sleepy",
+      "url": "https://github.com/bensyverson/sleepyhollow",
+      "say": "Lets {ai} see websites.",
+      "required": false,
+      "own_step": false,
+      "detect": ["/opt/homebrew/bin/sleepy", "~/go/bin/sleepy", "~/.swiftpm/bin/sleepy"]
+    },
+    {
+      "id": "peep",
+      "name": "Peep",
+      "url": "https://github.com/bensyverson/PixelPeeper",
+      "say": "Lets {ai} analyze pictures.",
+      "required": false,
+      "own_step": false,
+      "detect": ["/opt/homebrew/bin/peep", "~/go/bin/peep", "~/.swiftpm/bin/peep"]
+    },
+    {
+      "id": "woodcase",
+      "name": "Woodcase",
+      "url": "https://github.com/bensyverson/woodcase",
+      "say": "Lets {ai} draw designs.",
+      "required": false,
+      "own_step": false,
+      "detect": ["/opt/homebrew/bin/woodcase", "~/go/bin/woodcase", "~/.swiftpm/bin/woodcase"]
+    }
+  ]
+}

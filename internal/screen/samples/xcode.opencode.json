@@ -1,0 +1,26 @@
+{
+  "screen": "xcode",
+  "mode": "waiting",
+  "progress": 0.889,
+  "title": [
+    {
+      "text": "This one needs Xcode."
+    }
+  ],
+  "status": [
+    {
+      "text": "It’s free, and it’s big. The App Store will take a while."
+    }
+  ],
+  "choices": [
+    {
+      "id": "app-store",
+      "label": "Open the App Store",
+      "primary": true
+    },
+    {
+      "id": "later",
+      "label": "Do it later"
+    }
+  ]
+}

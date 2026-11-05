@@ -1,0 +1,22 @@
+{
+  "screen": "apple-ask",
+  "mode": "waiting",
+  "progress": 0,
+  "title": [
+    {
+      "text": "Your turn: click Install."
+    }
+  ],
+  "status": [
+    {
+      "text": "A window from Apple will pop up. It adds the "
+    },
+    {
+      "text": "Command Line Tools",
+      "url": "https://developer.apple.com/xcode/resources/"
+    },
+    {
+      "text": ", which include Git."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "screen": "fixing",
+  "mode": "working",
+  "progress": 0.5,
+  "title": [
+    {
+      "text": "OpenCode is on it."
+    }
+  ],
+  "status": [
+    {
+      "text": "Looking at what went wrong"
+    }
+  ]
+}
