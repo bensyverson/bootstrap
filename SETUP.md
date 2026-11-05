@@ -42,7 +42,7 @@ curl -fsSL -o ~/.bootstrap/bin/bootstrap.download https://github.com/bensyverson
 You can't read a binary, so these checks are how you know it's the file Ben released.
 
 ```sh
-echo "53f64c0ef0b131bf54fdad1108acbbfaee780766daa8c0039d376ce7589294ab  $HOME/.bootstrap/bin/bootstrap.download" | shasum -a 256 -c
+echo "d6593d3de0c497ecf157fb4b0585109926f8e9da30a06093e048fc3ca2f2a60c  $HOME/.bootstrap/bin/bootstrap.download" | shasum -a 256 -c
 codesign --verify --strict ~/.bootstrap/bin/bootstrap.download
 codesign -dv ~/.bootstrap/bin/bootstrap.download 2>&1 | grep TeamIdentifier
 spctl -a -vvv -t open --context context:primary-signature ~/.bootstrap/bin/bootstrap.download
