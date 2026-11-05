@@ -6,12 +6,12 @@
 
 - **Built and on `main`, unpushed:** the core, server, CLI and real page. `go test ./...` passes. There's no public repo yet.
 - **`IjcOYy` (the page) is closed:** Ben reviewed it live on 2026-11-05 and approved the motion. The commands below still work for later reviews.
-- **The release agent was still running when this was written:** `contextfill` 0.1.3, `job` 0.1.0 and `agents` 0.1.0 were reported released, unverified by the integrator. Sleepy and Peep were still to do, and Sleepy's change was staged in `/Users/ben/git/SleepyHollow`, waiting for this Mac's load to fall, because its WebKit tests deadlock under load. `J2FJEI` and `GB3eQp` hold the results. Check `job show` on both, and `git -C` each repo, before assuming anything.
+- **Released and verified:** `contextfill` 0.1.3, `job` 0.1.0, `agents` 0.1.0, `sleepy` 0.1.0 and `peep` 0.1.0, as signed, notarized bottles. `J2FJEI` and `GB3eQp` stay open only for their clean-account criteria, which the VM run settles.
 - **The VM:** Tart 2.41.1 is in `~agent/tart-install` on `agent@sally.local`, cloning `macos-tahoe-vanilla` into a VM named `clean`. Progress is in `~/tart-install/clone.log`.
 
 ## Next, in order
 
-1. **Integrate the release agent** if it hasn't been: verify its bottles, then close `J2FJEI` and `GB3eQp`.
+1. **Done: the release agent is integrated.**
 2. **Add the chat screen** (approved by Ben): title "Let's talk in {app}.", line "{ai} has a question." It has no buttons, and it must not show the lost screen, because the agent stops running commands while waiting for a reply in the chat. Red first, then regenerate samples with `go test ./internal/screen -update`.
 3. **Done: Ben approved the page.**
 4. **VM run (`Y6LsGy`):** confirm the VM really has no Command Line Tools, then run Apple's step and Homebrew. Ben clicks Install over Screen Sharing. It also has to answer whether a dependable signal exists for the "your turn" screens. If so, use `apple-wait` and `brew-wait`; if not, delete them. And it should check whether Homebrew's file appears before its installer finishes. Also try the threads on the Mini's own display.
@@ -39,6 +39,8 @@ All are recorded in the plan docs and job notes: the agent drives; the page is o
 
 ## Traps
 
+- **Sleepy's pre-commit suite** was killed at its 5-minute cap twice, then passed in about 160s. Load was high at both kills, but also high during a pass, so the cause isn't established. `scripts/release`'s `check` has no such cap, so a stall there would hang rather than fail.
+- **Tap script gaps:** a new formula needs a placeholder `v0.0.0` url, and a formula fix after a step 5 failure needs a manual push. Neither is documented in `--help`.
 - **Worktree cleanup:** `.claude/worktrees/agent-a2f1cffc921078ad6` and its branch were locked by the harness when this was written. The work is already squashed into `648a2f3`, so remove both once unlocked.
 - **Woodcase renders need images:** `Tests/WoodcaseTests/Fixtures` has no `images/` folder. `local/viewer-demo/images` does.
 - **The page's card contents** for Homebrew, Git, Contextfill and Woodcase are still made up or illustrative.
