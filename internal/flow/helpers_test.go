@@ -42,6 +42,8 @@ type world struct {
 	handoffs []session.Handoff
 	free     uint64
 	running  func(string) bool
+	// interject is a screen an agent shows over the question at key, once, instead of the person answering.
+	interject map[asked]screen.Request
 }
 
 func defaultAnswers() map[asked]screen.Answer {
@@ -145,6 +147,13 @@ func (w *world) play() string {
 		return ""
 	}
 	key := asked{state.Current.Request.Screen, state.Current.Request.Status}
+	if req, ok := w.interject[key]; ok {
+		delete(w.interject, key)
+		if _, err := w.store.Show(req, 0, time.Now()); err != nil {
+			return err.Error()
+		}
+		return ""
+	}
 	answer, ok := w.answers[key]
 	if !ok {
 		return "the person was asked something unexpected: " + string(key.Screen) + " " + key.Status

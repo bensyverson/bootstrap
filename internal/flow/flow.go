@@ -351,33 +351,33 @@ func (r *run) answer(req screen.Request) (screen.Answer, bool, error) {
 	return screen.Answer{}, false, nil
 }
 
-var errMovedOn = errors.New("another screen replaced the flow's question")
-
-// ask shows a question and waits for the person's answer.
+// ask shows a question and waits for the person's answer. If another screen
+// replaces it, as an agent's stray show would, the question goes back up.
 func (r *run) ask(req screen.Request) error {
-	state, err := r.f.cfg.Store.Show(req, 0, time.Now())
-	if err != nil {
-		return err
-	}
-	seq := state.Current.Seq
-	var got screen.Answer
-	moved := false
-	err = r.poll(func(state session.State) bool {
-		if state.Current == nil || state.Current.Seq != seq {
-			moved = true
-			return true
+	for {
+		state, err := r.f.cfg.Store.Show(req, 0, time.Now())
+		if err != nil {
+			return err
 		}
-		a, ok := state.CurrentAnswer()
-		got = a.Answer
-		return ok
-	})
-	if err != nil {
-		return err
+		seq := state.Current.Seq
+		var got screen.Answer
+		moved := false
+		err = r.poll(func(state session.State) bool {
+			if state.Current == nil || state.Current.Seq != seq {
+				moved = true
+				return true
+			}
+			a, ok := state.CurrentAnswer()
+			got = a.Answer
+			return ok
+		})
+		if err != nil {
+			return err
+		}
+		if !moved {
+			return r.note("%s", told(req, got))
+		}
 	}
-	if moved {
-		return errMovedOn
-	}
-	return r.note("%s", told(req, got))
 }
 
 // told is a person's answer as a line the agent can pass on.

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bensyverson/bootstrap/internal/screen"
 	"github.com/bensyverson/bootstrap/internal/session"
 )
 
@@ -247,5 +248,18 @@ func TestNewRefusesAnIncompleteConfig(t *testing.T) {
 		if _, err := flow.New(cfg); err == nil {
 			t.Errorf("%s: accepted", name)
 		}
+	}
+}
+
+// An agent that shows a screen over the flow's question doesn't stop the setup:
+// the flow puts its question back and waits for the person.
+func TestAQuestionCoveredByAnotherScreenIsAskedAgain(t *testing.T) {
+	w := newWorld(t)
+	w.interject = map[asked]screen.Request{{"list", ""}: {Screen: "fast"}}
+	if err := w.walk(); err != nil {
+		t.Fatalf("walk: %v", err)
+	}
+	if got := w.state().Current.Request.Screen; got != "done" {
+		t.Errorf("ended on %s, want done", got)
 	}
 }
