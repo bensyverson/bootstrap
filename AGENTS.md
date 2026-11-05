@@ -14,7 +14,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - [The binary's seams](project/2026-11-05-bootstrap-seams.md) — packages, what the page and an agent get, and decisions made while building
 - [Setup page prototype](project/2026-11-05-setup-page-mock/prototype/) — the approved look and motion, in one page; `build.py` makes `local.html`; the [mock](project/2026-11-05-setup-page-mock/) shows the options tried
 - [Clean Mac research](project/2026-11-05-clean-mac-research.md) and [what's stock on macOS](project/2026-11-05-stock-macos-runtimes.md) — what's settled, and where the rest gets tested
-- [First VM run](project/2026-11-05-vm-run-findings.md) — Apple blocks the Homebrew paste, the `.pkg` works, and what a fresh clone still has to answer
+- [VM runs](project/2026-11-05-vm-run-findings.md) — Apple blocks the Homebrew paste, the `.pkg` works, and Apple's step has a click signal
 - [project/backlog.md](project/backlog.md) and [project/gotchas.md](project/gotchas.md) — work parked, and traps to know
 
 <!-- agents:begin core@cfc86c -->
