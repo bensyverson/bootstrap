@@ -14,7 +14,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - [Clean Mac research](project/2026-11-05-clean-mac-research.md) and [what's stock on macOS](project/2026-11-05-stock-macos-runtimes.md) — what's settled, and where the rest gets tested
 - [project/backlog.md](project/backlog.md) and [project/gotchas.md](project/gotchas.md) — work parked, and traps to know
 
-<!-- agents:begin core@bb8246 -->
+<!-- agents:begin core@cfc560 -->
 ## Working rules
 
 **Understand the why.** If the goal behind a request isn't clear, ask before solving — beware the XY problem.
@@ -51,7 +51,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - **On the main thread, read `project/agents/delegation.md` in full before you begin, so whether to delegate is a choice, not a default.** A subagent skips this: its brief is its scope, and it doesn’t delegate further.
 - **Unless the user says they're around, assume they aren't.** Make the call yourself when it's safe and a two-way door, queue the rest, and report every decision at the end. While they're around, bring questions as they come up, including ones an agent raises mid-flight.
 - **Before starting, say what needs the user's eyes.**
-- **Keep working while there's work; once past your context line, start nothing new.** The main thread's line is 25%, a subagent's 40% (read with contextfill; never estimate). The line is where wrapping up begins: finishing what's in flight and handing off happen after it, however far past it that takes. A delegating main thread: delegation.md ▸ Carving the work.
+- **Keep working while there's work; once past your context line, start nothing new.** The main thread's line is 33%, a subagent's 40% (read with contextfill; never estimate). The line is where wrapping up begins: finishing what's in flight and handing off happen after it, however far past it that takes. A delegating main thread: delegation.md ▸ Carving the work.
 
 ## Git
 
