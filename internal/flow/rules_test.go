@@ -1,0 +1,50 @@
+package flow_test
+
+import (
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/bensyverson/bootstrap/internal/screen"
+)
+
+// Ben, 2026-11-05: the rules add the modules the project's kind calls for, and
+// a new project starts at stage-build. A project that's already there gets no stage.
+func TestTheRulesFitWhatThePersonIsMaking(t *testing.T) {
+	for _, tc := range []struct {
+		making, want string
+		inPlace      bool
+	}{
+		{"website", "agents add web stage-build", false},
+		{"app", "agents add swift swiftui stage-build", false},
+		{"code", "agents add stage-build", false},
+		{"other", "agents add stage-build", false},
+		{"website", "agents add web", true},
+	} {
+		w := newWorld(t)
+		w.answers[asked{"making", ""}] = screen.Answer{Choice: tc.making}
+		w.answers[asked{"xcode", ""}] = screen.Answer{Choice: "later"}
+		if tc.inPlace {
+			start := filepath.Join(w.home, "code", "bakery")
+			put(t, filepath.Join(start, ".git", "HEAD"), "ref: refs/heads/main\n")
+			put(t, filepath.Join(start, "index.html"), "<h1>Pine</h1>\n")
+			w.probe.Cwd = start
+		}
+		if err := w.walk(); err != nil {
+			t.Fatal(err)
+		}
+		changes := w.mac.Changes()
+		var adds []string
+		for i, c := range changes {
+			if strings.HasPrefix(c, "agents add") {
+				adds = append(adds, c)
+				if i == 0 || !strings.HasPrefix(changes[i-1], "agents init") {
+					t.Errorf("%s: %q didn't follow agents init", tc.making, c)
+				}
+			}
+		}
+		if len(adds) != 1 || adds[0] != tc.want {
+			t.Errorf("%s (in place %v): ran %q, want %q", tc.making, tc.inPlace, adds, tc.want)
+		}
+	}
+}

@@ -359,6 +359,11 @@ func (m *Mac) agents(cmd flow.Command) flow.Result {
 			}
 		}
 		return ok("initialized")
+	case len(cmd.Args) > 1 && cmd.Args[0] == "add":
+		if !exists(agentsMD) {
+			return failed(1, "no .agents.yaml here: run agents init first")
+		}
+		return ok("added " + strings.Join(cmd.Args[1:], ", "))
 	case len(cmd.Args) > 0 && cmd.Args[0] == "migrate":
 		if err := os.Rename(claudeMD, agentsMD); err != nil {
 			return fail(err)

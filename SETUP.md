@@ -161,7 +161,7 @@ Ask what they're making (a website, an app, or something else) and whether it's 
 
 In the project folder:
 
-- `agents init` (`/opt/homebrew/bin/agents init`), unless there's an `AGENTS.md`. If it refuses because of the project's own `CLAUDE.md` and names `agents migrate`, run `agents migrate`, then `agents init` again.
+- `/opt/homebrew/bin/agents init github.com/bensyverson/agents-md`, unless there's an `AGENTS.md`. If it refuses because of the project's own `CLAUDE.md` and names `agents migrate`, run `agents migrate`, then `agents init` again. Then add the rules for what they're making, plus `stage-build` for a new project (a project that was already there gets no stage): `agents add web stage-build` for a website, `agents add swift swiftui stage-build` for an app, `agents add stage-build` otherwise.
 - Write a `.gitignore` with what this kind of project shouldn't keep, adding only lines that aren't there: `.DS_Store` always; `node_modules/`, `.env` and `dist/` for a website; `.build/`, `.swiftpm/`, `DerivedData/` and `xcuserdata/` for an app.
 - Make a `local/` folder, and add `local/` to `.gitignore`. Tell the person `local/` is theirs: private notes and files that are never committed.
 - `job init --as claude` (or `--as opencode`), then `job gitignore`, unless there's a `.jobs.db` already. Never run `job init` over one: it would lose its tasks.

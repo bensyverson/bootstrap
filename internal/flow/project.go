@@ -297,6 +297,27 @@ func (r *run) ignored() ([]string, error) {
 	return slices.Concat(alwaysIgnore, ignoreFor[what.Choice], []string{localDir + "/"}), nil
 }
 
+// modulesFor are the agents-md modules each kind of project adds to the source's defaults.
+var modulesFor = map[string][]string{website: {"web"}, anApp: {"swift", "swiftui"}}
+
+// stageBuild is the stage a new project starts at.
+const stageBuild = "stage-build"
+
+// modules are the rules this project adds beyond the defaults: what its kind
+// calls for, and stage-build for a new project. A project that was already
+// there gets no stage, since its stage isn't known (Ben, 2026-11-05).
+func (r *run) modules() ([]string, error) {
+	what, _, err := r.answer(making)
+	if err != nil {
+		return nil, err
+	}
+	out := slices.Clone(modulesFor[what.Choice])
+	if !r.f.inPlace {
+		out = append(out, stageBuild)
+	}
+	return out, nil
+}
+
 // toolPath is a required tool's full path, or a handoff when it isn't there.
 func (r *run) toolPath(id string) (string, *session.Handoff) {
 	if path, ok := r.located(id); ok {
@@ -339,6 +360,18 @@ func actRules(r *run) (outcome, error) {
 		}
 		if err := r.note("added the rules with agents init"); err != nil {
 			return outcome{}, err
+		}
+		modules, err := r.modules()
+		if err != nil {
+			return outcome{}, err
+		}
+		if len(modules) > 0 {
+			if _, h, err := r.exec(Command{Kind: Change, Path: agents, Args: slices.Concat([]string{"add"}, modules), Dir: dir}, ""); err != nil || h != nil {
+				return orHandOff(h, err)
+			}
+			if err := r.note("added the rules for %s", strings.Join(modules, ", ")); err != nil {
+				return outcome{}, err
+			}
 		}
 	}
 	if err := os.MkdirAll(filepath.Join(dir, localDir), 0o755); err != nil {
