@@ -123,6 +123,21 @@ func TestYourTurnScreensCanBeLost(t *testing.T) {
 	}
 }
 
+func TestChatIsNeverLost(t *testing.T) {
+	store := begun(t)
+	state := show(t, store, screen.Request{Screen: "chat"}, t0)
+	later := t0.Add(24 * time.Hour)
+	if state.Lost(later) {
+		t.Error("the agent stops running commands while it waits for a reply in the chat")
+	}
+	if frame := state.Frame(later); frame.Lost || frame.Screen == nil || frame.Screen.Screen != "chat" {
+		t.Errorf("frame = %+v", frame)
+	}
+	if state.PastLifetime(later) {
+		t.Error("the server has to outlast a long wait, or the page draws the lost screen when it exits")
+	}
+}
+
 func TestDoneIsNeverLost(t *testing.T) {
 	store := begun(t)
 	state := show(t, store, screen.Request{Screen: "done"}, t0)

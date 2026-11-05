@@ -46,7 +46,7 @@ func TestProgressRisesAcrossTools(t *testing.T) {
 }
 
 func TestOffPathScreensHoldProgress(t *testing.T) {
-	for _, req := range []Request{{Screen: "trouble", Tool: "jobs", Reason: "network"}, {Screen: "fixing"}} {
+	for _, req := range []Request{{Screen: "trouble", Tool: "jobs", Reason: "network"}, {Screen: "fixing"}, {Screen: "chat"}} {
 		if got := Progress(req, nil, 0.42); got != 0.42 {
 			t.Errorf("%s progress = %v, want the carried 0.42", req.Screen, got)
 		}

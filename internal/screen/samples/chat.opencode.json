@@ -1,0 +1,15 @@
+{
+  "screen": "chat",
+  "mode": "waiting",
+  "progress": 0.5,
+  "title": [
+    {
+      "text": "Let’s talk in OpenCode."
+    }
+  ],
+  "status": [
+    {
+      "text": "OpenCode has a question."
+    }
+  ]
+}

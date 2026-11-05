@@ -116,6 +116,8 @@ var recordedCopyChanges = map[string]bool{
 	" didn’t install.":                            true,
 	"Skip {tool}":                                 true,
 	", which include Git. This can take a while.": true,
+	"Let’s talk in {app}.":                        true,
+	"{ai} has a question.":                        true,
 }
 
 func TestCopyComesFromThePrototype(t *testing.T) {
@@ -149,6 +151,41 @@ func TestRecordedWordsAreExact(t *testing.T) {
 	}
 	if got := plain(lost.Status); got != "Open it back up and type “continue”." {
 		t.Errorf("lost line = %q", got)
+	}
+}
+
+func TestChatScreen(t *testing.T) {
+	for _, tc := range []struct {
+		agent       Agent
+		title, line string
+	}{
+		{ClaudeCode, "Let’s talk in Claude Code.", "Claude has a question."},
+		{OpenCode, "Let’s talk in OpenCode.", "OpenCode has a question."},
+	} {
+		d, err := Describe(Request{Screen: "chat"}, Context{Agent: tc.agent})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := plain(d.Title); got != tc.title {
+			t.Errorf("title = %q", got)
+		}
+		if got := plain(d.Status); got != tc.line {
+			t.Errorf("line = %q", got)
+		}
+		if len(d.Choices) != 0 || d.Mode != Waiting {
+			t.Errorf("chat has no buttons and waits on the person: %+v", d)
+		}
+	}
+	if !AwaitsChat("chat") {
+		t.Error("chat waits on a reply in the chat")
+	}
+	if AwaitsClick("chat") {
+		t.Error("chat has nothing to click")
+	}
+	for _, id := range []ID{"welcome", "terminal", "tool", "done", Lost} {
+		if AwaitsChat(id) {
+			t.Errorf("%s doesn't wait on the chat", id)
+		}
 	}
 }
 

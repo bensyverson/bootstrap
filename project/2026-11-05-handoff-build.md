@@ -7,14 +7,14 @@
 - **Built and on `main`, unpushed:** the core, server, CLI and real page. `go test ./...` passes. There's no public repo yet.
 - **`IjcOYy` (the page) is closed:** Ben reviewed it live on 2026-11-05 and approved the motion. The commands below still work for later reviews.
 - **Released and verified:** `contextfill` 0.1.3, `job` 0.1.0, `agents` 0.1.0, `sleepy` 0.1.0 and `peep` 0.1.0, as signed, notarized bottles. `J2FJEI` and `GB3eQp` stay open only for their clean-account criteria, which the VM run settles.
-- **The VM:** Tart 2.41.1 is in `~agent/tart-install` on `agent@sally.local`, cloning `macos-tahoe-vanilla` into a VM named `clean`. Progress is in `~/tart-install/clone.log`.
+- **The VM:** Tart 2.41.1 is in `~agent/tart-install` on `agent@sally.local`. The VM `clean` is cloned and running, and it has no developer tools (`Y6LsGy` has the checks). Its VNC address is in `~/tart-install/run.log` on the Mini.
 
 ## Next, in order
 
 1. **Done: the release agent is integrated.**
-2. **Add the chat screen** (approved by Ben): title "Let's talk in {app}.", line "{ai} has a question." It has no buttons, and it must not show the lost screen, because the agent stops running commands while waiting for a reply in the chat. Red first, then regenerate samples with `go test ./internal/screen -update`.
+2. **Done: the chat screen.** Its rules are in [the seams doc](2026-11-05-bootstrap-seams.md). Ben hasn't seen it on the page yet.
 3. **Done: Ben approved the page.**
-4. **VM run (`Y6LsGy`):** confirm the VM really has no Command Line Tools, then run Apple's step and Homebrew. Ben clicks Install over Screen Sharing. It also has to answer whether a dependable signal exists for the "your turn" screens. If so, use `apple-wait` and `brew-wait`; if not, delete them. And it should check whether Homebrew's file appears before its installer finishes. Also try the threads on the Mini's own display.
+4. **VM run (`Y6LsGy`):** run Apple's step and Homebrew. Ben clicks Install over Screen Sharing. It also has to answer whether a dependable signal exists for the "your turn" screens. If so, use `apple-wait` and `brew-wait`; if not, delete them. And it should check whether Homebrew's file appears before its installer finishes. Also try the threads on the Mini's own display.
 5. **Trial release (`vHAiCj`):** ask Ben before publishing. He wants everything that can be approved locally approved first. Copy `/Users/ben/git/goodall/.env` to the Mini for OpenCode only when the trial needs it, never into the repo or the VM, and never print its values.
 6. **The rest:** remaining screens and real cards (`6jPdjy`), `g0RIoY` then `W2yASt`, `GGbVZ5`, `DhuGEt`, `t5FAqu`, `9WWQm2`.
 

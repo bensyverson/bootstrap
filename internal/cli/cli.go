@@ -218,20 +218,17 @@ func report(env Env, asJSON bool, err error) int {
 
 // asFailure maps any library error to its exit code and remedy.
 func asFailure(err error) *failure {
-	var f *failure
-	if errors.As(err, &f) {
+	if f, ok := errors.AsType[*failure](err); ok {
 		return f
 	}
-	var invalid *screen.InvalidError
-	if errors.As(err, &invalid) {
+	if invalid, ok := errors.AsType[*screen.InvalidError](err); ok {
 		next := invalid.Next
 		if next == "" {
 			next = "bootstrap screens"
 		}
 		return &failure{code: exitUsage, message: invalid.Message, valid: invalid.Valid, next: next}
 	}
-	var corrupt *session.CorruptError
-	if errors.As(err, &corrupt) {
+	if corrupt, ok := errors.AsType[*session.CorruptError](err); ok {
 		return &failure{code: exitTarget, message: corrupt.Error(), next: fmt.Sprintf("delete %s, then bootstrap serve", corrupt.Path)}
 	}
 	switch {

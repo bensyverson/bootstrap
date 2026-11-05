@@ -92,8 +92,7 @@ var serveCommand = command{
 }
 
 func serveFailure(err error) error {
-	var start *server.StartError
-	if errors.As(err, &start) {
+	if start, ok := errors.AsType[*server.StartError](err); ok {
 		return &failure{code: exitEnviron, message: "can't start the page: " + start.Reason, next: fallbackNext}
 	}
 	return err

@@ -106,13 +106,14 @@ func (s State) CurrentAnswer() (Answered, bool) {
 }
 
 // Lost reports whether the page should say the agent has gone. Past the allowance
-// that holds, unless a person may still be reading a screen they can click on.
+// that holds, unless a person may still be reading a screen they can click on, or
+// the agent is waiting on their reply in the chat.
 func (s State) Lost(now time.Time) bool {
 	if s.Ended {
 		return false
 	}
 	if s.Current != nil {
-		if screen.IsSettled(s.Current.Request.Screen) {
+		if screen.IsSettled(s.Current.Request.Screen) || screen.AwaitsChat(s.Current.Request.Screen) {
 			return false
 		}
 		_, answered := s.CurrentAnswer()
@@ -125,6 +126,9 @@ func (s State) Lost(now time.Time) bool {
 
 // PastLifetime reports whether the agent has been gone so long that the server should exit.
 func (s State) PastLifetime(now time.Time) bool {
+	if s.Current != nil && screen.AwaitsChat(s.Current.Request.Screen) {
+		return false
+	}
 	return !s.Ended && now.After(s.Deadline.Add(LostLifetime))
 }
 

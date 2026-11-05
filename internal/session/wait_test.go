@@ -77,6 +77,10 @@ func TestWaitAnswerErrors(t *testing.T) {
 	if _, err := store.WaitAnswer(context.Background(), time.Second); !errors.Is(err, ErrNoChoices) {
 		t.Errorf("nothing to answer: %v", err)
 	}
+	show(t, store, screen.Request{Screen: "chat"}, time.Now())
+	if _, err := store.WaitAnswer(context.Background(), time.Second); !errors.Is(err, ErrNoChoices) {
+		t.Errorf("a reply in the chat never reaches the page: %v", err)
+	}
 }
 
 func TestWaitAnswerStopsWhenThePageIsGone(t *testing.T) {

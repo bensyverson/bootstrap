@@ -66,6 +66,8 @@ The title is "Whoops! We lost your {app} session.", and the line under it is "Op
 
 A false alarm has to heal itself, so the next `show` or `status` brings the page straight back. The server therefore keeps running after the session is lost, for as long as the tab is open and at most about an hour. If the tab is closed or the hour is up, it exits, and `serve` starts a fresh one from the same log.
 
+> **Correction, 2026-11-05:** "at most about an hour" no longer holds on the `chat` screen. The agent runs no commands while it waits for a reply in the chat, so that screen never shows the lost screen, and the server stays up for as long as the tab is open. See [the seams doc](2026-11-05-bootstrap-seams.md).
+
 **`wait clt` and `wait brew` replace the "I did it" buttons.** The binary watches for `/Library/Developer/CommandLineTools/usr/bin/git` and `/opt/homebrew/bin/brew`. The plan rules out those prototype buttons, and agents can't poll by sleeping, since Claude Code blocks a foreground `sleep`. The `brew` file may appear before Homebrew's installer finishes, so the VM run has to check that.
 
 **`detect` says what kind of folder this is, and the agent decides what to do (Ben, 2026-11-05).** People often start in a folder that isn't a project: the home folder, `~/Desktop`, `~/Documents`, `~/Downloads`, or one with a generic name like "Claude" or "Claude Code". `detect` reports the kind, and whether the folder holds files or a Git repo. The agent then offers to make a project folder and restart the session there, without moving anything that's already in the folder. A Git repo wins over a generic name, so a real project that happens to be called "Claude" isn't flagged. The list of generic names lives with the catalog, so adding one needs no code change.

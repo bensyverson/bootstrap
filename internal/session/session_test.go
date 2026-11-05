@@ -158,8 +158,7 @@ func TestShowRefusesASkippedTool(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := store.Show(screen.Request{Screen: "tool", Tool: "sleepy"}, 0, t0)
-	var inv *screen.InvalidError
-	if !errors.As(err, &inv) {
+	if _, ok := errors.AsType[*screen.InvalidError](err); !ok {
 		t.Errorf("err = %v", err)
 	}
 }
@@ -220,8 +219,7 @@ func TestAnswerOutsideTheScreenIsRefused(t *testing.T) {
 	store := begun(t)
 	state := show(t, store, screen.Request{Screen: "naming"}, t0)
 	_, err := store.RecordAnswer(state.Current.Seq, screen.Answer{Choice: "next", Name: "../../etc"}, t0)
-	var inv *screen.InvalidError
-	if !errors.As(err, &inv) {
+	if _, ok := errors.AsType[*screen.InvalidError](err); !ok {
 		t.Errorf("err = %v", err)
 	}
 	if got := load(t, store).Answers; len(got) != 0 {

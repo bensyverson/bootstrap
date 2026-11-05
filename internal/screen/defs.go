@@ -31,6 +31,7 @@ const (
 	nextCLT    = "bootstrap wait clt"
 	nextBrew   = "bootstrap wait brew"
 	nextWork   = "do the work, then bootstrap show <screen>"
+	nextChat   = "ask in the chat, then bootstrap show <screen> when they reply"
 	nextStop   = "bootstrap stop"
 )
 
@@ -88,6 +89,7 @@ type spec struct {
 	cardTool bool
 	next     string
 	internal bool
+	chat     bool
 }
 
 var specs = []spec{
@@ -126,6 +128,7 @@ var specs = []spec{
 		reasons: []option{{"network", "Your Mac couldn’t reach the download. Check your Wi-Fi."}, {"other", OtherFailureLine}},
 		choices: []choiceDef{{"retry", "Try again"}, {"skip", "Skip {tool}"}, {"ask", "Ask {ai}"}}, next: nextAnswer},
 	{id: "fixing", mode: Working, title: "{ai} is on it.", status: "Looking at what went wrong", next: nextWork},
+	{id: "chat", mode: Waiting, title: "Let’s talk in {app}.", status: "{ai} has a question.", chat: true, next: nextChat},
 	{id: Lost, mode: Waiting, title: LostTitle, status: LostLine, internal: true},
 }
 
@@ -224,6 +227,14 @@ func NextFor(id ID) string {
 func AwaitsClick(id ID) bool {
 	s, ok := find(id)
 	return ok && len(s.choices) > 0
+}
+
+// AwaitsChat reports whether a screen is waiting on a reply in the chat. The agent
+// runs no commands until that reply comes, so its silence says nothing about
+// whether it's still there.
+func AwaitsChat(id ID) bool {
+	s, ok := find(id)
+	return ok && s.chat
 }
 
 // IsSettled reports whether a screen has nothing left to happen.

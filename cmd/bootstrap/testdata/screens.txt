@@ -16,5 +16,6 @@ phone mode=waiting choices=yes,not-now next="bootstrap wait answer"
 done mode=settled next="bootstrap stop"
 trouble mode=waiting tools=clt,homebrew,git,agents,jobs,contextfill,sleepy,peep,woodcase reasons=network,other choices=retry,skip,ask next="bootstrap wait answer"
 fixing mode=working next="do the work, then bootstrap show <screen>"
+chat mode=waiting next="ask in the chat, then bootstrap show <screen> when they reply"
 lost mode=waiting appears=on-its-own
 next: bootstrap serve

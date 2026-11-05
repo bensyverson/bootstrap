@@ -1,0 +1,15 @@
+{
+  "screen": "chat",
+  "mode": "waiting",
+  "progress": 0.5,
+  "title": [
+    {
+      "text": "Let’s talk in Claude Code."
+    }
+  ],
+  "status": [
+    {
+      "text": "Claude has a question."
+    }
+  ]
+}

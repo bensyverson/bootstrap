@@ -76,8 +76,7 @@ func TestABrokenFinishedLineIsStillCorrupt(t *testing.T) {
 	store := startedStore(t)
 	appendRaw(t, store, "not json\n")
 	_, err := store.Load()
-	var corrupt *CorruptError
-	if !errors.As(err, &corrupt) {
+	if _, ok := errors.AsType[*CorruptError](err); !ok {
 		t.Errorf("err = %v, want a CorruptError", err)
 	}
 }

@@ -188,6 +188,18 @@ func TestExitsWhenTheHourIsUp(t *testing.T) {
 	}
 }
 
+func TestChatOutlastsTheHour(t *testing.T) {
+	f := start(t)
+	f.show(t, screen.Request{Screen: "chat"}, t0)
+	e := f.connect(t)
+	defer e.close()
+	e.next(t)
+	end := t0.Add(session.DefaultAllowance + session.LostLifetime + time.Hour)
+	if got := f.walk(t0, end); got != ExitNone {
+		t.Errorf("exit = %v, and an exit makes the page draw the lost screen", got)
+	}
+}
+
 func TestAnHourWithALiveAgentIsFine(t *testing.T) {
 	f := start(t)
 	f.show(t, screen.Request{Screen: "welcome"}, t0)
@@ -195,7 +207,7 @@ func TestAnHourWithALiveAgentIsFine(t *testing.T) {
 	defer e.close()
 	e.next(t)
 	at := t0
-	for i := 0; i < 80; i++ {
+	for i := range 80 {
 		at = at.Add(time.Minute)
 		if err := f.store.Renew(at); err != nil {
 			t.Fatal(err)
