@@ -8,6 +8,7 @@
   --font: "Grand", "Avenir Next", "Helvetica Neue", sans-serif;
   --mono: ui-monospace, Menlo, monospace;
   --ease: cubic-bezier(.65, 0, .35, 1);
+  --sine: cubic-bezier(.37, 0, .63, 1);
   --S: min(62vh, 92vw);
   --aura: 88 136 232;
   --good: #17A673; --near: #E3A008; --past: #E0603A;
@@ -49,7 +50,7 @@ h1 {
   font-size: clamp(32px, 4.3vw, 62px);
   max-width: 75vw;
   line-height: 1.06;
-  letter-spacing: -0.022em;
+  letter-spacing: -0.032em;
   text-wrap: balance;
 }
 .overlay h1 { font-size: clamp(30px, 3.6vw, 52px); }
@@ -99,7 +100,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 #peek { position: fixed; inset: 0; pointer-events: none; }
 .card {
   position: absolute; top: calc(3vh + var(--S) / 2); width: min(32vw, 440px); border-radius: 12px; overflow: hidden;
-  background: #FFFFFF; box-shadow: 0 14px 44px #3D5A8A33;
+  background: #FFFFFF; box-shadow: 0 0 0 1px rgb(var(--aura) / .12), 0 16px 44px -12px rgb(var(--aura) / .5);
+  /* A slow bob and sway while it waits: two sine swings on periods that don't
+     divide, so the motion never repeats the same way. The individual translate
+     and rotate properties stack on the tilt and the slide in page.js's
+     transform, and both swings start at rest, so arriving never cuts. */
+  animation: bob 3.4s var(--sine) infinite alternate, sway 4.7s var(--sine) infinite alternate;
   font: 400 12px/1.5 var(--mono); color: #33445F;
 }
 .card.a { left: 2.5vw; }
@@ -133,6 +139,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .tiny { font-size: 9.5px; line-height: 1.42; }
 .padsm { padding: 10px 12px; }
 .c1 { color: #7FE8B8; } .c2 { color: #FFC98A; } .c3 { color: #9CC2FF; }
+@keyframes bob { from { translate: 0 0; } to { translate: 0 -7px; } }
+@keyframes sway { from { rotate: 0deg; } to { rotate: .45deg; } }
+@media (prefers-reduced-motion: reduce) { .card { animation: none; } }
 @media (max-width: 900px) { .card { display: none; } }
 @media (max-width: 760px) {
   .panel.overlay { bottom: 52px; align-content: start; overflow: auto; padding-block: 12px; }
