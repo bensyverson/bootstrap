@@ -1,5 +1,7 @@
 # Handoff: the VM runs reshaped the Homebrew step (2026-11-05)
 
+> **Superseded, 2026-11-05,** by [the release handoff](2026-11-05-handoff-release.md).
+
 **Start here:** run `job orient`, then read [the VM runs](2026-11-05-vm-run-findings.md) and [the seams doc](2026-11-05-bootstrap-seams.md). This replaces [the build handoff](2026-11-05-handoff-build.md), whose review commands and earlier rulings still hold.
 
 ## Where things stand
