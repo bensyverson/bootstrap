@@ -20,7 +20,7 @@
   "choices": [
     {
       "id": "just-tools",
-      "label": "Just the tools for now"
+      "label": "Skip"
     },
     {
       "id": "next",

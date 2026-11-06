@@ -130,6 +130,8 @@ var recordedCopyChanges = map[string]bool{
 	"Let’s talk in {app}.":                                                        true,
 	"{ai} has a question.":                                                        true,
 	"That’s all for now.":                                                         true,
+	// Ben approved done's line for just the tools in the preview, 2026-11-06.
+	"You can close this. When you want a project, ask {ai} to run bootstrap new.": true,
 	// Ben approved these from the live preview, 2026-11-05.
 	"And your email?":                        true,
 	"Git adds it to every version you save.": true,
@@ -485,9 +487,10 @@ func TestStatusDefaultsToTheFirst(t *testing.T) {
 // takes it off this list.
 func TestDraftScreens(t *testing.T) {
 	// Ben approved naming's choice of folder and github-code's line, 2026-11-06.
-	// Naming's "just the tools" and done's line for it are new (VGCn9C), and wait on him.
-	if got, want := Drafts(), []ID{"naming", "done"}; !slices.Equal(got, want) {
-		t.Errorf("drafts = %v, want %v", got, want)
+	// He approved naming's "Skip" and done's line for just the tools (VGCn9C) later
+	// that day, so nothing waits on him.
+	if got := Drafts(); len(got) != 0 {
+		t.Errorf("drafts = %v, want none", got)
 	}
 	code, err := Describe(Request{Screen: "github-code", Code: "ABCD-1234"}, Context{Agent: ClaudeCode})
 	if err != nil {

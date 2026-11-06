@@ -285,11 +285,9 @@ func (t *terminal) typeIn(ctx context.Context, q flow.Question) (screen.Answer, 
 	switch {
 	case q.Default != nil && q.Default.Name != "":
 		prompt = fmt.Sprintf("%s [%s]: ", q.Screen.Field.Label, q.Default.Name)
-	case skip != nil && skip.ID == "skip":
-		prompt = fmt.Sprintf("%s (Enter skips): ", q.Screen.Field.Label)
 	case skip != nil:
-		// Such as the name's "just the tools", which takes the place of one.
-		prompt = fmt.Sprintf("%s (Enter for %s): ", q.Screen.Field.Label, strings.ToLower(skip.Label[:1])+skip.Label[1:])
+		// A skip, or the name's "just the tools", which the page calls Skip too.
+		prompt = fmt.Sprintf("%s (Enter skips): ", q.Screen.Field.Label)
 	}
 	for {
 		line, err := t.read(ctx, q, prompt)

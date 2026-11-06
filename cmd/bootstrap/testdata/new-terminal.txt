@@ -2,7 +2,7 @@ $ bootstrap new
 
 What should we call this project?
   We’ll make a folder with this name.
-Project name (Enter for just the tools for now): project path=~/Projects/pine-bakery log=$DIR/new/pine-bakery-$HASH/session.jsonl
+Project name (Enter skips): project path=~/Projects/pine-bakery log=$DIR/new/pine-bakery-$HASH/session.jsonl
 note person named the project pine-bakery
 Got it. We’ll only stop if we need you.
 step plan done 1 of 13

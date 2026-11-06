@@ -200,7 +200,7 @@ func TestNewAtATerminalCanTakeJustTheTools(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("exit %d\n%s", code, out.String())
 	}
-	if !strings.Contains(out.String(), "Project name (Enter for just the tools for now): ") {
+	if !strings.Contains(out.String(), "Project name (Enter skips): ") {
 		t.Errorf("the name's prompt doesn't offer just the tools:\n%s", out.String())
 	}
 	if _, err := os.Stat(filepath.Join(w.home, "Projects")); err == nil {

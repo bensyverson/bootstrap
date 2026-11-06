@@ -69,7 +69,8 @@ func TestDoneSaysHowToMakeAProjectLater(t *testing.T) {
 	if plain(tools.Status) == plain(plainDone.Status) || !strings.Contains(plain(tools.Status), "project") {
 		t.Errorf("done with just the tools says %q, want how to make a project later", plain(tools.Status))
 	}
-	if !strings.Contains(plain(tools.Status), "Claude Code") {
-		t.Errorf("done with just the tools says %q, want the app's name", plain(tools.Status))
+	// Ben, 2026-11-06: "ask Claude to run bootstrap new".
+	if !strings.Contains(plain(tools.Status), "ask Claude to run bootstrap new") {
+		t.Errorf("done with just the tools says %q, want it to say to ask Claude", plain(tools.Status))
 	}
 }
