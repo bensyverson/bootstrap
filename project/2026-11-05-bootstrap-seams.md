@@ -214,3 +214,12 @@ From [the clean-Mac trial](2026-11-06-clean-mac-trial-findings.md), run 2, findi
 - **One rule, `flow.setsUpHere(probe, name)`:** the folder kind is `project` (not home, a standard folder or a generic name) and either it's a Git repo or no name was given. `flow.Where` (the CLI's) follows it, and so does the flow for a run with a `Person` that isn't just the tools (`Flow.startsInPlace`), so the two can't disagree. The page has no `Person` and keeps the old rule: in place only for a Git repo, since people often start the chat in a folder made for it.
 - **`--in` with no name** in such a folder is a usage error of its own ("with no name, new sets up this folder, so --in has nothing to place"), not "already a project".
 - Two terminal tests that relied on `~/pine-bakery` needing a name now start from home.
+
+## The helpers teach every session about bootstrap (`S2lZZq`, 2026-11-06)
+
+- **Ben's ruling:** bootstrap writes the instruction itself, only when the person accepts the helpers. This overrides, for this one block, the 2026-11-05 ruling that bootstrap leaves an agent's settings to the tools' own `hook install`.
+- **`internal/region`** keeps a named block between `<!-- name:begin -->` and `<!-- name:end -->` in a file people also edit: `Merge` replaces the block where it is or appends it after a blank line, `Write` makes the file and folder if needed and writes nothing when nothing changed, `Has` checks for it. Every line outside the block is kept.
+- **Where:** `screen.Agent.RulesFile()`, under home: `.claude/CLAUDE.md` for Claude Code, `.config/opencode/AGENTS.md` for OpenCode (OpenCode's documented global rules file).
+- **When:** `actSettings` writes it after the hooks (`flow/teach.go`), naming `bootstrap` plainly once Homebrew's copy is there and `~/.bootstrap/bin/bootstrap` while the download stayed, and notes "told Claude how to start a project, in ~/.claude/CLAUDE.md".
+- **Done reads the file, not the log:** with just the tools and the block present, done shows `tools-ask` ("You can close this window. Next time you start a project, just ask {ai} to bootstrap it.") and its handoff tells the agent to say so. Without it, `tools` and the old handoff.
+- **Words approved by Ben in the chat, 2026-11-06:** the block, the settings line ("They help {ai} start new projects, manage long sessions, and use Jobs for planning.") and done's `tools-ask` line. The block's sentence on setting up the folder you're already in (`FaXHnx`) was added after his approval and waits on his read.

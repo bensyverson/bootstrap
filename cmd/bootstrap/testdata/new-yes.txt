@@ -29,6 +29,7 @@ step rules done 10 of 13
 note person chose yes on settings
 note installed contextfill's hook
 note installed jobs's hook
+note told Claude how to start a project, in ~/.claude/CLAUDE.md
 step settings done 11 of 13
 note to use Claude from your phone, ask Claude how (in Claude Code, it's /remote-control)
 step phone done 12 of 13

@@ -27,12 +27,12 @@ Say it in your own words if you like, but keep every fact: it downloads a progra
 
 - The page offers Apple's developer tools, Homebrew (a tool that installs other tools), and a few of Ben's tools, each with a line on what it's for. Nothing is installed that they don't pick.
 - Then it makes a project folder for them, or sets up the one you started in.
-- With their OK on the page, it also signs them in to GitHub, sets the name and email Git puts on their work, and turns on a few machine-wide helpers for you.
+- With their OK on the page, it also signs them in to GitHub, sets the name and email Git puts on their work, and turns on a few machine-wide helpers for you. The helpers include a short note in your instructions for every session (`~/.claude/CLAUDE.md`, or OpenCode's `~/.config/opencode/AGENTS.md`) saying how to start a new project; everything else in that file stays.
 - It never asks for their password in the chat. If their Mac asks, that's macOS itself.
 
 Then ask again. Don't go on without a clear yes in the chat. Some apps (Claude Code's auto mode) only let a downloaded program run once the person has said yes in the chat.
 
-To undo the program later: `~/.bootstrap/bin/bootstrap stop`, then `rm -rf ~/.bootstrap`. Once the setup has moved it into Homebrew, it's `/opt/homebrew/bin/bootstrap stop`, then `brew uninstall bootstrap` and `rm -rf ~/.bootstrap`. What it installed stays.
+To undo the program later: `~/.bootstrap/bin/bootstrap stop`, then `rm -rf ~/.bootstrap`. Once the setup has moved it into Homebrew, it's `/opt/homebrew/bin/bootstrap stop`, then `brew uninstall bootstrap` and `rm -rf ~/.bootstrap`. What it installed stays. The note in your instructions file sits between `<!-- bootstrap:begin -->` and `<!-- bootstrap:end -->`; delete those lines and what's between them to take it out.
 
 ## 2. Check this Mac
 
@@ -120,7 +120,7 @@ A `handoff` row means the setup needs you. It says what happened (`what:`), show
 
 - **`handoff trouble`**: something went wrong. Read the log it names, and fix what you safely can, without `sudo` or the person's password. Then `~/.bootstrap/bin/bootstrap resume --retry` runs the step again from its check. If the person would rather go on without that tool or step, and the handoff offers it, `resume --skip`. If you need to talk it over, ask the person in the chat first, then resume. After a resume, go back to `wait`. If the cure is something the person does in another window, such as clicking Install, don't hand the turn back to ask them to tell you: check for its result in a loop that ends on its own within 90 seconds, such as `for i in $(seq 1 9); do test -e <path> && break; sleep 10; done; test -e <path>`, and run it again until the result is there (your shell tool may stop any command at 2 minutes). Then resume.
 - **`handoff phone`**: the person wants to use you from their phone. Explain how your app does that (in Claude Code, they type `/remote-control` into this chat once the setup is over), then `wait` again. OpenCode never gets this handoff: it has no way of its own to reach a phone, so the setup skips the question there.
-- **`handoff done`**: the setup is over. Sum up in the chat what was set up, then tell the person how to start you again in their project folder (the handoff names it), so the new tools are found by name. See [Starting again in the project](#starting-again-in-the-project). Nothing more to run, not even `stop`: closing the page ends the program. If they'll make more projects, tell them that next time they can skip the page: in a new Terminal window, `bootstrap new <name>` (or `~/.bootstrap/bin/bootstrap new <name>` if a `note kept` row said it stayed there) sets up a new project and asks only what it can't tell on its own.
+- **`handoff done`**: the setup is over. Sum up in the chat what was set up, then tell the person how to start you again in their project folder (the handoff names it), so the new tools are found by name. See [Starting again in the project](#starting-again-in-the-project). Nothing more to run, not even `stop`: closing the page ends the program. If they'll make more projects and the handoff says your instructions now say how, tell them they can just ask you next time. Either way, they can skip the page: in a new Terminal window, `bootstrap new <name>` (or `~/.bootstrap/bin/bootstrap new <name>` if a `note kept` row said it stayed there) sets up a new project and asks only what it can't tell on its own.
 
 Other ways `wait` can end, each exit 5:
 

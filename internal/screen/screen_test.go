@@ -133,6 +133,9 @@ var recordedCopyChanges = map[string]bool{
 	"That’s all for now.":                      true,
 	// Ben approved done's line for just the tools in the preview, 2026-11-06.
 	"You can close this. When you want a project, ask {ai} to run bootstrap new.": true,
+	// Ben approved these in the chat, 2026-11-06 (S2lZZq).
+	"They help {ai} start new projects, manage long sessions, and use Jobs for planning.":      true,
+	"You can close this window. Next time you start a project, just ask {ai} to bootstrap it.": true,
 	// Ben approved these from the live preview, 2026-11-05.
 	"And your email?":                        true,
 	"Git adds it to every version you save.": true,
@@ -540,5 +543,14 @@ func TestOnlyClaudeCodeHasRemoteControl(t *testing.T) {
 	}
 	if got := OpenCode.RemoteControl(); got != "" {
 		t.Errorf("OpenCode's remote control = %q, want none", got)
+	}
+}
+
+func TestEachAgentNamesItsInstructionsFile(t *testing.T) {
+	if got := ClaudeCode.RulesFile(); got != ".claude/CLAUDE.md" {
+		t.Errorf("Claude Code's = %q", got)
+	}
+	if got := OpenCode.RulesFile(); got != ".config/opencode/AGENTS.md" {
+		t.Errorf("OpenCode's = %q", got)
 	}
 }

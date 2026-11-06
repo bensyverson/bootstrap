@@ -105,6 +105,8 @@ func TestTheDoneHandoffNamesHomebrewsBootstrap(t *testing.T) {
 	w := newWorld(t)
 	w.downloaded()
 	w.answers[asked{"naming", ""}] = screen.Answer{Choice: screen.JustTools}
+	// With the helpers on, the handoff says to just ask instead (S2lZZq; teach_test.go).
+	w.answers[asked{"settings", ""}] = screen.Answer{Choice: "not-now"}
 	if err := w.walk(); err != nil {
 		t.Fatal(err)
 	}
@@ -127,6 +129,8 @@ func TestTheDoneHandoffNamesTheDownloadWhenItStayed(t *testing.T) {
 	w := newWorld(t)
 	w.downloaded()
 	w.answers[asked{"naming", ""}] = screen.Answer{Choice: screen.JustTools}
+	// With the helpers on, the handoff says to just ask instead (S2lZZq; teach_test.go).
+	w.answers[asked{"settings", ""}] = screen.Answer{Choice: "not-now"}
 	w.mac.On("brew install bensyverson/tap/bootstrap", flow.Result{Exit: 1}, 1)
 	if err := w.walk(); err != nil {
 		t.Fatal(err)

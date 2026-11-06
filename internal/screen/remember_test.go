@@ -74,3 +74,24 @@ func TestDoneSaysHowToMakeAProjectLater(t *testing.T) {
 		t.Errorf("done with just the tools says %q, want it to say to ask Claude", plain(tools.Status))
 	}
 }
+
+// Ben, 2026-11-06 (S2lZZq): with the helpers on, every later session knows bootstrap.
+func TestDoneSaysJustAskOnceTheHelpersAreOn(t *testing.T) {
+	d, err := Describe(Request{Screen: "done", Status: DoneJustToolsAsk}, Context{Agent: ClaudeCode})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "You can close this window. Next time you start a project, just ask Claude to bootstrap it."; plain(d.Status) != want {
+		t.Errorf("done says %q, want %q", plain(d.Status), want)
+	}
+}
+
+func TestTheHelpersMentionNewProjects(t *testing.T) {
+	d, err := Describe(Request{Screen: "settings"}, Context{Agent: OpenCode})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := "They help OpenCode start new projects, manage long sessions, and use Jobs for planning."; plain(d.Status) != want {
+		t.Errorf("settings says %q, want %q", plain(d.Status), want)
+	}
+}

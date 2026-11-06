@@ -154,6 +154,9 @@ const JustTools = "just-tools"
 // DoneJustTools is the done screen's status after a setup with no project.
 const DoneJustTools = "tools"
 
+// DoneJustToolsAsk is DoneJustTools once the agent's instructions say how to start a project.
+const DoneJustToolsAsk = "tools-ask"
+
 // Context is what a description depends on besides the request.
 type Context struct {
 	Agent Agent
@@ -206,6 +209,12 @@ var remoteControl = map[string]string{ClaudeCode.ID: "/remote-control"}
 
 // RemoteControl is the command that carries a session to the person's phone, or "" when the app has none.
 func (a Agent) RemoteControl() string { return remoteControl[a.ID] }
+
+// rulesFile is each agent's instructions file for every session, under the home folder.
+var rulesFile = map[string]string{ClaudeCode.ID: ".claude/CLAUDE.md", OpenCode.ID: ".config/opencode/AGENTS.md"}
+
+// RulesFile is the agent's instructions file for every session, relative to the home folder.
+func (a Agent) RulesFile() string { return rulesFile[a.ID] }
 
 // Agents returns every agent.
 func Agents() []Agent { return []Agent{ClaudeCode, OpenCode} }

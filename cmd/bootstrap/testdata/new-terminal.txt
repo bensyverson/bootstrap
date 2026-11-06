@@ -47,12 +47,13 @@ note started Jobs in ~/Projects/pine-bakery
 step rules done 10 of 13
 
 Turn on Claude’s helpers?
-  They warn Claude before a session runs too long, and keep its plans in Jobs.
+  They help Claude start new projects, manage long sessions, and use Jobs for planning.
   1. Yes, turn them on (default)
   2. Not now
 Choose 1-2, or press Enter for Yes, turn them on: note person chose yes on settings
 note installed contextfill's hook
 note installed jobs's hook
+note told Claude how to start a project, in ~/.claude/CLAUDE.md
 step settings done 11 of 13
 note to use Claude from your phone, ask Claude how (in Claude Code, it's /remote-control)
 step phone done 12 of 13

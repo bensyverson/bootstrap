@@ -52,6 +52,9 @@ func actSettings(r *run) (outcome, error) {
 			return outcome{}, err
 		}
 	}
+	if err := r.teach(state.Agent); err != nil {
+		return outcome{}, err
+	}
 	return done()
 }
 
@@ -103,24 +106,31 @@ func actDone(r *run) (outcome, error) {
 	if err != nil {
 		return outcome{}, err
 	}
+	state, err := r.state()
+	if err != nil {
+		return outcome{}, err
+	}
+	taught := r.taught(state.Agent)
 	req := screen.Request{Screen: "done"}
-	if tools {
+	switch {
+	case tools && taught:
+		req.Status = screen.DoneJustToolsAsk
+	case tools:
 		req.Status = screen.DoneJustTools
 	}
 	if err := r.show(req); err != nil {
-		return outcome{}, err
-	}
-	state, err := r.state()
-	if err != nil {
 		return outcome{}, err
 	}
 	if slices.ContainsFunc(state.Handoffs, func(l session.Logged) bool { return l.Handoff.Kind == session.HandoffDone }) {
 		return done()
 	}
 	var what string
-	if tools {
+	switch {
+	case tools && taught:
+		what = fmt.Sprintf("the setup is done, with just the tools and no project: sum it up in the chat, and tell the person that next time they start a project they can just ask you to bootstrap it, as the page says (your instructions in %s now say how)", r.tilde(r.rulesPath(state.Agent)))
+	case tools:
 		what = fmt.Sprintf("the setup is done, with just the tools and no project: sum it up in the chat, and tell the person how to make a project later, as the page says: ask their agent to run bootstrap new, or run %s (or paste the setup link into their agent again)", r.personCommand("new <name>"))
-	} else {
+	default:
 		dir, err := r.mustProject()
 		if err != nil {
 			return outcome{}, err

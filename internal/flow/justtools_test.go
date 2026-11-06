@@ -57,15 +57,17 @@ func TestJustTheToolsOnThePageSkipsTheProject(t *testing.T) {
 		t.Error("the helpers are machine-wide, but none was turned on")
 	}
 	state := w.state()
-	if state.Current == nil || state.Current.Request != (screen.Request{Screen: "done", Status: screen.DoneJustTools}) {
-		t.Errorf("ended on %+v, want done for just the tools", state.Current)
+	// The helpers are on, so done says to just ask (S2lZZq); with them off it
+	// says how to run bootstrap new (selfmove_test.go, teach_test.go).
+	if state.Current == nil || state.Current.Request != (screen.Request{Screen: "done", Status: screen.DoneJustToolsAsk}) {
+		t.Errorf("ended on %+v, want done for just the tools, saying to just ask", state.Current)
 	}
 	i := slices.IndexFunc(state.Handoffs, func(l session.Logged) bool { return l.Handoff.Kind == session.HandoffDone })
 	if i < 0 {
 		t.Fatal("no done handoff")
 	}
-	if what := state.Handoffs[i].Handoff.What; !strings.Contains(what, "bootstrap new") || !strings.Contains(what, "link") {
-		t.Errorf("the done handoff says %q, want how to make a project later", what)
+	if what := state.Handoffs[i].Handoff.What; !strings.Contains(what, "just ask you to bootstrap it") {
+		t.Errorf("the done handoff says %q, want that they can just ask", what)
 	}
 }
 
