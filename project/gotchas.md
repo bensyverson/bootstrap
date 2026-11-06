@@ -14,10 +14,6 @@ Format: one dated H2 headline, then one paragraph. If an entry needs more than t
 
 `requestAnimationFrame` never fires in `sleepy`, and a probe that awaits it hangs. Web animations also sit at their first frame, so a page that fades in screenshots as blank. Draw once directly and test stills through a link that opens a screen at rest (`#tools-jobs` in the prototype). Live motion can only be judged in a real browser.
 
-## 2026-11-05 `GIT_CONFIG_GLOBAL=/dev/null` commits under a made-up email
-
-The handoffs' sandbox tip for running `agents` (`GIT_CONFIG_GLOBAL=/dev/null`) also hides `user.email`, so a `git commit` made with it falls back to `ben@<hostname>` without any warning. It nearly reached a pushed release of `agents`. Use the override only for `agents` itself; run `git commit`, and any release script that commits, unsandboxed with the real config, and check `git log -1 --format='%ae'` before pushing.
-
 ## 2026-11-05 `spctl -a -t exec` rejects every bare command-line tool
 
 It assesses apps, so a signed and notarized `bootstrap` comes back "rejected (the code is valid but does not seem to be an app)", which reads as a failed notarization. Check a bare binary with `spctl -a -vvv -t open --context context:primary-signature <file>` and look for `source=Notarized Developer ID`. See [the binary plan](2026-11-05-bootstrap-binary-plan.md), "Verifying the download".
@@ -32,4 +28,4 @@ Run sandboxed, it reports `Status: invalid signature` (exit 1) for Homebrew's go
 
 ## 2026-11-06 Hiding `~/.gitconfig` from the sandbox commits under the wrong email
 
-Inside the sandbox, git can't read `~/.gitconfig` and stops with a fatal error. Setting `GIT_CONFIG_GLOBAL=/dev/null` gets past that, but git then guesses an identity from the hostname, and a commit made that way carries `ben@<host>` instead of Ben's GitHub noreply address (5c5b4ec, 2026-11-06). Run git commands that write outside the sandbox.
+Inside the sandbox, git can't read `~/.gitconfig` and stops with a fatal error. Setting `GIT_CONFIG_GLOBAL=/dev/null` gets past that, but git then guesses an identity from the hostname, and a commit made that way carries `ben@<host>` instead of Ben's GitHub noreply address (5c5b4ec, 2026-11-06). That override was once the handoffs' tip for running `agents` in the sandbox, and a commit made with it nearly reached a pushed release of `agents`. Run `git commit`, and any release script that commits, outside the sandbox with the real config, and check `git log -1 --format='%ae'` before pushing.
