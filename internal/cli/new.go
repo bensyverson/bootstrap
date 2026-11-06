@@ -74,7 +74,7 @@ var givenFlags = map[flow.GivenField]string{
 
 var newCommand = command{
 	name: "new", class: "Act", usage: "new [<name> | --just-tools] [--in <folder>] [--yes] [--skip <tool>] [--making <website|app|code|other>] [--[no-]git] [--[no-]github] [--[no-]identity] [--git-name <name> --git-email <email>] [--[no-]xcode] [--[no-]settings] [--agent <claude-code|opencode>] [--json]",
-	about: `Runs the whole setup here, in the foreground, with no page, server or browser. In a folder that's already a project (a Git repo), it sets that folder up and takes no name or --in; anywhere else, <name> makes <folder>/<name>, in ~/Projects unless --in or an earlier pick says otherwise. --just-tools makes no project: it installs the tools and does only what's for the whole Mac (GitHub, Git's name and email, the agent's helpers), and takes no name.
+	about: `Runs the whole setup here, in the foreground, with no page, server or browser. In a folder that's already a project (a Git repo), it sets that folder up and takes no name or --in. Anywhere else, <name> makes <folder>/<name>, in ~/Projects unless --in or an earlier pick says otherwise; with no name, it sets up the folder it's in, unless that's the home folder, Desktop, Documents, Downloads or a generic name such as Claude or Projects. --just-tools makes no project: it installs the tools and does only what's for the whole Mac (GitHub, Git's name and email, the agent's helpers), and takes no name.
 At a terminal, it asks each open question with its default ready, so Enter takes it. --yes takes every default without asking. With no terminal (an agent) or --json, and no --yes, it refuses with exit 2 before touching anything, listing each question no flag or earlier answer settles and the flag that answers it. A question with no default (Git's name and email, when GitHub can't supply them) fails with exit 2, naming the flag.
 Each answer, on the page or here, is remembered in ~/.bootstrap/preferences.json, and the next setup takes it as the default, so with --yes a no stays a no. A flag wins over a remembered answer and is remembered in its place. bootstrap prefs lists them, and bootstrap prefs reset <name> forgets one.
 Every offer is on unless a flag or a remembered answer says no:
@@ -170,6 +170,10 @@ func runNew(c *call) (output, error) {
 		return output{}, err
 	}
 	if inPlace && flagged {
+		if _, err := os.Stat(filepath.Join(dir, ".git")); err != nil {
+			return output{}, &failure{code: exitUsage, message: "with no name, new sets up this folder, so --in has nothing to place",
+				next: "bootstrap new <name> --in " + in + " to make a new project there, or bootstrap new with no --in to set up this folder"}
+		}
 		return output{}, whereFailure(flow.ErrInProject)
 	}
 	again := "bootstrap new"

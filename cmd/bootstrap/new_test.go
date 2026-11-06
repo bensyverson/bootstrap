@@ -214,12 +214,41 @@ func TestNewAgainChangesNothingAndAsksNothing(t *testing.T) {
 
 func TestNewWithNoNameOutsideAProject(t *testing.T) {
 	w := macForNew(t)
+	w.cwd = w.home
 	w.run(t, "new").wantErr(t, 2, "this folder isn't a project, so new needs a name for one", "next: bootstrap new <name>")
 	w.run(t, "new", "--yes").wantErr(t, 2, "next: bootstrap new <name>")
 	w.noPage(t)
 	if _, err := os.Stat(filepath.Join(w.home, "Projects")); err == nil {
 		t.Error("a refused new made ~/Projects")
 	}
+}
+
+// Ben, 2026-11-06 (FaXHnx): "bootstrap this" in a folder they made sets that folder up.
+func TestNewWithNoNameSetsUpTheFolderItsIn(t *testing.T) {
+	w := macForNew(t)
+	if r := w.run(t, "new", "--yes"); r.code != 0 {
+		t.Fatalf("exit %d\n%s\n%s", r.code, r.stdout, r.stderr)
+	}
+	if _, err := os.Stat(filepath.Join(w.cwd, ".git")); err != nil {
+		t.Errorf("the folder new ran in wasn't set up: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(w.home, "Projects")); err == nil {
+		t.Error("new with no name made ~/Projects")
+	}
+}
+
+func TestNewWithInButNoNameInAFolderTheyMade(t *testing.T) {
+	w := macForNew(t)
+	w.run(t, "new", "--in", "~/git", "--yes").wantErr(t, 2, "with no name, new sets up this folder", "next: bootstrap new <name> --in ~/git")
+}
+
+func TestNewWithNoNameInAGenericFolder(t *testing.T) {
+	w := macForNew(t)
+	w.cwd = filepath.Join(w.home, "Claude Code")
+	if err := os.MkdirAll(w.cwd, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	w.run(t, "new", "--yes").wantErr(t, 2, "next: bootstrap new <name>")
 }
 
 func TestNewWithANameInsideAProject(t *testing.T) {
@@ -324,6 +353,8 @@ func TestNewRefusesBadFlags(t *testing.T) {
 
 func TestNewAtATerminal(t *testing.T) {
 	w := macForNew(t)
+	// From home, which needs a name; a folder they made is set up in place (FaXHnx).
+	w.cwd = w.home
 	var out bytes.Buffer
 	// The name, then Enter for Git, Enter for the GitHub identity, 1 for a website, then Enter twice.
 	code := cli.Run([]string{"new"}, w.terminal("Pine Bakery\n\n\n1\n\n\n", &out))

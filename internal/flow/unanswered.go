@@ -61,12 +61,13 @@ func (f *Flow) Unanswered() ([]screen.ID, error) {
 	}
 	probe := f.cfg.Probe
 	dir := probe.Cwd
-	if !startsInPlace(probe) {
+	inPlace := f.startsInPlace()
+	if !inPlace {
 		dir, _, _ = Where(probe, f.cfg.Given.Name, f.cfg.Given.In)
 	}
 	hasRepo := dir != "" && exists(filepath.Join(dir, ".git"))
 	named, _ := last(naming.Screen)
-	justTools := !startsInPlace(probe) && named.Choice == screen.JustTools
+	justTools := !inPlace && named.Choice == screen.JustTools
 
 	var open []screen.ID
 	if !answered(list.Screen) && !toolsSettled(probe) {

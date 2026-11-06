@@ -402,6 +402,13 @@ func TestWhere(t *testing.T) {
 	home := t.TempDir()
 	repo := filepath.Join(home, "code", "bakery")
 	put(t, filepath.Join(repo, ".git", "HEAD"), "ref: refs/heads/main\n")
+	made := filepath.Join(home, "bakery")
+	generic := filepath.Join(home, "Claude")
+	for _, dir := range []string{made, generic} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
 	for _, tc := range []struct {
 		name, cwd, given, in, want string
 		inPlace                    bool
@@ -414,6 +421,10 @@ func TestWhere(t *testing.T) {
 		{"a folder is ignored in place", repo, "", "~/git", repo, true, nil},
 		{"no name outside a project", home, "", "", "", false, flow.ErrNeedsName},
 		{"a name inside a project", repo, "other", "", "", false, flow.ErrInProject},
+		// Ben, 2026-11-06 (FaXHnx): "bootstrap this" in a folder they made.
+		{"no name in a folder they made", made, "", "", made, true, nil},
+		{"a name in a folder they made", made, "pine-bakery", "", filepath.Join(home, "Projects", "pine-bakery"), false, nil},
+		{"no name in a generic folder", generic, "", "", "", false, flow.ErrNeedsName},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got, inPlace, err := flow.Where(detect.Probe{Home: home, Cwd: tc.cwd}, tc.given, tc.in)

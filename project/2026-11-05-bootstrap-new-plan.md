@@ -6,6 +6,8 @@
 
 - **The verb is `bootstrap new [<name>]`.** It runs the same setup the page runs, in the foreground, with no server, page or browser. A starting folder that's already a project is set up in place, and `<name>` isn't needed; otherwise `<name>` makes `~/Projects/<name>`.
 
+  > **Changed 2026-11-06 (Ben, `FaXHnx`):** with no name, `new` also sets up the folder it's in when that folder isn't home, Desktop, Documents, Downloads or a generic name, so "bootstrap this" works in a folder the person made. A name still makes `<in>/<name>`. The page still sets up in place only a Git repo.
+
   > **Corrected 2026-11-05 (`gpvHd3`):** `~/Projects` is now only the default. `--in <folder>` puts the project in `<folder>/<name>`, and the folder picked, here or on the page, is remembered in `~/.bootstrap/preferences.json` for the next setup. See [the seams](2026-11-05-bootstrap-seams.md), "Tidying `new`, and where projects go".
 - **One flow, two ways of asking.** `internal/flow` stays the only copy of the steps, their checks and their order. It gains a seam for asking the person: the page (today's show-and-wait on the session log) or the terminal. Library and thin executable: the CLI only wires the terminal side in. A second copy of the steps in `internal/cli` is the thing to avoid.
 - **The existing parser, not Cobra.** `internal/cli` already handles flags, switches, help and errors that teach, and Cobra would be the first outside library (a dependency needs Ben's OK, and this doesn't need one).

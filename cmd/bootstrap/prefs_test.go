@@ -195,6 +195,8 @@ func TestNewJustTheToolsRefusesANameOrAProject(t *testing.T) {
 
 func TestNewAtATerminalCanTakeJustTheTools(t *testing.T) {
 	w := macForNew(t)
+	// From home, which needs a name; a folder they made is set up in place (FaXHnx).
+	w.cwd = w.home
 	var out bytes.Buffer
 	code := cli.Run([]string{"new"}, w.terminal("\n\n\n\n", &out))
 	if code != 0 {

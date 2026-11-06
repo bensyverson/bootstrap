@@ -126,6 +126,15 @@ func startsInPlace(probe detect.Probe) bool {
 	return start.Git == detect.Yes && start.Kind == detect.KindProject
 }
 
+// setsUpHere reports whether a bootstrap new run given name sets up the starting
+// folder: one that's already a project, or, with no name, any folder that isn't
+// home, a standard folder or a generic one (Ben, 2026-11-06, FaXHnx), so "bootstrap
+// this" works in a folder the person made. The page asks for a name instead.
+func setsUpHere(probe detect.Probe, name string) bool {
+	start := detect.Run(probe).Folder
+	return start.Kind == detect.KindProject && (start.Git == detect.Yes || name == "")
+}
+
 // CheckJustTools says whether a setup from probe.Cwd can be just the tools. A
 // folder that's already a project is set up where it is, so it's ErrInProject.
 func CheckJustTools(probe detect.Probe) error {
@@ -135,11 +144,11 @@ func CheckJustTools(probe detect.Probe) error {
 	return nil
 }
 
-// Where is the folder a setup from probe.Cwd works in: the starting folder when
-// it's already a project, and otherwise <in>/<name>, where in is "~/git" or an
+// Where is the folder a bootstrap new run from probe.Cwd works in: the starting
+// folder when setsUpHere, and otherwise <in>/<name>, where in is "~/git" or an
 // absolute path, and empty is ~/Projects. A setup in place ignores in.
 func Where(probe detect.Probe, name, in string) (dir string, inPlace bool, err error) {
-	if startsInPlace(probe) {
+	if setsUpHere(probe, name) {
 		if name != "" {
 			return "", false, ErrInProject
 		}

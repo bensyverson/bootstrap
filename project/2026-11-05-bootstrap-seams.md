@@ -208,3 +208,9 @@ From [the clean-Mac trial](2026-11-06-clean-mac-trial-findings.md), run 2, findi
 
 - **What the agent can do is a fact about the agent.** `screen.Agent.RemoteControl()` is the app's own command that carries a session to a phone: `/remote-control` for Claude Code, empty for OpenCode. OpenCode has no first-party equivalent (searched 2026-11-06: only third-party bridges such as OpenCode Pilot, HAPI, Happier and Sesori, none of which the setup installs).
 - **`checkPhone` returns done when the agent has none,** so the step never runs: no `phone` screen, no `phone` handoff, and `bootstrap new` notes no tip. The hint and the handoff's words name the agent's command rather than hard-coding Claude Code's. The page's samples still render `phone.opencode.json`, as they render every screen for both apps; it is never shown on OpenCode's path.
+
+## `new` with no name sets up the folder it's in (`FaXHnx`, 2026-11-06)
+
+- **One rule, `flow.setsUpHere(probe, name)`:** the folder kind is `project` (not home, a standard folder or a generic name) and either it's a Git repo or no name was given. `flow.Where` (the CLI's) follows it, and so does the flow for a run with a `Person` that isn't just the tools (`Flow.startsInPlace`), so the two can't disagree. The page has no `Person` and keeps the old rule: in place only for a Git repo, since people often start the chat in a folder made for it.
+- **`--in` with no name** in such a folder is a usage error of its own ("with no name, new sets up this folder, so --in has nothing to place"), not "already a project".
+- Two terminal tests that relied on `~/pine-bakery` needing a name now start from home.

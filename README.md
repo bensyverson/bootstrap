@@ -17,7 +17,7 @@ https://github.com/bensyverson/bootstrap
 Once your Mac is set up, start each new project from Terminal, with no page:
 
 ```sh
-~/.bootstrap/bin/bootstrap new pine-bakery
+bootstrap new pine-bakery
 ```
 
 ## Docs

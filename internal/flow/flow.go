@@ -122,7 +122,7 @@ type Config struct {
 // Flow is one run of the setup.
 type Flow struct {
 	cfg Config
-	// inPlace is a starting folder that's already a project, which is set up where it is.
+	// inPlace is a starting folder that's set up where it is (startsInPlace).
 	inPlace bool
 	// startSeq is the log's last seq before this run, so the run can tell its own answers from earlier ones.
 	startSeq int
@@ -166,10 +166,20 @@ func New(cfg Config) (*Flow, error) {
 	return &Flow{cfg: cfg}, nil
 }
 
+// startsInPlace reports whether this run sets up the starting folder. A run with
+// a person at a terminal is bootstrap new, which follows setsUpHere; the page
+// sets up in place only a folder that's already a project.
+func (f *Flow) startsInPlace() bool {
+	if f.cfg.Person != nil && !f.cfg.Given.JustTools {
+		return setsUpHere(f.cfg.Probe, f.cfg.Given.Name)
+	}
+	return startsInPlace(f.cfg.Probe)
+}
+
 // Run walks every step to the end. It returns early only when the log can't be
 // written, the session ends, or ctx is done: anything else is a handoff.
 func (f *Flow) Run(ctx context.Context) error {
-	f.inPlace = startsInPlace(f.cfg.Probe)
+	f.inPlace = f.startsInPlace()
 	if err := os.MkdirAll(f.logs(), 0o700); err != nil {
 		return err
 	}
