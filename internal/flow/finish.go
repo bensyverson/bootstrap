@@ -107,7 +107,7 @@ func actDone(r *run) (outcome, error) {
 	}
 	var what string
 	if tools {
-		what = fmt.Sprintf("the setup is done, with just the tools and no project: sum it up in the chat, and tell the person how to make a project later, as the page says: ask their agent to run %s (or paste the setup link into it again)", r.bootstrapCommand("new <name>"))
+		what = fmt.Sprintf("the setup is done, with just the tools and no project: sum it up in the chat, and tell the person how to make a project later, as the page says: ask their agent to run bootstrap new, or run %s (or paste the setup link into their agent again)", r.personCommand("new <name>"))
 	} else {
 		dir, err := r.mustProject()
 		if err != nil {

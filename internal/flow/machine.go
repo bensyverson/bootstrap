@@ -280,6 +280,9 @@ func actHomebrew(r *run) (outcome, error) {
 	if err := r.show(screen.Request{Screen: "brew-ask"}); err != nil {
 		return outcome{}, err
 	}
+	if err := r.pause(r.f.cfg.Limits.BrewRead); err != nil {
+		return outcome{}, err
+	}
 	if _, h, err := r.exec(Command{Kind: Change, Path: openPath, Args: []string{pkg}}, "homebrew"); err != nil || h != nil {
 		return orHandOff(h, err)
 	}

@@ -100,7 +100,7 @@ func TestAFailedBootstrapUpgradeIsNotTrouble(t *testing.T) {
 	}
 }
 
-// With just the tools, the done handoff names the bootstrap that's there.
+// With just the tools, the done handoff tells the person how to run bootstrap later.
 func TestTheDoneHandoffNamesHomebrewsBootstrap(t *testing.T) {
 	w := newWorld(t)
 	w.downloaded()
@@ -113,7 +113,30 @@ func TestTheDoneHandoffNamesHomebrewsBootstrap(t *testing.T) {
 	if i < 0 {
 		t.Fatal("no done handoff")
 	}
-	if what := state.Handoffs[i].Handoff.What; !strings.Contains(what, "/opt/homebrew/bin/bootstrap new") {
+	// Ben, 2026-11-06: Homebrew puts its bin on every new Terminal's PATH
+	// (/etc/paths.d/homebrew), so the person runs plain bootstrap new.
+	what := state.Handoffs[i].Handoff.What
+	if !strings.Contains(what, "bootstrap new <name> in a new Terminal window") || strings.Contains(what, "/opt/homebrew") {
+		t.Errorf("the done handoff says %q", what)
+	}
+}
+
+// Until Homebrew's copy is there, the download is off the PATH, so the
+// person needs its full path.
+func TestTheDoneHandoffNamesTheDownloadWhenItStayed(t *testing.T) {
+	w := newWorld(t)
+	w.downloaded()
+	w.answers[asked{"naming", ""}] = screen.Answer{Choice: screen.JustTools}
+	w.mac.On("brew install bensyverson/tap/bootstrap", flow.Result{Exit: 1}, 1)
+	if err := w.walk(); err != nil {
+		t.Fatal(err)
+	}
+	state := w.state()
+	i := slices.IndexFunc(state.Handoffs, func(l session.Logged) bool { return l.Handoff.Kind == session.HandoffDone })
+	if i < 0 {
+		t.Fatal("no done handoff")
+	}
+	if what := state.Handoffs[i].Handoff.What; !strings.Contains(what, "~/.bootstrap/bin/bootstrap new <name>") {
 		t.Errorf("the done handoff says %q", what)
 	}
 }

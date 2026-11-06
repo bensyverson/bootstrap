@@ -74,12 +74,15 @@ type Limits struct {
 	// AppleWindow is how long the Apple step waits for Apple's installer to
 	// start before it tries to bring the installer's window forward anyway.
 	AppleWindow time.Duration
+	// BrewRead is how long brew-ask stays in view before Homebrew's installer
+	// opens over it, so the person reads what's coming (Ben, 2026-11-06).
+	BrewRead time.Duration
 }
 
 // DefaultLimits are the limits outside tests. Each is far past what the step
 // takes on a working Mac, since going past one hands off.
 func DefaultLimits() Limits {
-	return Limits{Command: 10 * time.Minute, Apple: time.Hour, Homebrew: 30 * time.Minute, Login: 15 * time.Minute, AppleWindow: 5 * time.Second}
+	return Limits{Command: 10 * time.Minute, Apple: time.Hour, Homebrew: 30 * time.Minute, Login: 15 * time.Minute, AppleWindow: 5 * time.Second, BrewRead: 2 * time.Second}
 }
 
 // DefaultHooks are the tools whose own `hook install` the settings step runs (GGbVZ5).

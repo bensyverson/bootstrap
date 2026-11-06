@@ -52,7 +52,13 @@ func (r *run) moveOntoHomebrew(trust func() error) error {
 	return r.note("deleted %s; %s runs from now on", detect.DownloadedBootstrap, detect.HomebrewBootstrap)
 }
 
-// bootstrapCommand is a bootstrap command as the person or agent should run it.
-func (r *run) bootstrapCommand(args string) string {
-	return fmt.Sprintf("%s %s", detect.Bootstrap(r.f.cfg.Probe), args)
+// personCommand is a bootstrap command as the person should type it later in
+// Terminal. Homebrew's installer puts its bin on every new shell's PATH
+// (/etc/paths.d/homebrew), so Homebrew's copy goes by its name; the download is
+// off the PATH and needs its full path.
+func (r *run) personCommand(args string) string {
+	if detect.Bootstrap(r.f.cfg.Probe) == detect.HomebrewBootstrap {
+		return fmt.Sprintf("bootstrap %s in a new Terminal window", args)
+	}
+	return fmt.Sprintf("%s %s in Terminal", detect.DownloadedBootstrap, args)
 }
