@@ -11,13 +11,14 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - [README.md](README.md) — the page a pasted link lands on; it sends an agent to `SETUP.md`
 - [SETUP.md](SETUP.md) — the agent's playbook: consent, fetching and verifying the pinned binary, `bootstrap run` and the `wait` loop, handoffs, and the chat-only setup
 - [`scripts/release`](scripts/release) — builds, signs, notarizes and pins a version of the binary, and with `--publish` puts it on GitHub; `--help` lists the steps, `scripts/test-release` tests it
-- [project/](project/) — dated plans, findings and decisions; the current plan is [the setup link plan](project/2026-11-05-setup-link-plan.md), and the latest handoff is [2026-11-06](project/2026-11-06-handoff.md)
+- [project/](project/) — dated plans, findings and decisions; the current plan is [the setup link plan](project/2026-11-05-setup-link-plan.md), and the latest handoff is [2026-11-06, afternoon](project/2026-11-06-handoff-trial.md)
 - [The `bootstrap` binary plan](project/2026-11-05-bootstrap-binary-plan.md) — the detail for the `VNF9sG` job: commands, session log and build order
 - [The binary's seams](project/2026-11-05-bootstrap-seams.md) — packages, what the page and an agent get, and decisions made while building
 - [Setup page prototype](project/2026-11-05-setup-page-mock/prototype/) — the approved look and motion, in one page; `build.py` makes `local.html`; the [mock](project/2026-11-05-setup-page-mock/) shows the options tried
 - [Clean Mac research](project/2026-11-05-clean-mac-research.md) and [what's stock on macOS](project/2026-11-05-stock-macos-runtimes.md) — what's settled, and where the rest gets tested
 - [What `agents init` and `job init` do to an existing project](project/2026-11-05-init-existing-project-findings.md) — the cases, and the new `agents migrate` for a project's own `CLAUDE.md`
 - [VM runs](project/2026-11-05-vm-run-findings.md) — Apple blocks the Homebrew paste, the `.pkg` works, and Apple's step has a click signal
+- [Clean-Mac trial of v0.2.0](project/2026-11-06-clean-mac-trial-findings.md) — two Claude Code runs on the Mini's VMs, and the fixes they led to
 - [Agent trial](project/2026-11-05-agent-trial-findings.md) — Claude Code and OpenCode given only the link: auto mode's block, the click delay, and a weak model that never waits
 - [The server drives the setup](project/2026-11-05-server-driven-flow.md) — the agent starts one run and supervises (approved)
 - [Building the server-driven flow](project/2026-11-05-server-driven-build-plan.md) — the order and the leaves, imported under `CAwBVg`
