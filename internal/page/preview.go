@@ -77,6 +77,9 @@ func statesFor(agent screen.Agent) []Preview {
 	add("required", screen.Request{Screen: "trouble", Tool: "homebrew", Reason: "network"}, false)
 	// The naming screen starting on a folder picked before.
 	add("picked", screen.Request{Screen: "naming", In: screen.OtherPlace}, false)
+	// A choice remembered from last time is the main button, even "Not now" (XbdzWw).
+	add("remembered", screen.Request{Screen: "github", Default: "not-now"}, false)
+	add("remembered", screen.Request{Screen: "making", Default: "app"}, false)
 	for _, id := range []screen.ID{"welcome", "list", "making", "naming"} {
 		add("answered", screen.Request{Screen: id}, true)
 	}

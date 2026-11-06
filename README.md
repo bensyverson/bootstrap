@@ -30,4 +30,4 @@ Once your Mac is set up, start each new project from Terminal, with no page:
 
 ## Author and license
 
-By Ben Syverson. There's no license file yet.
+By Ben Syverson. MIT licensed; see [LICENSE](LICENSE).

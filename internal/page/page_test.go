@@ -293,3 +293,28 @@ func TestARequiredToolHasNoSkipInItsPreview(t *testing.T) {
 	}
 	t.Error("no preview of a required tool's trouble")
 }
+
+// Ben reviews the remembered default (XbdzWw) in the preview: a remembered
+// answer is the main button, even "Not now".
+func TestThePreviewShowsARememberedDefault(t *testing.T) {
+	want := map[string]string{"github.remembered.claude-code": "not-now", "making.remembered.claude-code": "app"}
+	for _, p := range Previews() {
+		id, ok := want[p.Name]
+		if !ok {
+			continue
+		}
+		delete(want, p.Name)
+		var primary []string
+		for _, c := range p.Frame.Screen.Choices {
+			if c.Primary {
+				primary = append(primary, c.ID)
+			}
+		}
+		if len(primary) != 1 || primary[0] != id {
+			t.Errorf("%s: main buttons %v, want [%s]", p.Name, primary, id)
+		}
+	}
+	for name := range want {
+		t.Errorf("no preview %s", name)
+	}
+}

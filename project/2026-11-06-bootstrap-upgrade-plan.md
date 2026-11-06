@@ -21,7 +21,7 @@ Ben asked for a `bootstrap upgrade` that brings the tools up to date and runs `a
 
 - `detect.Bootstrap` names the live copy: Homebrew's once it's there, the download until then. The done handoff uses it.
 - `next:` lines from the downloaded copy name `/opt/homebrew/bin/bootstrap` once that exists, so a `wait` started before the move points the agent at the copy that's left. A build run from anywhere else (a checkout) is still named by its own path.
-- `Formula/bootstrap.rb` in the tap: built from source with Go, `depends_on macos: :sequoia` like the other Go tools, the version stamped by `-ldflags`. It points at v0.2.0 until the first release rewrites it. The repo has no license file yet, so the formula has no `license` line.
+- `Formula/bootstrap.rb` in the tap: built from source with Go, `depends_on macos: :sequoia` like the other Go tools, the version stamped by `-ldflags`. It points at v0.2.0 until the first release rewrites it. MIT, like the other tools (Ben, 2026-11-06).
 - `scripts/release` step 0 (state the version) and step 9 (the tap's release); `scripts/test-release` covers both.
 
 ## Open questions for the builder
