@@ -92,10 +92,8 @@ func (f *Flow) Unanswered() ([]screen.ID, error) {
 	if (!ok || what.Choice == anApp) && !answered(xcode.Screen) {
 		open = append(open, xcode.Screen)
 	}
-	for _, req := range []screen.Request{liveYet, settings} {
-		if !answered(req.Screen) {
-			open = append(open, req.Screen)
-		}
+	if !answered(settings.Screen) {
+		open = append(open, settings.Screen)
 	}
 	return open, nil
 }

@@ -37,7 +37,7 @@ var offerFlags = []struct {
 	offer flow.Offer
 }{
 	{"git", flow.OfferGit}, {"github", flow.OfferGitHub}, {"identity", flow.OfferIdentity},
-	{"xcode", flow.OfferXcode}, {"live", flow.OfferLive}, {"settings", flow.OfferSettings},
+	{"xcode", flow.OfferXcode}, {"settings", flow.OfferSettings},
 }
 
 // questionFlags are the flags that answer each question new can ask, for the
@@ -49,7 +49,6 @@ var questionFlags = map[screen.ID]string{
 	"identity": "--identity|--no-identity|--git-name <name> --git-email <email>",
 	"making":   "--making <website|app|code|other>",
 	"xcode":    "--xcode|--no-xcode",
-	"live-yet": "--live|--no-live",
 	"settings": "--settings|--no-settings",
 }
 
@@ -72,7 +71,7 @@ var givenFlags = map[flow.GivenField]string{
 }
 
 var newCommand = command{
-	name: "new", class: "Act", usage: "new [<name>] [--in <folder>] [--yes] [--skip <tool>] [--making <website|app|code|other>] [--[no-]git] [--[no-]github] [--[no-]identity] [--git-name <name> --git-email <email>] [--[no-]xcode] [--[no-]live] [--[no-]settings] [--agent <claude-code|opencode>] [--json]",
+	name: "new", class: "Act", usage: "new [<name>] [--in <folder>] [--yes] [--skip <tool>] [--making <website|app|code|other>] [--[no-]git] [--[no-]github] [--[no-]identity] [--git-name <name> --git-email <email>] [--[no-]xcode] [--[no-]settings] [--agent <claude-code|opencode>] [--json]",
 	about: `Runs the whole setup here, in the foreground, with no page, server or browser. In a folder that's already a project (a Git repo), it sets that folder up and takes no name or --in; anywhere else, <name> makes <folder>/<name>, in ~/Projects unless --in or an earlier pick says otherwise.
 At a terminal, it asks each open question with its default ready, so Enter takes it. --yes takes every default without asking. With no terminal (an agent) or --json, and no --yes, it refuses with exit 2 before touching anything, listing each question no flag or earlier answer settles and the flag that answers it. A question with no default (Git's name and email, when GitHub can't supply them) fails with exit 2, naming the flag.
 Every offer is on unless a flag says no:
@@ -88,7 +87,6 @@ Every offer is on unless a flag says no:
                        set the name and email Git signs your work with, or don't; they come
                        from GitHub, or from --git-name and --git-email
   --xcode, --no-xcode  for an app, open Xcode in the App Store, or don't
-  --live, --no-live    people already use it, or not yet (the default)
   --settings, --no-settings
                        turn on the agent's helpers, or don't
   --agent <app>        the app the rules and helpers are for: from the environment, else claude-code
@@ -99,7 +97,7 @@ The log is ~/.bootstrap/new/<project>-<hash>/session.jsonl, apart from the page'
 	example:  "bootstrap new pine-bakery --yes --in ~/git --skip woodcase",
 	flags:    []string{"agent", "making", "git-name", "git-email", "in"},
 	lists:    []string{"skip"},
-	switches: []string{"yes", "git", "no-git", "github", "no-github", "identity", "no-identity", "xcode", "no-xcode", "live", "no-live", "settings", "no-settings"},
+	switches: []string{"yes", "git", "no-git", "github", "no-github", "identity", "no-identity", "xcode", "no-xcode", "settings", "no-settings"},
 	run:      runNew,
 }
 

@@ -55,7 +55,7 @@ func TestTheMainButtonSitsRightAndTheWayOutLeft(t *testing.T) {
 
 // Ben, 2026-11-05: answers of equal weight have no main button.
 func TestEqualAnswersHaveNoMainButton(t *testing.T) {
-	for _, id := range []ID{"live-yet", "making"} {
+	for _, id := range []ID{"making"} {
 		d, err := Describe(Request{Screen: id}, Context{Agent: ClaudeCode})
 		if err != nil {
 			t.Fatal(err)

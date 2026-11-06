@@ -19,7 +19,6 @@ note set Git's user.name to Ada Lovelace
 note set Git's user.email to 1234+ada@users.noreply.github.com
 step identity done 8 of 13
 note person chose other on making
-note person chose not-yet on live-yet
 step stage done 9 of 13
 Teaching Claude how you work
 note added the rules with agents init

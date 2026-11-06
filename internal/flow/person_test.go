@@ -102,7 +102,7 @@ func TestATerminalRunTakesTheDefaults(t *testing.T) {
 	if err := w.runAt(p, flow.Given{Name: "Pine Bakery"}); err != nil {
 		t.Fatal(err)
 	}
-	want := []screen.ID{"list", "git-ask", "github", "identity", "making", "live-yet", "settings"}
+	want := []screen.ID{"list", "git-ask", "github", "identity", "making", "settings"}
 	if got := p.askedScreens(); !slices.Equal(got, want) {
 		t.Errorf("asked %v, want %v", got, want)
 	}

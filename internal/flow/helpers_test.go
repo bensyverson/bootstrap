@@ -61,7 +61,6 @@ func defaultAnswers() map[asked]screen.Answer {
 		{"identity-name", ""}:  {Choice: "next", Name: "ada"},
 		{"identity-email", ""}: {Choice: "next", Name: "ada@example.com"},
 		{"making", ""}:         {Choice: "website"},
-		{"live-yet", ""}:       {Choice: "not-yet"},
 		{"settings", ""}:       {Choice: "yes"},
 		{"phone", ""}:          {Choice: "yes"},
 	}

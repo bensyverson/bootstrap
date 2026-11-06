@@ -156,8 +156,6 @@ var specs = []spec{
 		choices: []choiceDef{{"website", "A website"}, {"app", "A Mac or iPhone app"}, {"code", "Some code"}, {"other", "Something else"}}, next: nextAnswer},
 	{id: "xcode", mode: Waiting, title: "This one needs Xcode.", status: "It’s free, and it’s big. The App Store will take a while.",
 		choices: []choiceDef{{"app-store", "Open the App Store"}, {"later", "Do it later"}}, next: nextAnswer},
-	{id: "live-yet", asListed: true, mode: Waiting, title: "Do people use it yet?",
-		choices: []choiceDef{{"not-yet", "Not yet"}, {"yes", "Yes"}}, next: nextAnswer},
 	{id: "naming", mode: Waiting, layout: LayoutLow, title: "What should we call this project?", status: "We’ll make a folder with this name.",
 		field: &Field{Label: "Project name", Value: "my-project"}, places: "Put it in", choices: []choiceDef{{"next", "Next"}}, next: nextAnswer},
 	{id: "building", mode: Working, title: "Setting up your project",

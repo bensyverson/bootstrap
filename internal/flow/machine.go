@@ -69,7 +69,7 @@ var steps = []stepDef{
 	{ID: StepGit, Screens: []screen.ID{"git-ask", "building"}, Asks: []screen.ID{"git-ask"}, Skippable: true, check: checkGit, act: actGit},
 	{ID: StepGitHub, Screens: []screen.ID{"github", "github-signup", "github-code"}, Asks: []screen.ID{"github", "github-signup"}, Skippable: true, check: checkGitHub, act: actGitHub},
 	{ID: StepIdentity, Screens: []screen.ID{"identity", "identity-name", "identity-email"}, Asks: []screen.ID{"identity", "identity-name", "identity-email"}, Skippable: true, check: checkIdentity, act: actIdentity},
-	{ID: StepStage, Screens: []screen.ID{"making", "xcode", "live-yet"}, Asks: []screen.ID{"making", "xcode", "live-yet"}, check: checkStage, act: actStage},
+	{ID: StepStage, Screens: []screen.ID{"making", "xcode"}, Asks: []screen.ID{"making", "xcode"}, check: checkStage, act: actStage},
 	{ID: StepRules, Screens: []screen.ID{"building"}, check: checkRules, act: actRules},
 	{ID: StepSettings, Screens: []screen.ID{"settings"}, Asks: []screen.ID{"settings"}, Skippable: true, check: checkSettings, act: actSettings},
 	{ID: StepPhone, Screens: []screen.ID{"phone"}, Asks: []screen.ID{"phone"}, Skippable: true, check: checkPhone, act: actPhone},

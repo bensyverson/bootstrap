@@ -31,15 +31,15 @@ func (w *world) unanswered(given flow.Given) []screen.ID {
 func TestUnansweredListsEveryOpenQuestion(t *testing.T) {
 	w := newWorld(t)
 	w.withTools()
-	everything := []screen.ID{"git-ask", "github", "identity", "making", "xcode", "live-yet", "settings"}
+	everything := []screen.ID{"git-ask", "github", "identity", "making", "xcode", "settings"}
 	if got := w.unanswered(flow.Given{Name: "pine-bakery"}); !slices.Equal(got, everything) {
 		t.Errorf("unanswered = %v, want %v", got, everything)
 	}
-	given := flow.Given{Name: "pine-bakery", Making: "code", Accepted: []flow.Offer{flow.OfferGit, flow.OfferLive}, Declined: []flow.Offer{flow.OfferGitHub}}
+	given := flow.Given{Name: "pine-bakery", Making: "code", Accepted: []flow.Offer{flow.OfferGit}, Declined: []flow.Offer{flow.OfferGitHub}}
 	if got, want := w.unanswered(given), []screen.ID{"identity", "settings"}; !slices.Equal(got, want) {
 		t.Errorf("with flags, unanswered = %v, want %v", got, want)
 	}
-	if got, want := w.unanswered(flow.Given{Name: "pine-bakery", GitName: "Ada", GitEmail: "ada@example.com", Making: "app"}), []screen.ID{"git-ask", "github", "xcode", "live-yet", "settings"}; !slices.Equal(got, want) {
+	if got, want := w.unanswered(flow.Given{Name: "pine-bakery", GitName: "Ada", GitEmail: "ada@example.com", Making: "app"}), []screen.ID{"git-ask", "github", "xcode", "settings"}; !slices.Equal(got, want) {
 		t.Errorf("with a name and email, unanswered = %v, want %v", got, want)
 	}
 }

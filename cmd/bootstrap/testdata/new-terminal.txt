@@ -38,11 +38,6 @@ What are you working on?
   3. Some code
   4. Something else (default)
 Choose 1-4, or press Enter for Something else: note person chose website on making
-
-Do people use it yet?
-  1. Not yet (default)
-  2. Yes
-Choose 1-2, or press Enter for Not yet: note person chose not-yet on live-yet
 step stage done 9 of 13
 Teaching Claude how you work
 note added the rules with agents init

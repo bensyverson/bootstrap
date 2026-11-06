@@ -13,6 +13,8 @@
 
   > **Corrected 2026-11-05 (Ben, `OWv6U2`):** no terminal no longer takes the defaults. With no terminal (or `--json`) and no `--yes`, `new` refuses with exit 2 before touching anything, listing each question no flag or earlier answer settles and the flag that answers it. A terminal decides only between asking and refusing, never between asking and installing; `--yes` is the only way to take defaults unasked. Each `--no-X` also gained a `--X` that takes back an earlier no.
 - **Defaults are opt-out.** Every tool in the catalog is kept unless `--skip <tool>` says otherwise. Git is used, and the identity is set from GitHub when signed in. Machine settings are turned on. The project type is detected: `package.json` means a website, and `Package.swift` or an `.xcodeproj` means an app. Without either, it's "Something else". Live yet defaults to "not yet". Phone is a page-only question, so the CLI prints a one-line hint instead.
+
+  > **Superseded 2026-11-06:** Ben dropped the live-yet question, since nothing used its answer. A new project gets `stage-build`, a project set up in place gets no stage, and `new` has no `--live` flag.
 - **Handoffs end the command.** A trouble handoff prints what happened and the evidence, as `wait` does, and exits 4 with a `next:` line. Running `new` again picks up, since every step checks before it acts. Steps that need the person's clicks (Apple's window, Homebrew's installer, GitHub's code) print what to do and wait, as the page does.
 
 ## The leaf

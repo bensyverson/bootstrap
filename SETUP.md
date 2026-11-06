@@ -182,7 +182,7 @@ Only with a Git repository, and only if `git config --global user.name` or `user
 
 ### 9. What they're making (`stage`)
 
-Ask what they're making (a website, an app, or something else) and whether it's live yet. For an app, ask whether they have Xcode; if not, offer to open it in the App Store.
+Ask what they're making (a website, an app, or something else). For an app, ask whether they have Xcode; if not, offer to open it in the App Store: `open macappstore://apps.apple.com/app/xcode/id497799835` (or the web page, https://apps.apple.com/app/xcode/id497799835).
 
 ### 10. The rules (`rules`)
 

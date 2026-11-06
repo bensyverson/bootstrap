@@ -31,13 +31,12 @@ func TestNewWithNoTerminalAndNoYesRefuses(t *testing.T) {
 	w := macForNew(t)
 	r := w.run(t, "new", "pine-bakery")
 	r.wantErr(t, 2,
-		"error: no one is at a terminal to answer 7 questions",
+		"error: no one is at a terminal to answer 6 questions",
 		"question git-ask “Should Git keep track of this project?” answer=--git|--no-git\n",
 		"question github “Want a place to keep your work online?” answer=--github|--no-github\n",
 		"question identity answer=\"--identity|--no-identity|--git-name <name> --git-email <email>\"\n",
 		"question making “What are you working on?” answer=\"--making <website|app|code|other>\"\n",
 		"question xcode “This one needs Xcode.” answer=--xcode|--no-xcode\n",
-		"question live-yet “Do people use it yet?” answer=--live|--no-live\n",
 		"question settings “Turn on Claude’s helpers?” answer=--settings|--no-settings\n",
 		"next: bootstrap new pine-bakery --yes takes the defaults; or answer each with its flag, or run new at a terminal")
 	w.untouched(t)
@@ -62,7 +61,7 @@ func TestNewWithJSONAndNoYesRefuses(t *testing.T) {
 		screens = append(screens, q.Screen)
 	}
 	// With no Git, nothing asks who signs the work.
-	if want := []string{"github", "making", "xcode", "live-yet", "settings"}; !slices.Equal(screens, want) {
+	if want := []string{"github", "making", "xcode", "settings"}; !slices.Equal(screens, want) {
 		t.Errorf("questions = %v, want %v", screens, want)
 	}
 	w.untouched(t)
@@ -70,7 +69,7 @@ func TestNewWithJSONAndNoYesRefuses(t *testing.T) {
 
 func TestNewWithEveryAnswerGivenNeedsNoTerminal(t *testing.T) {
 	w := macForNew(t)
-	r := w.run(t, "new", "pine-bakery", "--skip", "peep", "--git", "--github", "--identity", "--making", "code", "--no-live", "--settings")
+	r := w.run(t, "new", "pine-bakery", "--skip", "peep", "--git", "--github", "--identity", "--making", "code", "--settings")
 	if r.code != 0 {
 		t.Fatalf("exit %d\n%s\n%s", r.code, r.stdout, r.stderr)
 	}
@@ -109,7 +108,7 @@ func TestNewAYesFlagReversesAKeptNo(t *testing.T) {
 
 func TestNewRefusesAYesAndANoTogether(t *testing.T) {
 	w := macForNew(t)
-	for _, offer := range []string{"git", "github", "identity", "xcode", "settings", "live"} {
+	for _, offer := range []string{"git", "github", "identity", "xcode", "settings"} {
 		w.run(t, "new", "pine-bakery", "--yes", "--"+offer, "--no-"+offer).wantErr(t, 2,
 			"--"+offer+" and --no-"+offer+" say opposite things", "next: bootstrap new --help")
 	}
@@ -187,7 +186,7 @@ func TestThePrimerStartsWithPeople(t *testing.T) {
 
 func TestNewHelpSaysItRefusesWithNoTerminal(t *testing.T) {
 	r := newWorld(t).run(t, "new", "--help")
-	for _, want := range []string{"--in <folder>", "--git ", "--no-live", "refuses", "a page setup"} {
+	for _, want := range []string{"--in <folder>", "--git ", "--no-settings", "refuses", "a page setup"} {
 		if !strings.Contains(r.stdout, want) {
 			t.Errorf("new --help lacks %q:\n%s", want, r.stdout)
 		}
@@ -229,4 +228,11 @@ func TestRunRefusesWhileANewSetsUp(t *testing.T) {
 	if w.store().ServerRunning() {
 		t.Error("a refused run left its page running")
 	}
+}
+
+// Ben, 2026-11-06: nothing used the live-yet answer, so the question is gone.
+func TestNewHasNoLiveQuestion(t *testing.T) {
+	w := macForNew(t)
+	w.run(t, "new", "pine-bakery", "--yes", "--live").wantErr(t, 2, "unknown flag --live")
+	w.untouched(t)
 }

@@ -45,7 +45,6 @@ var (
 	askRepo  = screen.Request{Screen: "git-ask"}
 	making   = screen.Request{Screen: "making"}
 	xcode    = screen.Request{Screen: "xcode"}
-	liveYet  = screen.Request{Screen: "live-yet"}
 	settings = screen.Request{Screen: "settings"}
 	phone    = screen.Request{Screen: "phone"}
 )
@@ -257,13 +256,8 @@ func actGit(r *run) (outcome, error) {
 }
 
 func checkStage(r *run) (session.StepStatus, *session.Handoff, error) {
-	for _, req := range []screen.Request{making, liveYet} {
-		if _, ok, err := r.answer(req); err != nil || !ok {
-			return "", nil, err
-		}
-	}
-	what, _, err := r.answer(making)
-	if err != nil {
+	what, ok, err := r.answer(making)
+	if err != nil || !ok {
 		return "", nil, err
 	}
 	if what.Choice == anApp {
@@ -284,9 +278,6 @@ func actStage(r *run) (outcome, error) {
 		if store, ask, err = r.asked(xcode); err != nil || ask != nil {
 			return deref(ask, err)
 		}
-	}
-	if _, ask, err := r.asked(liveYet); err != nil || ask != nil {
-		return deref(ask, err)
 	}
 	if store.Choice == appStore {
 		if _, h, err := r.exec(Command{Kind: Change, Path: openPath, Args: []string{xcodeInAppStore}}, ""); err != nil || h != nil {

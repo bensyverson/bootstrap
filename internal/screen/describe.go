@@ -317,7 +317,7 @@ func Progress(req Request, chosen []string, carried float64) float64 {
 			return carried
 		}
 		p = float64(i+2) / steps
-	case "making", "xcode", "live-yet", "naming":
+	case "making", "xcode", "naming":
 		p = (steps - 1) / steps
 	case "building":
 		p = 0.92
@@ -336,7 +336,7 @@ func PathOrder(chosen []string) []Request {
 		requests = append(requests, Request{Screen: "tool", Tool: id, Status: "downloading"}, Request{Screen: "tool", Tool: id, Status: "installing"})
 	}
 	requests = append(requests,
-		Request{Screen: "making"}, Request{Screen: "xcode"}, Request{Screen: "live-yet"}, Request{Screen: "naming"},
+		Request{Screen: "making"}, Request{Screen: "xcode"}, Request{Screen: "naming"},
 		Request{Screen: "building", Status: "folder"}, Request{Screen: "building", Status: "git"}, Request{Screen: "building", Status: "rules"},
 		Request{Screen: "github"}, Request{Screen: "phone"}, Request{Screen: "done"})
 	return requests

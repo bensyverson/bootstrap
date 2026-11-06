@@ -61,8 +61,6 @@ const (
 	OfferIdentity Offer = "identity"
 	OfferXcode    Offer = "xcode"
 	OfferSettings Offer = "settings"
-	// OfferLive is saying people already use what's being made; its default is no.
-	OfferLive Offer = "live"
 )
 
 // Given is what the person said up front, in place of being asked. An answer
@@ -189,7 +187,6 @@ var declines = map[Offer]given{
 	OfferIdentity: {req: typedName, answer: screen.Answer{Choice: skip}},
 	OfferXcode:    {req: xcode, answer: screen.Answer{Choice: "later"}},
 	OfferSettings: {req: settings, answer: screen.Answer{Choice: notNow}},
-	OfferLive:     {req: liveYet, answer: screen.Answer{Choice: "not-yet"}},
 }
 
 // accepts are the answers that take each offer. Identity has none: taking it
@@ -199,7 +196,6 @@ var accepts = map[Offer]given{
 	OfferGitHub:   {req: askGitHub, answer: screen.Answer{Choice: "yes"}},
 	OfferXcode:    {req: xcode, answer: screen.Answer{Choice: appStore}},
 	OfferSettings: {req: settings, answer: screen.Answer{Choice: "yes"}},
-	OfferLive:     {req: liveYet, answer: screen.Answer{Choice: "yes"}},
 }
 
 // optionalTools are the tools a person may go without, in catalog order.
@@ -344,7 +340,6 @@ var defaultChoice = map[screen.ID]string{
 	"github-signup": "made-it",
 	"identity":      useThese,
 	"xcode":         appStore,
-	"live-yet":      "not-yet",
 	"settings":      "yes",
 }
 
