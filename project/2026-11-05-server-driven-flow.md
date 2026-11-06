@@ -92,6 +92,8 @@ The server runs the [setup order](2026-11-05-setup-link-plan.md#setup-order) as 
 ## What changes elsewhere
 
 - **`SETUP.md` (`W2yASt`) shrinks** to: consent, fetch and verify, `run`, loop on `wait`, handle handoffs, and the chat-only fallback. The fallback is now a second copy of the flow, written in prose. Both read `catalog/tools.json`, but the order and checks can drift. A test that compares the fallback's steps with `flow`'s list would catch that.
+
+  > **Superseded, 2026-11-06 (Ben):** the chat-only fallback is gone from `SETUP.md`, and its sync test with it. Almost everything that stops the program on a clean Mac (a blocked GitHub download, an older macOS, the sandbox, a model that won't loop) stops the prose copy too, and the program's own `resume --retry`/`--skip` covers a broken step. When the program can't go on, the agent tells the person what stays, how to pick up later, and where to report it. See [the backlog](backlog.md), "A chat-only setup".
 - **`6jPdjy`'s screens are unchanged.** The server shows them instead of the agent.
 - **New work, under `VNF9sG`:** the `flow` core, the installers behind the `Runner`, `run`/`wait`/`resume`, and the next release and trial.
 

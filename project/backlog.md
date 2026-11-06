@@ -10,6 +10,12 @@ Format: one dated H2 per entry, a headline, then what it is, why it's parked, an
 
 ---
 
+## 2026-11-06: A chat-only setup
+
+SETUP.md used to carry the whole setup a second time, in prose (13 steps, ~95 lines), for when the `bootstrap` program couldn't run, with `TestTheChatOnlySetupFollowsTheFlowsSteps` keeping its step order in line with `internal/flow`. Ben removed it (2026-11-06) before its first real run (`W2yASt`'s `gjk`): on a clean Mac, nearly every reason the program can't run also stops the prose copy. A blocked download blocks Homebrew's `.pkg` too, since both come from GitHub's release-assets host; an older macOS ends the setup either way; the sandbox and a model that won't loop break both. The program's own `resume --retry`/`--skip` gets past a broken step. SETUP.md now tells the person what stays, how to pick up later, and where to report it. The last version is `git show ab39cfe:SETUP.md`, section "The chat-only setup".
+
+**Would un-park it:** a real report of someone stuck because the program itself was broken where an agent could have finished by hand, or a common case where people say yes to the setup but no to running a downloaded program.
+
 ## 2026-11-05: Installing `timetattle` during setup
 
 The setup would install `timetattle` for new users. It's parked because it is shaped for Ben's own use and runs constantly, which asks more of someone's machine than the other tools do, and nothing in the setup depends on it.

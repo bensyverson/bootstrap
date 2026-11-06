@@ -9,7 +9,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 ## Documentation
 
 - [README.md](README.md) — the page a pasted link lands on; it sends an agent to `SETUP.md`
-- [SETUP.md](SETUP.md) — the agent's playbook: consent, fetching and verifying the pinned binary, `bootstrap run` and the `wait` loop, handoffs, and the chat-only setup
+- [SETUP.md](SETUP.md) — the agent's playbook: consent, fetching and verifying the pinned binary, `bootstrap run` and the `wait` loop, handoffs, and what to say when the program can't go on
 - [`scripts/release`](scripts/release) — builds, signs, notarizes and pins a version of the binary, and with `--publish` puts it on GitHub; `--help` lists the steps, `scripts/test-release` tests it
 - [project/](project/) — dated plans, findings and decisions; the current plan is [the setup link plan](project/2026-11-05-setup-link-plan.md), and the latest handoff is [2026-11-06, evening](project/2026-11-06-handoff-evening.md)
 - [The `bootstrap` binary plan](project/2026-11-05-bootstrap-binary-plan.md) — the detail for the `VNF9sG` job: commands, session log and build order
