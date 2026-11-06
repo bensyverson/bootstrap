@@ -1,11 +1,13 @@
 package flow
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/bensyverson/bootstrap/catalog"
@@ -59,6 +61,8 @@ const (
 	OfferIdentity Offer = "identity"
 	OfferXcode    Offer = "xcode"
 	OfferSettings Offer = "settings"
+	// OfferLive is saying people already use what's being made; its default is no.
+	OfferLive Offer = "live"
 )
 
 // Given is what the person said up front, in place of being asked. An answer
@@ -70,10 +74,13 @@ type Given struct {
 	Skip []string
 	// Making is the making question's choice: website, app, code or other.
 	Making string
-	// Live says people already use what's being made.
-	Live bool
+	// In is the folder a new project goes in, as "~/git" or an absolute path.
+	// Empty is ~/Projects. A setup in place ignores it.
+	In string
 	// GitName and GitEmail sign the person's work when GitHub can't.
 	GitName, GitEmail string
+	// Accepted are the offers the person took, which wins over an earlier no.
+	Accepted []Offer
 	// Declined are the offers the person turned down.
 	Declined []Offer
 }
@@ -87,11 +94,15 @@ const (
 	GivenMaking   GivenField = "making"
 	GivenGitName  GivenField = "git-name"
 	GivenGitEmail GivenField = "git-email"
+	GivenIn       GivenField = "in"
+	// GivenOffer is an offer both taken and turned down; GivenError.Offer names it.
+	GivenOffer GivenField = "offer"
 )
 
 // GivenError is an answer given up front that its question won't take.
 type GivenError struct {
 	Field   GivenField
+	Offer   Offer
 	Message string
 	Valid   []string
 }
@@ -113,8 +124,9 @@ func startsInPlace(probe detect.Probe) bool {
 }
 
 // Where is the folder a setup from probe.Cwd works in: the starting folder when
-// it's already a project, and otherwise ~/Projects/<name>.
-func Where(probe detect.Probe, name string) (dir string, inPlace bool, err error) {
+// it's already a project, and otherwise <in>/<name>, where in is "~/git" or an
+// absolute path, and empty is ~/Projects. A setup in place ignores in.
+func Where(probe detect.Probe, name, in string) (dir string, inPlace bool, err error) {
 	if startsInPlace(probe) {
 		if name != "" {
 			return "", false, ErrInProject
@@ -128,7 +140,35 @@ func Where(probe detect.Probe, name string) (dir string, inPlace bool, err error
 	if !ok {
 		return "", false, badName(name)
 	}
-	return filepath.Join(probe.Home, "Projects", folder), false, nil
+	if in != "" && !screen.SafePlace(in) {
+		return "", false, badPlace(in)
+	}
+	return projectDir(probe.Home, in, folder), false, nil
+}
+
+// projectDir is the one rule for where a new project goes: <in>/<folder>, with
+// "~/" in in meaning home, and no in meaning ~/Projects.
+func projectDir(home, in, folder string) string {
+	if in == "" {
+		in = screen.DefaultPlace
+	}
+	if rest, ok := strings.CutPrefix(in, "~/"); ok {
+		return filepath.Join(home, rest, folder)
+	}
+	return filepath.Join(in, folder)
+}
+
+// Place is a folder as the naming screen and the preferences file write it:
+// "~/…" under home, and absolute anywhere else.
+func Place(home, dir string) string {
+	if rest, ok := strings.CutPrefix(dir, home+"/"); ok && home != "" {
+		return "~/" + rest
+	}
+	return dir
+}
+
+func badPlace(in string) error {
+	return &GivenError{Field: GivenIn, Message: fmt.Sprintf("%q can't hold projects. Use ~/<folder> or a full path, with letters, numbers and dashes", in)}
 }
 
 func badName(name string) error {
@@ -149,6 +189,17 @@ var declines = map[Offer]given{
 	OfferIdentity: {req: typedName, answer: screen.Answer{Choice: skip}},
 	OfferXcode:    {req: xcode, answer: screen.Answer{Choice: "later"}},
 	OfferSettings: {req: settings, answer: screen.Answer{Choice: notNow}},
+	OfferLive:     {req: liveYet, answer: screen.Answer{Choice: "not-yet"}},
+}
+
+// accepts are the answers that take each offer. Identity has none: taking it
+// only sets aside an earlier skip, and its own questions are asked as usual.
+var accepts = map[Offer]given{
+	OfferGit:      {req: askRepo, answer: screen.Answer{Choice: "yes"}},
+	OfferGitHub:   {req: askGitHub, answer: screen.Answer{Choice: "yes"}},
+	OfferXcode:    {req: xcode, answer: screen.Answer{Choice: appStore}},
+	OfferSettings: {req: settings, answer: screen.Answer{Choice: "yes"}},
+	OfferLive:     {req: liveYet, answer: screen.Answer{Choice: "yes"}},
 }
 
 // optionalTools are the tools a person may go without, in catalog order.
@@ -170,7 +221,12 @@ func (g Given) answers() ([]given, error) {
 		if !ok {
 			return nil, badName(g.Name)
 		}
-		out = append(out, given{naming, screen.Answer{Choice: "next", Name: name}, GivenName})
+		if g.In != "" && !screen.SafePlace(g.In) {
+			return nil, badPlace(g.In)
+		}
+		req := naming
+		req.In = cmp.Or(g.In, screen.DefaultPlace)
+		out = append(out, given{req, screen.Answer{Choice: "next", Name: name, In: req.In}, GivenName})
 	}
 	if len(g.Skip) > 0 {
 		for _, id := range g.Skip {
@@ -188,14 +244,22 @@ func (g Given) answers() ([]given, error) {
 	if g.Making != "" {
 		out = append(out, given{making, screen.Answer{Choice: g.Making}, GivenMaking})
 	}
-	if g.Live {
-		out = append(out, given{req: liveYet, answer: screen.Answer{Choice: "yes"}})
-	}
 	if g.GitName != "" {
 		out = append(out, given{typedName, screen.Answer{Choice: "next", Name: g.GitName}, GivenGitName})
 	}
 	if g.GitEmail != "" {
 		out = append(out, given{typedEmail, screen.Answer{Choice: "next", Name: g.GitEmail}, GivenGitEmail})
+	}
+	for _, offer := range g.Accepted {
+		if slices.Contains(g.Declined, offer) {
+			return nil, &GivenError{Field: GivenOffer, Offer: offer, Message: fmt.Sprintf("%s is both taken and turned down", offer)}
+		}
+		if _, ok := declines[offer]; !ok {
+			return nil, fmt.Errorf("there's no offer %q to take", offer)
+		}
+		if a, ok := accepts[offer]; ok {
+			out = append(out, a)
+		}
 	}
 	for _, offer := range g.Declined {
 		d, ok := declines[offer]
@@ -238,7 +302,7 @@ func (f *Flow) pickUp() error {
 		return err
 	}
 	for _, a := range answers {
-		if a.req == naming && f.inPlace {
+		if a.req.Screen == naming.Screen && f.inPlace {
 			continue
 		}
 		if last, ok := latest(state, a.req); ok && sameAnswer(last, a.answer) {
@@ -261,7 +325,7 @@ func (f *Flow) pickUp() error {
 
 func latest(state session.State, req screen.Request) (screen.Answer, bool) {
 	for _, a := range slices.Backward(state.Answers) {
-		if a.Request == req {
+		if sameQuestion(a.Request, req) {
 			return a.Answer, true
 		}
 	}
@@ -269,7 +333,7 @@ func latest(state session.State, req screen.Request) (screen.Answer, bool) {
 }
 
 func sameAnswer(a, b screen.Answer) bool {
-	return a.Choice == b.Choice && a.Name == b.Name && slices.Equal(a.Tools, b.Tools)
+	return a.Choice == b.Choice && a.Name == b.Name && a.In == b.In && slices.Equal(a.Tools, b.Tools)
 }
 
 // defaultChoice is what each question takes when the person just presses Enter:
@@ -306,11 +370,7 @@ func (r *run) question(req screen.Request) (q Question, settled bool, err error)
 		a, settled = screen.Answer{Choice: "see-plan"}, true
 	case list.Screen:
 		a = screen.Answer{Choice: "lets-go", Tools: screen.KeepRequired(screen.AllToolIDs())}
-		settled = !slices.ContainsFunc(a.Tools, func(id string) bool {
-			tool, _ := catalog.Find(id)
-			_, there := r.locate(tool.Detect...)
-			return !tool.OwnStep && !there
-		})
+		settled = toolsSettled(r.f.cfg.Probe)
 	case making.Screen:
 		dir, err := r.mustProject()
 		if err != nil {

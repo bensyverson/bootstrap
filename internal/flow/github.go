@@ -53,14 +53,19 @@ func checkGitHub(r *run) (session.StepStatus, *session.Handoff, error) {
 	if in {
 		return session.StepDone, nil, nil
 	}
-	for _, req := range []screen.Request{askGitHub, signup} {
-		no, err := r.declined(req)
-		if err != nil {
+	// The sign-up's "not now" counts only while the last answer was to make an account.
+	a, ok, err := r.answer(askGitHub)
+	if err != nil || !ok {
+		return "", nil, err
+	}
+	no := a.Choice == notNow
+	if a.Choice == makeOne {
+		if no, err = r.declined(signup); err != nil {
 			return "", nil, err
 		}
-		if no {
-			return session.StepSkipped, nil, nil
-		}
+	}
+	if no {
+		return session.StepSkipped, nil, nil
 	}
 	return "", nil, nil
 }
@@ -166,15 +171,23 @@ func (r *run) unsetIdentity() (string, []string, *session.Handoff, error) {
 	return git, unset, nil, nil
 }
 
-// skippedIdentity reports whether the person skipped any of the identity questions.
+// skippedIdentity reports whether the person's last word on who signs their
+// work was a skip. Taking the offer now, or answering any identity question
+// since, sets an earlier skip aside.
 func (r *run) skippedIdentity() (bool, error) {
+	if r.f.accepted(OfferIdentity) {
+		return false, nil
+	}
 	state, err := r.state()
 	if err != nil {
 		return false, err
 	}
-	return slices.ContainsFunc(state.Answers, func(a session.Answered) bool {
-		return strings.HasPrefix(string(a.Request.Screen), "identity") && a.Answer.Choice == skip
-	}), nil
+	for _, a := range slices.Backward(state.Answers) {
+		if isIdentity(a.Request.Screen) {
+			return a.Answer.Choice == skip, nil
+		}
+	}
+	return false, nil
 }
 
 func checkIdentity(r *run) (session.StepStatus, *session.Handoff, error) {
@@ -214,12 +227,15 @@ func actIdentity(r *run) (outcome, error) {
 		if err != nil || h != nil {
 			return orHandOff(h, err)
 		}
-		a, ask, err := r.asked(offer)
-		if err != nil || ask != nil {
-			return deref(ask, err)
-		}
-		if a.Choice == skip {
-			return skipped()
+		// Taking the offer up front (--identity) is the yes to GitHub's name, so there's nothing to ask.
+		if !r.f.accepted(OfferIdentity) {
+			a, ask, err := r.identityAsked(offer)
+			if err != nil || ask != nil {
+				return deref(ask, err)
+			}
+			if a.Choice == skip {
+				return skipped()
+			}
 		}
 		give["user.name"], give["user.email"] = offer.Name, offer.Email
 	} else {
@@ -230,7 +246,7 @@ func actIdentity(r *run) (outcome, error) {
 			if !slices.Contains(unset, q.key) {
 				continue
 			}
-			a, ask, err := r.asked(q.req)
+			a, ask, err := r.identityAsked(q.req)
 			if err != nil || ask != nil {
 				return deref(ask, err)
 			}
@@ -250,6 +266,29 @@ func actIdentity(r *run) (outcome, error) {
 		}
 	}
 	return done()
+}
+
+// identityAsked is asked for an identity question, where a skip from before
+// this run doesn't count once the person has taken the offer again.
+func (r *run) identityAsked(req screen.Request) (screen.Answer, *outcome, error) {
+	a, ask, err := r.asked(req)
+	if err != nil || ask != nil || a.Choice != skip || !r.f.accepted(OfferIdentity) {
+		return a, ask, err
+	}
+	state, err := r.state()
+	if err != nil {
+		return a, nil, err
+	}
+	for _, kept := range slices.Backward(state.Answers) {
+		if sameQuestion(kept.Request, req) {
+			if kept.Seq > r.f.startSeq {
+				return a, nil, nil
+			}
+			break
+		}
+	}
+	out, _ := needs(req)
+	return screen.Answer{}, &out, nil
 }
 
 // gitHubIdentity is the offer of the person's GitHub name, or login when it's

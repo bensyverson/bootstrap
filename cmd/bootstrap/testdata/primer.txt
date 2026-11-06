@@ -1,6 +1,10 @@
-bootstrap sets up a new Mac with a coding agent. The agent starts the setup,
-which installs what the person picks on a local web page, and tells the person
-what's happening. The agent steps in when the setup hands something over.
+bootstrap sets up a new Mac with a coding agent.
+
+To set up a project: bootstrap new <name>
+
+For an agent: the agent starts the setup, which installs what the person picks
+on a local web page, and tells the person what's happening. The agent steps in
+when the setup hands something over.
 
 Run first: bootstrap status
 
@@ -11,9 +15,11 @@ Read (needs no session, except status)
   bootstrap status                 the session: the current screen and every answer
 
 Act: the setup in the terminal, with no page
-  bootstrap new [<name>] [--yes]   set up this project, or ~/Projects/<name>; asks
-                                   at a terminal, else takes the defaults. Trouble
-                                   is exit 4, and running new again picks up
+  bootstrap new [<name>] [--yes] [--in <folder>]
+                                   set up this project, or ~/Projects/<name>; asks
+                                   at a terminal. With no terminal, --yes takes the
+                                   defaults, else it refuses (exit 2) and lists the
+                                   flags. Trouble is exit 4; new again picks up
 
 Act: the setup runs itself, and you narrate
   bootstrap run [--agent <app>]    start the setup and its page in the background

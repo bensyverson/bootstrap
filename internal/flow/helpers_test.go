@@ -13,6 +13,7 @@ import (
 
 	"github.com/bensyverson/bootstrap/internal/detect"
 	"github.com/bensyverson/bootstrap/internal/flow/flowtest"
+	"github.com/bensyverson/bootstrap/internal/prefs"
 	"github.com/bensyverson/bootstrap/internal/screen"
 	"github.com/bensyverson/bootstrap/internal/session"
 )
@@ -44,6 +45,8 @@ type world struct {
 	running  func(string) bool
 	// interject is a screen an agent shows over the question at key, once, instead of the person answering.
 	interject map[asked]screen.Request
+	// prefs is where the flow remembers the person's preferences. Empty remembers nothing.
+	prefs prefs.File
 }
 
 func defaultAnswers() map[asked]screen.Answer {
@@ -85,7 +88,7 @@ func newWorld(t *testing.T) *world {
 func (w *world) config() flow.Config {
 	limits := flow.DefaultLimits()
 	limits.Apple, limits.Homebrew = 2*time.Second, 2*time.Second
-	return flow.Config{Store: w.store, Runner: w.mac, Probe: w.probe, HomebrewPkg: pkgURL, Hooks: flow.DefaultHooks(), Limits: limits, Poll: 2 * time.Millisecond}
+	return flow.Config{Store: w.store, Runner: w.mac, Probe: w.probe, HomebrewPkg: pkgURL, Hooks: flow.DefaultHooks(), Limits: limits, Poll: 2 * time.Millisecond, Preferences: w.prefs}
 }
 
 // walk runs the flow to its end, playing the person and the agent.

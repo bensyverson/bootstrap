@@ -14,11 +14,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"time"
 
 	"github.com/bensyverson/bootstrap/catalog"
 	"github.com/bensyverson/bootstrap/internal/detect"
+	"github.com/bensyverson/bootstrap/internal/prefs"
 	"github.com/bensyverson/bootstrap/internal/screen"
 	"github.com/bensyverson/bootstrap/internal/session"
 )
@@ -105,6 +105,9 @@ type Config struct {
 	Person Person
 	// Given is what the person said up front, for a run with a Person.
 	Given Given
+	// Preferences are what bootstrap remembers between setups: where new
+	// projects go. One with no folder remembers nothing.
+	Preferences prefs.File
 }
 
 // Flow is one run of the setup.
@@ -112,6 +115,8 @@ type Flow struct {
 	cfg Config
 	// inPlace is a starting folder that's already a project, which is set up where it is.
 	inPlace bool
+	// startSeq is the log's last seq before this run, so the run can tell its own answers from earlier ones.
+	startSeq int
 }
 
 // New checks a config and fills in its defaults.
@@ -156,9 +161,11 @@ func (f *Flow) Run(ctx context.Context) error {
 	if err := os.MkdirAll(f.logs(), 0o700); err != nil {
 		return err
 	}
-	if _, err := f.cfg.Store.Drive(time.Now()); err != nil {
+	state, err := f.cfg.Store.Drive(time.Now())
+	if err != nil {
 		return err
 	}
+	f.startSeq = state.Seq
 	if f.cfg.Person != nil {
 		if err := f.pickUp(); err != nil {
 			return err
@@ -366,12 +373,8 @@ func (r *run) answer(req screen.Request) (screen.Answer, bool, error) {
 	if err != nil {
 		return screen.Answer{}, false, err
 	}
-	for _, a := range slices.Backward(state.Answers) {
-		if a.Request == req {
-			return a.Answer, true, nil
-		}
-	}
-	return screen.Answer{}, false, nil
+	a, ok := latest(state, req)
+	return a, ok, nil
 }
 
 // ask shows a question and waits for the person's answer. If another screen

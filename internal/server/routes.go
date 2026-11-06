@@ -27,6 +27,7 @@ type answerRequest struct {
 	Choice string   `json:"choice"`
 	Tools  []string `json:"tools"`
 	Name   string   `json:"name"`
+	In     string   `json:"in"`
 }
 
 // answerReply tells the page what became of the click.
@@ -122,7 +123,7 @@ func (s *Server) handleAnswer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	now := s.cfg.Now()
-	_, err := s.cfg.Store.RecordAnswer(req.Seq, screen.Answer{Choice: req.Choice, Tools: req.Tools, Name: req.Name}, now)
+	_, err := s.cfg.Store.RecordAnswer(req.Seq, screen.Answer{Choice: req.Choice, Tools: req.Tools, Name: req.Name, In: req.In}, now)
 	var invalid *screen.InvalidError
 	switch {
 	case err == nil:

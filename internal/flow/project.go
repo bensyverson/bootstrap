@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bensyverson/bootstrap/internal/prefs"
 	"github.com/bensyverson/bootstrap/internal/screen"
 	"github.com/bensyverson/bootstrap/internal/session"
 )
@@ -60,7 +61,10 @@ const (
 var errNoProject = errors.New("the project steps ran before the folder step")
 
 // project is where the project steps run: the starting folder when it's already a
-// project, and otherwise ~/Projects/<name>. Nothing in the starting folder moves.
+// project, and otherwise <in>/<name> from the naming answer. Nothing in the
+// starting folder moves, and since the answer names its folder, neither does a
+// project when the remembered folder changes. An answer from before answers named
+// one is in ~/Projects.
 func (r *run) project() (string, bool, error) {
 	if r.f.inPlace {
 		return r.f.cfg.Probe.Cwd, true, nil
@@ -69,7 +73,28 @@ func (r *run) project() (string, bool, error) {
 	if err != nil || !ok {
 		return "", false, err
 	}
-	return filepath.Join(r.f.cfg.Probe.Home, "Projects", a.Name), true, nil
+	return projectDir(r.f.cfg.Probe.Home, a.In, a.Name), true, nil
+}
+
+// naming is the naming question, starting on the folder the person picked last time.
+func (r *run) naming() (screen.Request, error) {
+	p, err := r.f.cfg.Preferences.Load()
+	if err != nil {
+		return screen.Request{}, err
+	}
+	req := naming
+	if screen.SafePlace(p.ProjectsIn) {
+		req.In = p.ProjectsIn
+	}
+	return req, nil
+}
+
+// remember keeps the folder a project went in for the next setup.
+func (r *run) remember(in string) error {
+	if in == "" {
+		return nil
+	}
+	return r.f.cfg.Preferences.Update(func(p *prefs.Preferences) { p.ProjectsIn = in })
 }
 
 // mustProject is the project folder for the steps after the folder step.
@@ -116,8 +141,16 @@ func checkFolder(r *run) (session.StepStatus, *session.Handoff, error) {
 }
 
 func actFolder(r *run) (outcome, error) {
-	if _, ask, err := r.asked(naming); err != nil || ask != nil {
+	req, err := r.naming()
+	if err != nil {
+		return outcome{}, err
+	}
+	named, ask, err := r.asked(req)
+	if err != nil || ask != nil {
 		return deref(ask, err)
+	}
+	if err := r.remember(named.In); err != nil {
+		return outcome{}, err
 	}
 	dir, err := r.mustProject()
 	if err != nil {

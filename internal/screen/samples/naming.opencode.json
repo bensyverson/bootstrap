@@ -23,5 +23,17 @@
       "label": "Next",
       "primary": true
     }
-  ]
+  ],
+  "places": {
+    "label": "Put it in",
+    "options": [
+      {
+        "path": "~/Projects",
+        "picked": true
+      },
+      {
+        "path": "~/git"
+      }
+    ]
+  }
 }

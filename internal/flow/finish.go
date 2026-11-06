@@ -21,7 +21,11 @@ func checkSettings(r *run) (session.StepStatus, *session.Handoff, error) {
 		return session.StepDone, nil, nil
 	}
 	status, err := r.finished()
-	return status, nil, err
+	// A skip stands unless the person took the offer up front this time.
+	if err != nil || status != session.StepSkipped || !r.f.accepted(OfferSettings) {
+		return status, nil, err
+	}
+	return "", nil, nil
 }
 
 func actSettings(r *run) (outcome, error) {

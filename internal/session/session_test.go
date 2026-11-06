@@ -227,6 +227,23 @@ func TestAnswerOutsideTheScreenIsRefused(t *testing.T) {
 	}
 }
 
+// A name typed with no folder picked goes in the folder the screen picked, and the log says which.
+func TestANamingAnswerKeepsItsFolder(t *testing.T) {
+	for _, tc := range []struct{ offered, picked, want string }{
+		{"", "", "~/Projects"}, {"~/git", "", "~/git"}, {"~/git", "~/Projects", "~/Projects"},
+	} {
+		store := begun(t)
+		state := show(t, store, screen.Request{Screen: "naming", In: tc.offered}, t0)
+		state, err := store.RecordAnswer(state.Current.Seq, screen.Answer{Choice: "next", Name: "pine-bakery", In: tc.picked}, t0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, _ := state.CurrentAnswer(); got.Answer.In != tc.want {
+			t.Errorf("offered %q, picked %q: kept %q, want %q", tc.offered, tc.picked, got.Answer.In, tc.want)
+		}
+	}
+}
+
 func TestListAnswerKeepsRequiredTools(t *testing.T) {
 	store := begun(t)
 	state := show(t, store, screen.Request{Screen: "list"}, t0)

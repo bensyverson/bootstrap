@@ -323,6 +323,7 @@ func TestAnswerRefusals(t *testing.T) {
 		{"a command in a name", fmt.Sprintf(`{"seq":%d,"choice":"next","name":"$(rm -rf x)"}`, naming.Current.Seq), http.StatusUnprocessableEntity},
 		{"not JSON", `nope`, http.StatusBadRequest},
 		{"an unknown field", fmt.Sprintf(`{"seq":%d,"choice":"next","name":"x","extra":1}`, naming.Current.Seq), http.StatusBadRequest},
+		{"a folder not offered", fmt.Sprintf(`{"seq":%d,"choice":"next","name":"x","in":"/etc"}`, naming.Current.Seq), http.StatusUnprocessableEntity},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -338,9 +339,12 @@ func TestAnswerRefusals(t *testing.T) {
 	if len(state.Answers) != 0 {
 		t.Errorf("a refused answer reached the log: %+v", state.Answers)
 	}
-	code, body := f.post(t, fmt.Sprintf(`{"seq":%d,"choice":"next","name":"my-project"}`, naming.Current.Seq))
+	code, body := f.post(t, fmt.Sprintf(`{"seq":%d,"choice":"next","name":"my-project","in":"%s"}`, naming.Current.Seq, screen.OtherPlace))
 	if code != 200 {
 		t.Fatalf("a safe name: %d %s", code, body)
+	}
+	if state, _ := f.store.Load(); len(state.Answers) != 1 || state.Answers[0].Answer.In != screen.OtherPlace {
+		t.Errorf("the folder picked wasn't kept: %+v", state.Answers)
 	}
 	if code, _ := f.post(t, fmt.Sprintf(`{"seq":%d,"choice":"next","name":"other"}`, naming.Current.Seq)); code != http.StatusConflict {
 		t.Errorf("a second answer: %d", code)

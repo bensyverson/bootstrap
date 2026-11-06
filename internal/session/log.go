@@ -338,6 +338,10 @@ func (s Store) RecordAnswer(seq int, ans screen.Answer, now time.Time) (State, e
 		if err := screen.ValidateAnswer(desc, ans); err != nil {
 			return event{}, err
 		}
+		// The log says where a project goes, so a preference changed later can't move it.
+		if desc.Places != nil && ans.In == "" {
+			ans.In = desc.Places.Picked()
+		}
 		return event{Kind: kindAnswer, For: seq, Answer: &ans}, nil
 	})
 }

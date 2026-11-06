@@ -75,6 +75,8 @@ func statesFor(agent screen.Agent) []Preview {
 	}
 	add("other", screen.Request{Screen: "trouble", Tool: "sleepy", Reason: "other"}, false)
 	add("required", screen.Request{Screen: "trouble", Tool: "homebrew", Reason: "network"}, false)
+	// The naming screen starting on a folder picked before.
+	add("picked", screen.Request{Screen: "naming", In: screen.OtherPlace}, false)
 	for _, id := range []screen.ID{"welcome", "list", "making", "naming"} {
 		add("answered", screen.Request{Screen: id}, true)
 	}

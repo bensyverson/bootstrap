@@ -66,6 +66,8 @@ func (w *world) with(env ...string) *world {
 type result struct {
 	stdout, stderr string
 	code           int
+	// rawStdout and rawStderr are as printed, before asBootstrap.
+	rawStdout, rawStderr string
 }
 
 func (w *world) run(t *testing.T, args ...string) result {
@@ -81,7 +83,30 @@ func (w *world) run(t *testing.T, args ...string) result {
 	} else if err != nil {
 		t.Fatal(err)
 	}
-	return result{stdout.String(), stderr.String(), code}
+	return result{asBootstrap(stdout.String()), asBootstrap(stderr.String()), code, stdout.String(), stderr.String()}
+}
+
+// asBootstrap names the binary under test as an agent reads it on a Mac with
+// bootstrap on its PATH. Next lines name the path the binary ran from, which in
+// a test is a temporary folder; TestNextNamesTheProgramByItsPath checks that.
+func asBootstrap(s string) string {
+	return strings.NewReplacer(binary+" ", "bootstrap ", binary+"\n", "bootstrap\n", binary+`"`, `bootstrap"`).Replace(s)
+}
+
+func TestNextNamesTheProgramByItsPath(t *testing.T) {
+	w := newWorld(t)
+	r := w.run(t, "detect")
+	if !strings.HasSuffix(r.rawStdout, "next: "+binary+" tools\n") {
+		t.Errorf("stdout:\n%s", r.rawStdout)
+	}
+	r = w.run(t, "status")
+	if !strings.HasSuffix(r.rawStderr, "next: "+binary+" run --agent <app>\n") {
+		t.Errorf("stderr:\n%s", r.rawStderr)
+	}
+	// Help documents the verb, so it keeps the short name.
+	if r := w.run(t); strings.Contains(r.rawStdout, binary) {
+		t.Errorf("the primer names the path:\n%s", r.rawStdout)
+	}
 }
 
 func (r result) want(t *testing.T, code int, stdout, stderr string) {

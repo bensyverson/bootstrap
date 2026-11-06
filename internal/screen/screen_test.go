@@ -483,8 +483,21 @@ func TestStatusDefaultsToTheFirst(t *testing.T) {
 // ship unnoticed, and the prototype check skips them. Approving a screen's words
 // takes it off this list.
 func TestDraftScreens(t *testing.T) {
-	if got := Drafts(); len(got) != 0 {
-		t.Errorf("drafts = %v: every screen's words are approved", got)
+	// Waiting on Ben, 2026-11-05: naming's choice of folder (gpvHd3), and
+	// github-code's line, which said "This page" in a terminal too (OWv6U2).
+	if got, want := Drafts(), []ID{"naming", "github-code"}; !slices.Equal(got, want) {
+		t.Errorf("drafts = %v, want %v", got, want)
+	}
+	code, err := Describe(Request{Screen: "github-code", Code: "ABCD-1234"}, Context{Agent: ClaudeCode})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := plain(code.Status), "Open GitHub, sign in if it asks, and type this code. We’ll carry on once you’re done."; got != want {
+		t.Errorf("github-code says %q, want %q", got, want)
+	}
+	naming, _ := Describe(Request{Screen: "naming"}, Context{Agent: ClaudeCode})
+	if naming.Places == nil || naming.Places.Label != "Put it in" {
+		t.Errorf("naming's places = %+v", naming.Places)
 	}
 	gitAsk := slices.IndexFunc(Definitions(), func(d Definition) bool { return d.Screen == "git-ask" })
 	if gitAsk < 0 {

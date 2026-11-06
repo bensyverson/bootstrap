@@ -379,6 +379,8 @@ func TestGivenAnswersAreChecked(t *testing.T) {
 		{"a bad name", flow.Given{Name: "../up"}, flow.GivenName, nil},
 		{"a bad email", flow.Given{GitEmail: "nope"}, flow.GivenGitEmail, nil},
 		{"a bad git name", flow.Given{GitName: "-x"}, flow.GivenGitName, nil},
+		{"a folder with a space", flow.Given{Name: "pine-bakery", In: "~/My Projects"}, flow.GivenIn, nil},
+		{"a relative folder", flow.Given{Name: "pine-bakery", In: "code"}, flow.GivenIn, nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			w := newWorld(t)
@@ -401,17 +403,20 @@ func TestWhere(t *testing.T) {
 	repo := filepath.Join(home, "code", "bakery")
 	put(t, filepath.Join(repo, ".git", "HEAD"), "ref: refs/heads/main\n")
 	for _, tc := range []struct {
-		name, cwd, given, want string
-		inPlace                bool
-		err                    error
+		name, cwd, given, in, want string
+		inPlace                    bool
+		err                        error
 	}{
-		{"a project is set up in place", repo, "", repo, true, nil},
-		{"a name makes a folder in Projects", home, "Pine Bakery", filepath.Join(home, "Projects", "pine-bakery"), false, nil},
-		{"no name outside a project", home, "", "", false, flow.ErrNeedsName},
-		{"a name inside a project", repo, "other", "", false, flow.ErrInProject},
+		{"a project is set up in place", repo, "", "", repo, true, nil},
+		{"a name makes a folder in Projects", home, "Pine Bakery", "", filepath.Join(home, "Projects", "pine-bakery"), false, nil},
+		{"a folder under home", home, "pine-bakery", "~/git", filepath.Join(home, "git", "pine-bakery"), false, nil},
+		{"a folder anywhere", home, "pine-bakery", "/Volumes/work", "/Volumes/work/pine-bakery", false, nil},
+		{"a folder is ignored in place", repo, "", "~/git", repo, true, nil},
+		{"no name outside a project", home, "", "", "", false, flow.ErrNeedsName},
+		{"a name inside a project", repo, "other", "", "", false, flow.ErrInProject},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			got, inPlace, err := flow.Where(detect.Probe{Home: home, Cwd: tc.cwd}, tc.given)
+			got, inPlace, err := flow.Where(detect.Probe{Home: home, Cwd: tc.cwd}, tc.given, tc.in)
 			if !errors.Is(err, tc.err) || got != tc.want || inPlace != tc.inPlace {
 				t.Errorf("Where = %q, %v, %v; want %q, %v, %v", got, inPlace, err, tc.want, tc.inPlace, tc.err)
 			}

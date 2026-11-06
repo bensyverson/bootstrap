@@ -10,6 +10,7 @@ import (
 
 	"github.com/bensyverson/bootstrap/internal/detect"
 	"github.com/bensyverson/bootstrap/internal/flow"
+	"github.com/bensyverson/bootstrap/internal/prefs"
 	"github.com/bensyverson/bootstrap/internal/screen"
 	"github.com/bensyverson/bootstrap/internal/server"
 	"github.com/bensyverson/bootstrap/internal/session"
@@ -49,6 +50,7 @@ func (c *call) flowConfig(store session.Store) (flow.Config, error) {
 		Probe:       detect.Probe{Root: root, Home: c.env.Getenv("HOME"), Cwd: cwd, Chip: detect.Chip, Free: detect.FreeBytes, Running: detect.Running},
 		HomebrewPkg: flow.DefaultHomebrewPkg,
 		Hooks:       flow.DefaultHooks(),
+		Preferences: prefs.File{Dir: store.Dir},
 	}, nil
 }
 

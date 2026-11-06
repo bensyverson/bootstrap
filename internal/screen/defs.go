@@ -103,6 +103,8 @@ type spec struct {
 	links []linkDef
 	// detail is what the flow fills in from what it learned, beyond the closed lists.
 	detail detail
+	// places introduces a pick of the folder a new project goes in; empty offers none.
+	places string
 	// draft marks words Ben hasn't approved yet.
 	draft bool
 }
@@ -157,7 +159,7 @@ var specs = []spec{
 	{id: "live-yet", asListed: true, mode: Waiting, title: "Do people use it yet?",
 		choices: []choiceDef{{"not-yet", "Not yet"}, {"yes", "Yes"}}, next: nextAnswer},
 	{id: "naming", mode: Waiting, layout: LayoutLow, title: "What should we call this project?", status: "We’ll make a folder with this name.",
-		field: &Field{Label: "Project name", Value: "my-project"}, choices: []choiceDef{{"next", "Next"}}, next: nextAnswer},
+		field: &Field{Label: "Project name", Value: "my-project"}, places: "Put it in", choices: []choiceDef{{"next", "Next"}}, next: nextAnswer, draft: true},
 	{id: "building", mode: Working, title: "Setting up your project",
 		statuses: []option{{"folder", "Making your folder"}, {"git", "Turning on Git"}, {"rules", "Teaching {ai} how you work"}}, next: nextWork},
 	{id: "git-ask", mode: Waiting, title: "Should Git keep track of this project?",
@@ -170,8 +172,9 @@ var specs = []spec{
 		choices: []choiceDef{{"made-it", "I’ve made my account"}, {"not-now", "Not now"}},
 		links:   []linkDef{{"signup", "Open the sign-up page", "https://github.com/signup", "not-now"}}, next: nextAnswer},
 	{id: "github-code", mode: Waiting, layout: LayoutLow, title: "Your turn: enter this code on GitHub.",
-		status: "Open GitHub, sign in if it asks, and type this code. This page moves on by itself when you’re done.",
-		links:  []linkDef{{"device", "Open GitHub", "https://github.com/login/device", ""}}, detail: codeDetail, next: nextWork},
+		// The same words on the page and in bootstrap new's terminal.
+		status: "Open GitHub, sign in if it asks, and type this code. We’ll carry on once you’re done.",
+		links:  []linkDef{{"device", "Open GitHub", "https://github.com/login/device", ""}}, detail: codeDetail, next: nextWork, draft: true},
 	{id: "identity", mode: Waiting, layout: LayoutLow, title: "Sign your work as {name}?",
 		status:  "Git puts a name and email on every version you save. We’ll use {email}, a private address from GitHub, so your real email stays hidden.",
 		choices: []choiceDef{{"use-these", "Yes, use these"}, {"skip", "Skip"}}, detail: identityDetail, next: nextAnswer},
@@ -206,7 +209,7 @@ func (s spec) words() []string {
 			}
 		}
 	}
-	add(s.title, s.note, s.status, s.code)
+	add(s.title, s.note, s.status, s.code, s.places)
 	if s.field != nil {
 		add(s.field.Label, s.field.Value)
 	}

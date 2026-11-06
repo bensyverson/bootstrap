@@ -80,7 +80,7 @@ function draw(frame) {
 }
 
 function show(d) {
-  const key = JSON.stringify([d.title, (d.choices || []).map(c => c.label), d.rows, d.code, d.field, d.layout, d.note]);
+  const key = JSON.stringify([d.title, (d.choices || []).map(c => c.label), d.rows, d.code, d.field, d.places, d.layout, d.note]);
   shown = d;
   // A status line changing under the same title moves on its own, and nothing else does.
   if (key === shownKey && panel) { swapStatus(d.status); return; }
@@ -107,6 +107,7 @@ function show(d) {
     f.oninput = () => swapStatus(shown.status);
     next.append(f);
   }
+  if (d.places) next.append(placesFor(d.places));
   const row = el("div", "choices");
   row.append(...(d.choices || []).map(choice => {
     const b = el("button", choice.primary ? "main" : "", choice.label);
@@ -122,6 +123,20 @@ function show(d) {
   arrive(next, SWAP_MS, R);
   panel = next;
   if (hadFocus && row.firstChild) row.firstChild.focus({ preventScroll: true });
+}
+/* Where a new project goes: one folder picked of a few, as a row of radio buttons. */
+function placesFor(places) {
+  const group = el("div", "places");
+  group.setAttribute("role", "radiogroup");
+  group.setAttribute("aria-label", places.label);
+  group.append(el("span", "placesLabel", places.label));
+  group.append(...places.options.map(p => {
+    const label = el("label", "place"), r = el("input");
+    r.type = "radio"; r.name = "place"; r.value = p.path; r.checked = !!p.picked;
+    label.append(r, el("span", "", p.path));
+    return label;
+  }));
+  return group;
 }
 function statusLine(spans) {
   const s = spansInto(el("div", "statusBox"), spans);
@@ -158,6 +173,7 @@ function setAnswered(on) {
   panel.classList.toggle("waiting", on);
   panel.querySelectorAll(".choices button").forEach(b => { b.disabled = on; });
   panel.querySelectorAll(".row input").forEach(b => { b.disabled = on || b.dataset.required === "true"; });
+  panel.querySelectorAll(".place input").forEach(b => { b.disabled = on; });
   const f = panel.querySelector(".field");
   if (f) f.readOnly = on;
   const row = panel.querySelector(".choices"), line = row && row.querySelector(".waitLine:not(.gone)");
@@ -173,6 +189,7 @@ async function answer(choice) {
   const body = { seq, choice: choice.id };
   if (shown.rows) body.tools = [...panel.querySelectorAll(".row input:checked")].map(b => b.dataset.id);
   if (shown.field) body.name = panel.querySelector(".field").value;
+  if (shown.places) body.in = panel.querySelector(".place input:checked").value;
   setAnswered(true);
   let reply = { ok: false };
   try { reply = await sendAnswer(body); } catch (e) { /* The stream notices a server that's gone. */ }

@@ -78,20 +78,23 @@ type failure struct {
 	browser string
 	// updates are the flow's work a wait read before it ran out of time.
 	updates []session.Update
+	// questions are what a refused new still needs answered.
+	questions []openQuestion
 }
 
 func (f *failure) Error() string { return f.message }
 
 type errorBody struct {
-	Error   string           `json:"error"`
-	Exit    int              `json:"exit"`
-	Valid   []string         `json:"valid,omitempty"`
-	State   string           `json:"state,omitempty"`
-	URL     string           `json:"url,omitempty"`
-	PID     int              `json:"pid,omitempty"`
-	Browser string           `json:"browser,omitempty"`
-	Updates []session.Update `json:"updates,omitempty"`
-	Next    string           `json:"next"`
+	Error     string           `json:"error"`
+	Exit      int              `json:"exit"`
+	Valid     []string         `json:"valid,omitempty"`
+	State     string           `json:"state,omitempty"`
+	URL       string           `json:"url,omitempty"`
+	PID       int              `json:"pid,omitempty"`
+	Browser   string           `json:"browser,omitempty"`
+	Updates   []session.Update `json:"updates,omitempty"`
+	Questions []openQuestion   `json:"questions,omitempty"`
+	Next      string           `json:"next"`
 }
 
 // command is one verb: its help, its flags and what it does.
@@ -178,7 +181,7 @@ func Run(args []string, env Env) int {
 		fmt.Fprintln(env.Stdout, row)
 	}
 	if out.next != "" {
-		fmt.Fprintf(env.Stdout, "next: %s\n", out.next)
+		fmt.Fprintf(env.Stdout, "next: %s\n", byPath(out.next, program(env)))
 	}
 	return exitOK
 }
@@ -243,8 +246,9 @@ func encode(w io.Writer, value any) {
 // report prints an error, and returns its exit code. Every error ends with the next command.
 func report(env Env, asJSON bool, err error) int {
 	f := asFailure(err)
+	f.next = byPath(f.next, program(env))
 	if asJSON {
-		encode(env.Stdout, errorBody{Error: f.message, Exit: f.code, Valid: f.valid, State: f.state, URL: f.url, PID: f.pid, Browser: f.browser, Updates: f.updates, Next: f.next})
+		encode(env.Stdout, errorBody{Error: f.message, Exit: f.code, Valid: f.valid, State: f.state, URL: f.url, PID: f.pid, Browser: f.browser, Updates: f.updates, Questions: f.questions, Next: f.next})
 		return f.code
 	}
 	fmt.Fprintf(env.Stderr, "error: %s\n", f.message)

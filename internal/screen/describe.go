@@ -74,8 +74,52 @@ func (s spec) validateDetail(req Request) error {
 		return invalid(nil, "the %s screen needs a name Git can use", s.id)
 	case s.detail == identityDetail && !noreplyEmail.MatchString(req.Email):
 		return invalid(nil, "the %s screen needs GitHub's private email, like 1234+name@users.noreply.github.com", s.id)
+	case s.places == "" && req.In != "":
+		return invalid(nil, "the %s screen takes no folder", s.id)
+	case req.In != "" && !SafePlace(req.In):
+		return invalid(nil, "%q can't hold projects. Use ~/<folder> or a full path, with letters, numbers and dashes", req.In)
 	}
 	return nil
+}
+
+// SafePlace reports whether a folder can hold new projects: "~/" or "/" and then
+// safe folder names, so an agent can use it in a command unquoted, and nothing
+// in it climbs out with "..".
+func SafePlace(path string) bool {
+	rest, ok := strings.CutPrefix(path, "~/")
+	if !ok {
+		rest, ok = strings.CutPrefix(path, "/")
+	}
+	if !ok || rest == "" {
+		return false
+	}
+	for part := range strings.SplitSeq(rest, "/") {
+		if !SafeFolderName(part) {
+			return false
+		}
+	}
+	return true
+}
+
+// places is what the naming screen offers: the two suggestions, and the folder
+// the request picks when it's neither.
+func (s spec) placesFor(req Request) *Places {
+	if s.places == "" {
+		return nil
+	}
+	picked := req.In
+	if picked == "" {
+		picked = DefaultPlace
+	}
+	paths := []string{DefaultPlace, OtherPlace}
+	if !slices.Contains(paths, picked) {
+		paths = append(paths, picked)
+	}
+	p := &Places{Label: s.places}
+	for _, path := range paths {
+		p.Options = append(p.Options, Place{Path: path, Picked: path == picked})
+	}
+	return p
 }
 
 // GitName reports whether a name can go into git config as it is: one line, not
@@ -131,6 +175,7 @@ func (s spec) describe(req Request, ctx Context) Description {
 		Code:     s.code,
 		Field:    s.field,
 		Card:     s.card,
+		Places:   s.placesFor(req),
 	}
 	if s.cardTool {
 		d.Card = tool.ID
@@ -315,6 +360,16 @@ func ValidateAnswer(desc Description, ans Answer) error {
 		if !slices.ContainsFunc(desc.Rows, func(r Row) bool { return r.ID == id }) {
 			return invalid(catalog.IDs(), "unknown tool %q", id)
 		}
+	}
+	switch {
+	case desc.Places == nil && ans.In != "":
+		return invalid(nil, "the %s screen has no folder to pick", desc.Screen)
+	case desc.Places != nil && ans.In != "" && !slices.ContainsFunc(desc.Places.Options, func(p Place) bool { return p.Path == ans.In }):
+		var offered []string
+		for _, p := range desc.Places.Options {
+			offered = append(offered, p.Path)
+		}
+		return invalid(offered, "%q isn't a folder the %s screen offers", ans.In, desc.Screen)
 	}
 	if desc.Field == nil {
 		if ans.Name != "" {

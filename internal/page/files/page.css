@@ -95,6 +95,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .code code { font: 400 15px/1.3 var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1; }
 .code button { flex: none; font-size: 16px; border: 0; border-radius: 9px; padding: 10px 14px; background: var(--ink); color: #FFF; cursor: pointer; }
 .field { font-size: clamp(20px, 2vw, 26px); padding: 14px 22px; border: 0; border-radius: 40px; background: #FFFFFFE6; color: var(--ink); text-align: center; width: min(420px, 100%); }
+.places { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; font-size: 16px; color: var(--hint); }
+.placesLabel { margin-right: 4px; }
+.place { position: relative; }
+.place input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.place span { display: block; font: 400 15px/1.2 var(--mono); padding: 9px 16px; border-radius: 20px; background: #FFFFFF99; color: var(--ink); cursor: pointer; transition: background .35s var(--ease), color .35s var(--ease); }
+.place span:hover { background: #FFFFFF; }
+.place input:checked + span { background: var(--ink); color: #FFFFFF; }
+.place input:focus-visible + span { outline: 2px solid rgb(var(--aura) / .8); outline-offset: 2px; }
+.place input:disabled + span { cursor: default; }
 
 /* ---------- The best part of each tool, sliding in from its own edge ---------- */
 #peek { position: fixed; inset: 0; pointer-events: none; }
@@ -168,8 +177,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .choices button { transition: background .35s var(--ease), transform .35s var(--ease), box-shadow .35s var(--ease), opacity 1.4s var(--ease); }
 .choices button:disabled { pointer-events: none; }
 .waiting .choices button { opacity: 0; }
-.rows, .field { transition: opacity 1.4s var(--ease); }
-.waiting .rows, .waiting .field { opacity: .5; }
+.rows, .field, .places { transition: opacity 1.4s var(--ease); }
+.waiting .rows, .waiting .field, .waiting .places { opacity: .5; }
 /* Centered flex overflows both edges evenly, so a line wider than one button stays centered on it. */
 .waitLine { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; white-space: nowrap; font-size: clamp(18px, 1.6vw, 22px); color: var(--hint); pointer-events: none; }
 /* A screen opened at rest shows its state already reached. */

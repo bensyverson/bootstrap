@@ -20,11 +20,10 @@ import (
 // asks at a keyboard, or takes each default when no one is there to ask. It also
 // prints the flow's work from the log as it happens, in wait's rows.
 type terminal struct {
-	mu    sync.Mutex
-	out   io.Writer
-	store session.Store
-	// interactive is a person at a keyboard; otherwise every question takes its default.
-	interactive bool
+	mu        sync.Mutex
+	out       io.Writer
+	store     session.Store
+	answering answering
 	// quiet prints nothing, for --json.
 	quiet bool
 	lines <-chan string
@@ -33,9 +32,22 @@ type terminal struct {
 	updates []session.Update
 }
 
-func newTerminal(c *call, interactive, quiet bool) *terminal {
-	t := &terminal{out: c.env.Stdout, interactive: interactive, quiet: quiet}
-	if interactive {
+// answering is who answers the flow's questions in a run of new.
+type answering int
+
+const (
+	// refuseQuestions: no one is at a keyboard and there's no --yes, so any
+	// question is refused, never defaulted (Ben, 2026-11-05, OWv6U2).
+	refuseQuestions answering = iota
+	// takeDefaults: --yes, so each question takes its default.
+	takeDefaults
+	// askPerson: a person at a keyboard answers.
+	askPerson
+)
+
+func newTerminal(c *call, answering answering, quiet bool) *terminal {
+	t := &terminal{out: c.env.Stdout, answering: answering, quiet: quiet}
+	if answering == askPerson {
 		t.lines = readLines(c.env.Stdin)
 	}
 	return t
@@ -168,8 +180,8 @@ func (t *terminal) Ask(ctx context.Context, q flow.Question) (screen.Answer, err
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.flush()
-	if !t.interactive {
-		if q.Default == nil || q.Refused != nil {
+	if t.answering != askPerson {
+		if t.answering == refuseQuestions || q.Default == nil || q.Refused != nil {
 			return screen.Answer{}, &unanswered{q}
 		}
 		return *q.Default, nil

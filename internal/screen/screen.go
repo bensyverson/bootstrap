@@ -95,7 +95,38 @@ type Description struct {
 	Field    *Field   `json:"field,omitempty"`
 	Choices  []Choice `json:"choices,omitempty"`
 	Card     string   `json:"card,omitempty"`
+	// Places are the folders a new project can go in, on the naming screen.
+	Places *Places `json:"places,omitempty"`
 }
+
+// Places is a pick of one folder, with the words that introduce it.
+type Places struct {
+	Label   string  `json:"label"`
+	Options []Place `json:"options"`
+}
+
+// Place is one folder a new project can go in, as "~/git" or an absolute path.
+type Place struct {
+	Path   string `json:"path"`
+	Picked bool   `json:"picked,omitempty"`
+}
+
+// Picked is the folder picked, or "" when there's none.
+func (p Places) Picked() string {
+	for _, o := range p.Options {
+		if o.Picked {
+			return o.Path
+		}
+	}
+	return ""
+}
+
+// The folders the naming screen always offers: ~/Projects by default, and the
+// other suggestion (Ben, W2yASt and gpvHd3).
+const (
+	DefaultPlace = "~/Projects"
+	OtherPlace   = "~/git"
+)
 
 // Request is what an agent asks to show.
 type Request struct {
@@ -108,6 +139,9 @@ type Request struct {
 	// Name and Email are what Git would sign the person's work with, from GitHub.
 	Name  string `json:"name,omitempty"`
 	Email string `json:"email,omitempty"`
+	// In is the folder the naming screen picks to begin with, from the person's
+	// preferences. Empty picks DefaultPlace.
+	In string `json:"in,omitempty"`
 }
 
 // Context is what a description depends on besides the request.
@@ -125,6 +159,8 @@ type Answer struct {
 	Choice string   `json:"choice"`
 	Tools  []string `json:"tools,omitempty"`
 	Name   string   `json:"name,omitempty"`
+	// In is the folder picked on a screen with places.
+	In string `json:"in,omitempty"`
 }
 
 // InvalidError is a request or answer outside the closed lists. Valid lists what
