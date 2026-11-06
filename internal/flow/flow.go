@@ -109,8 +109,11 @@ type Config struct {
 	// Given is what the person said up front, for a run with a Person.
 	Given Given
 	// Preferences are what bootstrap remembers between setups: where new
-	// projects go. One with no folder remembers nothing.
+	// projects go, and the person's answers. One with no folder remembers nothing.
 	Preferences prefs.File
+	// Attendance says whether anyone will act outside the terminal, for a run
+	// with a Person. Unattended never starts a step that waits on them.
+	Attendance Attendance
 }
 
 // Flow is one run of the setup.
@@ -120,6 +123,8 @@ type Flow struct {
 	inPlace bool
 	// startSeq is the log's last seq before this run, so the run can tell its own answers from earlier ones.
 	startSeq int
+	// putOff are the steps skipped because they wait on a person and no one is there.
+	putOff []NeedsPerson
 }
 
 // New checks a config and fills in its defaults.
@@ -255,6 +260,9 @@ func (r *run) walk() error {
 		if status != "" {
 			return r.record(status)
 		}
+		if what, waits := waitsOnPerson[r.def.ID]; waits && r.unattended() {
+			return &NeedsPerson{Step: r.def.ID, What: what}
+		}
 		finished, err := r.act()
 		if err != nil || finished {
 			return err
@@ -387,8 +395,12 @@ func (r *run) ask(req screen.Request) error {
 	if r.f.cfg.Person != nil {
 		return r.askPerson(req)
 	}
+	asked, err := r.pageDefault(req)
+	if err != nil {
+		return err
+	}
 	for {
-		state, err := r.f.cfg.Store.Show(req, 0, time.Now())
+		state, err := r.f.cfg.Store.Show(asked, 0, time.Now())
 		if err != nil {
 			return err
 		}
@@ -408,6 +420,9 @@ func (r *run) ask(req screen.Request) error {
 			return err
 		}
 		if !moved {
+			if err := r.f.remember(req, got); err != nil {
+				return err
+			}
 			return r.note("%s", told(req, got))
 		}
 	}
@@ -418,6 +433,8 @@ func told(req screen.Request, a screen.Answer) string {
 	switch {
 	case len(a.Tools) > 0 || req.Screen == "list":
 		return fmt.Sprintf("person chose %s, keeping %s", a.Choice, joinList(screen.KeepRequired(a.Tools)))
+	case req.Screen == "naming" && a.Choice == screen.JustTools:
+		return "person chose just the tools, with no project"
 	case req.Screen == "naming":
 		return "person named the project " + a.Name
 	case a.Name != "" && a.Choice != "skip":

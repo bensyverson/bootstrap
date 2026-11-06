@@ -37,3 +37,7 @@ The briefing's sync step (`git merge --ff-only main`) fails inside the sandbox b
 ## 2026-11-06 A worktree agent's commands are refused for naming `git` or `eval`
 
 Every path here holds `/git/` (`/Users/ben/git/bootstrap`), and the scratchpad's holds `-git-`, so worktree isolation reads a command naming one, with `&&` or a loop around it, as a git call it can't verify and refuses it. `sleepy eval …` is refused for the word `eval`. Use relative paths from the worktree (`local/bs`, not the absolute path), one plain command per call, and put a `sleepy eval` or a loop in a script file run with `bash`.
+
+## 2026-11-06 `cmd/bootstrap`'s tests panic in the sandbox, but most of them can run there
+
+`TestMain` builds the binary with `go build`, which stamps VCS info by running git, and git can't read `~/.gitconfig` in the sandbox, so the whole package panics with "error obtaining VCS status" and reads as untestable. `GOFLAGS=-buildvcs=false` (with `GOCACHE` and `GOTELEMETRY=off` as usual) gets past it, and then every test passes but the ~30 that start a page (`run`, `serve`, `show`, `wait`, which bind a port) and `TestPrimerNeedsNoNetwork` (nested `sandbox-exec`). Those still need the sandbox off. Seen by the `XbdzWw`/`VGCn9C` agent, 2026-11-06.

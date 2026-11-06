@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -68,13 +69,15 @@ var stepFlags = map[session.StepID]string{
 var givenFlags = map[flow.GivenField]string{
 	flow.GivenName: "<name>", flow.GivenSkip: "--skip", flow.GivenMaking: "--making",
 	flow.GivenGitName: "--git-name", flow.GivenGitEmail: "--git-email", flow.GivenIn: "--in",
+	flow.GivenJustTools: "--just-tools",
 }
 
 var newCommand = command{
-	name: "new", class: "Act", usage: "new [<name>] [--in <folder>] [--yes] [--skip <tool>] [--making <website|app|code|other>] [--[no-]git] [--[no-]github] [--[no-]identity] [--git-name <name> --git-email <email>] [--[no-]xcode] [--[no-]settings] [--agent <claude-code|opencode>] [--json]",
-	about: `Runs the whole setup here, in the foreground, with no page, server or browser. In a folder that's already a project (a Git repo), it sets that folder up and takes no name or --in; anywhere else, <name> makes <folder>/<name>, in ~/Projects unless --in or an earlier pick says otherwise.
+	name: "new", class: "Act", usage: "new [<name> | --just-tools] [--in <folder>] [--yes] [--skip <tool>] [--making <website|app|code|other>] [--[no-]git] [--[no-]github] [--[no-]identity] [--git-name <name> --git-email <email>] [--[no-]xcode] [--[no-]settings] [--agent <claude-code|opencode>] [--json]",
+	about: `Runs the whole setup here, in the foreground, with no page, server or browser. In a folder that's already a project (a Git repo), it sets that folder up and takes no name or --in; anywhere else, <name> makes <folder>/<name>, in ~/Projects unless --in or an earlier pick says otherwise. --just-tools makes no project: it installs the tools and does only what's for the whole Mac (GitHub, Git's name and email, the agent's helpers), and takes no name.
 At a terminal, it asks each open question with its default ready, so Enter takes it. --yes takes every default without asking. With no terminal (an agent) or --json, and no --yes, it refuses with exit 2 before touching anything, listing each question no flag or earlier answer settles and the flag that answers it. A question with no default (Git's name and email, when GitHub can't supply them) fails with exit 2, naming the flag.
-Every offer is on unless a flag says no:
+Each answer, on the page or here, is remembered in ~/.bootstrap/preferences.json, and the next setup takes it as the default, so with --yes a no stays a no. A flag wins over a remembered answer and is remembered in its place. bootstrap prefs lists them, and bootstrap prefs reset <name> forgets one.
+Every offer is on unless a flag or a remembered answer says no:
   --in <folder>        where the new project goes, such as ~/git; remembered for the next
                        setup, on the page or here (~/.bootstrap/preferences.json)
   --skip <tool>        go without a tool (repeat, or use commas); every tool is kept by default
@@ -90,14 +93,14 @@ Every offer is on unless a flag says no:
   --settings, --no-settings
                        turn on the agent's helpers, or don't
   --agent <app>        the app the rules and helpers are for: from the environment, else claude-code
-Steps that need a click (Apple's window, Homebrew's installer, GitHub's code) say what to do and wait. Asking about the phone is the page's; new prints a hint instead.
+Steps that need a click (Apple's window, Homebrew's installer, GitHub's code) say what to do and wait, except with --yes, which never starts one: it stops before Apple's tools or Homebrew with exit 4, and skips GitHub's sign-in, saying so in its next: line. Asking about the phone is the page's; new prints a hint instead.
 Trouble prints what happened and the evidence, as wait does, and exits 4: running new again picks up where it stopped, since every step checks before it acts. Answers are kept for the project, so a run again asks nothing already answered; a flag given now wins over an earlier answer, so --git takes back an earlier --no-git. A flag and its --no- together are a usage error.
 While a page setup (bootstrap run or serve) is running on this Mac, new refuses with exit 3, so two setups never install at once.
-The log is ~/.bootstrap/new/<project>-<hash>/session.jsonl, apart from the page's.`,
+The log is ~/.bootstrap/new/<project>-<hash>/session.jsonl (~/.bootstrap/new/just-tools/ for --just-tools), apart from the page's.`,
 	example:  "bootstrap new pine-bakery --yes --in ~/git --skip woodcase",
 	flags:    []string{"agent", "making", "git-name", "git-email", "in"},
 	lists:    []string{"skip"},
-	switches: []string{"yes", "git", "no-git", "github", "no-github", "identity", "no-identity", "xcode", "no-xcode", "settings", "no-settings"},
+	switches: []string{"yes", "just-tools", "git", "no-git", "github", "no-github", "identity", "no-identity", "xcode", "no-xcode", "settings", "no-settings"},
 	run:      runNew,
 }
 
@@ -162,7 +165,7 @@ func runNew(c *call) (output, error) {
 	defer stop()
 
 	t := newTerminal(c, answers, asJSON)
-	dir, inPlace, err := where(ctx, t, cfg.Probe, agent, name, in)
+	dir, inPlace, justTools, err := where(ctx, t, cfg.Probe, agent, name, in, c.switched("just-tools"))
 	if err != nil {
 		return output{}, err
 	}
@@ -170,15 +173,28 @@ func runNew(c *call) (output, error) {
 		return output{}, whereFailure(flow.ErrInProject)
 	}
 	again := "bootstrap new"
-	if !inPlace {
+	logDir := filepath.Join(base.Dir, "new", projectKey(dir))
+	switch {
+	case justTools:
+		// A name or --in given with it is the flow's to refuse.
+		given.JustTools, given.Name = true, name
+		if flagged {
+			given.In = in
+		}
+		again += " --just-tools"
+		logDir = filepath.Join(base.Dir, "new", justToolsLog)
+	case !inPlace:
 		given.Name, given.In = filepath.Base(dir), in
 		again += " " + given.Name
 		if flagged {
 			again += " --in " + in
 		}
 	}
-	store := session.Store{Dir: filepath.Join(base.Dir, "new", projectKey(dir)), Bell: session.NewBell()}
+	store := session.Store{Dir: logDir, Bell: session.NewBell()}
 	cfg.Store, cfg.Given, cfg.Person = store, given, t
+	if yes {
+		cfg.Attendance = flow.Unattended
+	}
 	f, err := flow.New(cfg)
 	if err != nil {
 		return output{}, givenFailure(err)
@@ -213,7 +229,11 @@ func runNew(c *call) (output, error) {
 	}
 	t.attach(store)
 	shown := tilde(dir, c.env.Getenv("HOME"))
-	t.print(fmt.Sprintf("project %s %s", kv("path", shown), kv("log", store.LogPath())))
+	if justTools {
+		t.print("tools " + kv("log", store.LogPath()))
+	} else {
+		t.print(fmt.Sprintf("project %s %s", kv("path", shown), kv("log", store.LogPath())))
+	}
 
 	watching, quit := context.WithCancel(ctx)
 	go t.watch(watching)
@@ -229,8 +249,17 @@ func runNew(c *call) (output, error) {
 		return output{}, fail
 	}
 	next := fmt.Sprintf("open a new Terminal window, cd %s, and start %s there", shown, agent.App)
+	if justTools {
+		dir, next = "", "to make a project later: bootstrap new <name>"
+	}
+	for _, p := range slices.Backward(f.PutOff()) {
+		next = fmt.Sprintf("%s, which --yes never waits for, so it was skipped: to do it, run %s at a terminal, without --yes; then %s", p.What, again, next)
+	}
 	return output{next: next, value: newValue{Project: dir, Log: store.LogPath(), Updates: updates, Next: next}}, nil
 }
+
+// justToolsLog is the log folder of a run of new with no project, in place of a project's.
+const justToolsLog = "just-tools"
 
 // refuseOpen refuses a run with no one to ask and no --yes, when any question is still open.
 func refuseOpen(f *flow.Flow, agent screen.Agent, again string) error {
@@ -287,29 +316,40 @@ func (c *call) projectsIn(cfg flow.Config) (string, error) {
 	return in, nil
 }
 
-// where is the project folder, asking for a name at a terminal when the setup needs one.
-func where(ctx context.Context, t *terminal, probe detect.Probe, agent screen.Agent, name, in string) (string, bool, error) {
-	dir, inPlace, err := flow.Where(probe, name, in)
+// where is the project folder, asking for a name at a terminal when the setup
+// needs one. justTools is a setup with no project: asked for, or chosen in place
+// of a name.
+func where(ctx context.Context, t *terminal, probe detect.Probe, agent screen.Agent, name, in string, tools bool) (dir string, inPlace, justTools bool, err error) {
+	if tools {
+		if err := flow.CheckJustTools(probe); err != nil {
+			return "", false, false, &failure{code: exitUsage, message: err.Error(), next: "bootstrap new with no name sets up this folder; for just the tools, cd out of it first"}
+		}
+		return "", false, true, nil
+	}
+	dir, inPlace, err = flow.Where(probe, name, in)
 	if !errors.Is(err, flow.ErrNeedsName) || t.answering != askPerson {
-		return dir, inPlace, whereFailure(err)
+		return dir, inPlace, false, whereFailure(err)
 	}
 	req := screen.Request{Screen: "naming"}
 	desc, err := screen.Describe(req, screen.Context{Agent: agent})
 	if err != nil {
-		return "", false, err
+		return "", false, false, err
 	}
 	q := flow.Question{Request: req, Screen: desc}
 	for {
 		a, err := t.Ask(ctx, q)
 		if err != nil {
-			return "", false, newFailure(err, "bootstrap new")
+			return "", false, false, newFailure(err, "bootstrap new")
+		}
+		if a.Choice == screen.JustTools {
+			return "", false, true, nil
 		}
 		dir, inPlace, err = flow.Where(probe, a.Name, in)
 		if _, bad := errors.AsType[*flow.GivenError](err); bad {
 			q.Refused = err
 			continue
 		}
-		return dir, inPlace, whereFailure(err)
+		return dir, inPlace, false, whereFailure(err)
 	}
 }
 
@@ -342,6 +382,10 @@ func givenFailure(err error) error {
 func newFailure(err error, again string) *failure {
 	if handed, ok := errors.AsType[*flow.HandedOff](err); ok {
 		return &failure{code: exitTarget, message: handed.Error(), next: waysOn(handed.Handoff, again)}
+	}
+	if needs, ok := errors.AsType[*flow.NeedsPerson](err); ok {
+		return &failure{code: exitTarget, message: needs.What + ", and --yes never waits on a person",
+			next: again + " at a terminal, without --yes, to do it there; or bootstrap run, to set up on the page"}
 	}
 	if u, ok := isUnanswered(err); ok {
 		next := again + " at a terminal, to answer it"

@@ -16,10 +16,17 @@ import (
 const FileName = "preferences.json"
 
 // Preferences are what the person chose once and shouldn't be asked again.
+// A later setup takes them as its defaults (Ben, 2026-11-06, XbdzWw).
 type Preferences struct {
 	// ProjectsIn is the folder new projects go in, as "~/git" or an absolute
 	// path. Empty is the default, ~/Projects.
 	ProjectsIn string `json:"projects_in,omitempty"`
+	// SkipTools are the tools the person went without last time. Empty keeps
+	// every tool, so a tool added to the catalog later is offered.
+	SkipTools []string `json:"skip_tools,omitempty"`
+	// Answers are the person's last choice on each question, by name: the
+	// question's choice id, such as "not-now".
+	Answers map[Name]string `json:"answers,omitempty"`
 }
 
 // File is the preferences file in Dir. A File with no Dir remembers nothing.

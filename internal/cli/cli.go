@@ -131,7 +131,7 @@ func (c *call) switched(name string) bool {
 
 // verbs lists the commands in the order the primer gives them.
 func verbs() []command {
-	return []command{detectCommand, toolsCommand, screensCommand, statusCommand, newCommand, runCommand, waitCommand, resumeCommand, serveCommand, showCommand, stopCommand}
+	return []command{detectCommand, toolsCommand, screensCommand, statusCommand, newCommand, runCommand, waitCommand, resumeCommand, serveCommand, showCommand, stopCommand, prefsCommand}
 }
 
 func verbNames() []string {

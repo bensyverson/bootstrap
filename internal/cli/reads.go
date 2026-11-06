@@ -34,6 +34,7 @@ Act: the setup in the terminal, with no page
                                    at a terminal. With no terminal, --yes takes the
                                    defaults, else it refuses (exit 2) and lists the
                                    flags. Trouble is exit 4; new again picks up
+  bootstrap new --just-tools       the tools and the Mac's settings, with no project
 
 Act: the setup runs itself, and you narrate
   bootstrap run [--agent <app>]    start the setup and its page in the background
@@ -48,6 +49,11 @@ Act: driving the page yourself (tests and the chat fallback's preview)
                                    move the page to a screen
   bootstrap wait <answer|clt|brew> [--timeout 90s]
                                    return the answer or the arrival
+
+Manage: what later setups take without asking
+  bootstrap prefs                  the person's remembered answers, which the next
+                                   setup takes as its defaults (new --yes, unasked)
+  bootstrap prefs reset <name>     forget one, so the next setup asks it again
 
 Every command takes --json for a stable shape, and --help for an example.
 

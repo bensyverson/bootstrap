@@ -81,6 +81,9 @@ type Given struct {
 	Accepted []Offer
 	// Declined are the offers the person turned down.
 	Declined []Offer
+	// JustTools skips the project and keeps only what goes on the Mac (VGCn9C).
+	// It takes no Name, and a folder that's already a project ignores it.
+	JustTools bool
 }
 
 // GivenField names the part of Given that's wrong.
@@ -95,6 +98,8 @@ const (
 	GivenIn       GivenField = "in"
 	// GivenOffer is an offer both taken and turned down; GivenError.Offer names it.
 	GivenOffer GivenField = "offer"
+	// GivenJustTools is just the tools with a project's name.
+	GivenJustTools GivenField = "just-tools"
 )
 
 // GivenError is an answer given up front that its question won't take.
@@ -119,6 +124,15 @@ var (
 func startsInPlace(probe detect.Probe) bool {
 	start := detect.Run(probe).Folder
 	return start.Git == detect.Yes && start.Kind == detect.KindProject
+}
+
+// CheckJustTools says whether a setup from probe.Cwd can be just the tools. A
+// folder that's already a project is set up where it is, so it's ErrInProject.
+func CheckJustTools(probe detect.Probe) error {
+	if startsInPlace(probe) {
+		return ErrInProject
+	}
+	return nil
 }
 
 // Where is the folder a setup from probe.Cwd works in: the starting folder when
@@ -212,6 +226,15 @@ func optionalTools() []string {
 // answers turns Given into the answers it stands for, checking each.
 func (g Given) answers() ([]given, error) {
 	var out []given
+	if g.JustTools {
+		switch {
+		case g.Name != "":
+			return nil, &GivenError{Field: GivenJustTools, Message: fmt.Sprintf("just the tools makes no project, so it takes no name like %q", g.Name)}
+		case g.In != "":
+			return nil, &GivenError{Field: GivenJustTools, Message: fmt.Sprintf("just the tools makes no project, so there's nothing to put in %s", g.In)}
+		}
+		out = append(out, given{naming, screen.Answer{Choice: screen.JustTools}, GivenJustTools})
+	}
 	if g.Name != "" {
 		name, ok := screen.FolderName(g.Name)
 		if !ok {
@@ -301,6 +324,10 @@ func (f *Flow) pickUp() error {
 		if a.req.Screen == naming.Screen && f.inPlace {
 			continue
 		}
+		// What the person says up front wins over what they said before, and is kept for next time.
+		if err := f.remember(a.req, a.answer); err != nil {
+			return err
+		}
 		if last, ok := latest(state, a.req); ok && sameAnswer(last, a.answer) {
 			continue
 		}
@@ -316,7 +343,7 @@ func (f *Flow) pickUp() error {
 			return err
 		}
 	}
-	return nil
+	return f.rememberIdentity()
 }
 
 func latest(state session.State, req screen.Request) (screen.Answer, bool) {
@@ -371,13 +398,29 @@ func (r *run) question(req screen.Request) (q Question, settled bool, err error)
 		if err != nil {
 			return Question{}, false, err
 		}
-		a = screen.Answer{Choice: makingFor[detect.ProjectMaking(dir)]}
-	default:
-		choice, ok := defaultChoice[req.Screen]
-		if !ok {
+		// What the files say wins over what the person made last time.
+		if found := detect.ProjectMaking(dir); found != detect.MakingUnknown {
+			a = screen.Answer{Choice: makingFor[found]}
+			q.Default = &a
 			return q, false, nil
 		}
-		a = screen.Answer{Choice: choice}
+		a = screen.Answer{Choice: makingFor[detect.MakingUnknown]}
+	default:
+		if choice, ok := defaultChoice[req.Screen]; ok {
+			a = screen.Answer{Choice: choice}
+		}
+	}
+	if !settled {
+		remembered, err := r.f.rememberedDefault(req, desc)
+		if err != nil {
+			return Question{}, false, err
+		}
+		if remembered != nil {
+			a = *remembered
+		}
+	}
+	if a.Choice == "" {
+		return q, false, nil
 	}
 	q.Default = &a
 	return q, settled, nil
@@ -411,6 +454,9 @@ func (r *run) askPerson(req screen.Request) error {
 			return err
 		}
 		recorded, _ := state.CurrentAnswer()
+		if err := r.f.remember(req, recorded.Answer); err != nil {
+			return err
+		}
 		return r.note("%s", told(req, recorded.Answer))
 	}
 }

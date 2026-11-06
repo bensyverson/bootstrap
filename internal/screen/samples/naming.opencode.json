@@ -19,6 +19,10 @@
   },
   "choices": [
     {
+      "id": "just-tools",
+      "label": "Just the tools for now"
+    },
+    {
       "id": "next",
       "label": "Next",
       "primary": true

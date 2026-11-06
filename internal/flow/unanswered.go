@@ -65,10 +65,25 @@ func (f *Flow) Unanswered() ([]screen.ID, error) {
 		dir, _, _ = Where(probe, f.cfg.Given.Name, f.cfg.Given.In)
 	}
 	hasRepo := dir != "" && exists(filepath.Join(dir, ".git"))
+	named, _ := last(naming.Screen)
+	justTools := !startsInPlace(probe) && named.Choice == screen.JustTools
 
 	var open []screen.ID
 	if !answered(list.Screen) && !toolsSettled(probe) {
 		open = append(open, list.Screen)
+	}
+	if justTools {
+		// With no project, only the machine-wide questions are left.
+		if !answered(askGitHub.Screen) {
+			open = append(open, askGitHub.Screen)
+		}
+		if !slices.Contains(f.cfg.Given.Accepted, OfferIdentity) && !answered("identity", typedName.Screen, typedEmail.Screen) {
+			open = append(open, "identity")
+		}
+		if !answered(settings.Screen) {
+			open = append(open, settings.Screen)
+		}
+		return open, nil
 	}
 	gitOff := false
 	if !hasRepo {
@@ -116,6 +131,8 @@ func (f *Flow) accepted(offer Offer) bool { return slices.Contains(f.cfg.Given.A
 // wherever it starts.
 func sameQuestion(a, b screen.Request) bool {
 	a.In, b.In = "", ""
+	// Nor does the default it offers, which is only where the answer starts.
+	a.Default, b.Default = "", ""
 	return a == b
 }
 

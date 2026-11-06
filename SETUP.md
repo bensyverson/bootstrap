@@ -168,7 +168,7 @@ Rules for every step:
 - **Never ask for the person's password in the chat.** If macOS asks, it asks in its own window.
 - **Never move what's already in the starting folder.**
 - **Waiting for a click or a long install:** check in a loop that ends on its own within 90 seconds, for example `for i in $(seq 1 9); do test -e <path> && break; sleep 10; done; test -e <path>`, and run it again until the path exists. Your shell tool may stop any command at 2 minutes. Never hand the turn back to ask the person to tell you when they're done. The one exception is making a GitHub account (step 7), which leaves nothing to check for.
-- **The person's choices from the page are gone** if you came here partway through the program's setup. Steps already done skip themselves; ask again only what's left.
+- **The person's choices from the page are gone** if you came here partway through the program's setup. Steps already done skip themselves; ask again only what's left. Their answers from an earlier setup are in `~/.bootstrap/preferences.json` under `answers` (and `skip_tools`, the tools they went without): offer each as the likely answer, but still ask.
 
 ### 1. The plan (`plan`)
 
@@ -195,7 +195,7 @@ Run `/opt/homebrew/bin/brew trust bensyverson/tap` first, or the installs are re
 
 ### 5. The project folder (`folder`)
 
-If the starting folder holds a `.git` folder, and isn't the home folder, Desktop, Documents or Downloads, set up right there. Otherwise ask for a project name, and where projects should go: `~/Projects` (the default) or `~/git`. If `~/.bootstrap/preferences.json` has a `projects_in`, that's where their last project went, so offer it first. Turn the name into a folder name in lowercase with dashes ("Pine Bakery" becomes `pine-bakery`: letters, digits, `.`, `_` and `-`, starting with a letter or digit), and confirm it. Use `<that folder>/<name>`, making it if needed. If it's already there and has files in it, ask whether to set up in it or pick another name.
+If the starting folder holds a `.git` folder, and isn't the home folder, Desktop, Documents or Downloads, set up right there. Otherwise ask for a project name, or whether they'd like just the tools for now, with no project. Just the tools skips this step, Git (6), what they're making (9) and the rules (10), and keeps the steps for the whole Mac: GitHub, their name on their work, machine settings and the phone. For a project, ask where projects should go: `~/Projects` (the default) or `~/git`. If `~/.bootstrap/preferences.json` has a `projects_in`, that's where their last project went, so offer it first. Turn the name into a folder name in lowercase with dashes ("Pine Bakery" becomes `pine-bakery`: letters, digits, `.`, `_` and `-`, starting with a letter or digit), and confirm it. Use `<that folder>/<name>`, making it if needed. If it's already there and has files in it, ask whether to set up in it or pick another name.
 
 From here on, every command works in the project folder. Your shell may go back to where it started between commands, so give the folder's full path in each one: `cd /Users/<them>/Projects/pine-bakery && …`, or `git -C <path>`.
 
@@ -220,7 +220,7 @@ Then run `/opt/homebrew/bin/gh auth setup-git`.
 
 ### 8. Their name on their work (`identity`)
 
-Only with a Git repository, and only if `git config --global user.name` or `user.email` is empty. After a GitHub sign-in, offer their GitHub name (or login, if the name is blank) and private email: `/opt/homebrew/bin/gh api user` gives `id` and `login`, and the email is `<id>+<login>@users.noreply.github.com`. Without GitHub, ask for a name and an email, and say the email ends up in the project's history. They can skip this. Set only the half that's empty, with `git config --global`.
+Only with a Git repository (or with just the tools, since these settings are for the whole Mac), and only if `git config --global user.name` or `user.email` is empty. After a GitHub sign-in, offer their GitHub name (or login, if the name is blank) and private email: `/opt/homebrew/bin/gh api user` gives `id` and `login`, and the email is `<id>+<login>@users.noreply.github.com`. Without GitHub, ask for a name and an email, and say the email ends up in the project's history. They can skip this. Set only the half that's empty, with `git config --global`.
 
 ### 9. What they're making (`stage`)
 
@@ -250,4 +250,4 @@ Ask whether they'd like to use you from their phone. If so, explain how your app
 
 ### 13. Done (`done`)
 
-Sum up what was set up, and tell the person how to start you again in the project folder, as in [Starting again in the project](#starting-again-in-the-project).
+Sum up what was set up, and tell the person how to start you again in the project folder, as in [Starting again in the project](#starting-again-in-the-project). With just the tools, tell them how to make a project later instead: paste the setup link into you again, or run `~/.bootstrap/bin/bootstrap new <name>` in Terminal if the program is there.

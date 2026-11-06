@@ -83,6 +83,27 @@ func (r *run) project() (string, bool, error) {
 	return projectDir(r.f.cfg.Probe.Home, a.In, a.Name), true, nil
 }
 
+// justTools reports whether the person chose just the tools on the naming
+// screen, which skips the project steps (Ben, 2026-11-06, VGCn9C). A starting
+// folder that's already a project never asks it.
+func (r *run) justTools() (bool, error) {
+	if r.f.inPlace {
+		return false, nil
+	}
+	a, ok, err := r.answer(naming)
+	return ok && a.Choice == screen.JustTools, err
+}
+
+// skipForJustTools is a project step's check when the person chose just the
+// tools: skipped, or "" to go on to the step's own check.
+func skipForJustTools(r *run) (session.StepStatus, error) {
+	tools, err := r.justTools()
+	if err != nil || !tools {
+		return "", err
+	}
+	return session.StepSkipped, nil
+}
+
 // naming is the naming question, starting on the folder the person picked last time.
 func (r *run) naming() (screen.Request, error) {
 	p, err := r.f.cfg.Preferences.Load()
@@ -140,6 +161,9 @@ func (r *run) asked(req screen.Request) (screen.Answer, *outcome, error) {
 }
 
 func checkFolder(r *run) (session.StepStatus, *session.Handoff, error) {
+	if status, err := skipForJustTools(r); status != "" || err != nil {
+		return status, nil, err
+	}
 	dir, ok, err := r.project()
 	if err != nil || !ok || !isDir(dir) {
 		return "", nil, err
@@ -155,6 +179,9 @@ func actFolder(r *run) (outcome, error) {
 	named, ask, err := r.asked(req)
 	if err != nil || ask != nil {
 		return deref(ask, err)
+	}
+	if named.Choice == screen.JustTools {
+		return skipped()
 	}
 	if err := r.remember(named.In); err != nil {
 		return outcome{}, err
@@ -194,6 +221,9 @@ func (r *run) git() (string, *session.Handoff) {
 }
 
 func checkGit(r *run) (session.StepStatus, *session.Handoff, error) {
+	if status, err := skipForJustTools(r); status != "" || err != nil {
+		return status, nil, err
+	}
 	dir, err := r.mustProject()
 	if err != nil {
 		return "", nil, err
@@ -264,6 +294,9 @@ func actGit(r *run) (outcome, error) {
 }
 
 func checkStage(r *run) (session.StepStatus, *session.Handoff, error) {
+	if status, err := skipForJustTools(r); status != "" || err != nil {
+		return status, nil, err
+	}
 	what, ok, err := r.answer(making)
 	if err != nil || !ok {
 		return "", nil, err
@@ -304,6 +337,9 @@ func hasLine(path, line string) bool {
 }
 
 func checkRules(r *run) (session.StepStatus, *session.Handoff, error) {
+	if status, err := skipForJustTools(r); status != "" || err != nil {
+		return status, nil, err
+	}
 	dir, err := r.mustProject()
 	if err != nil {
 		return "", nil, err

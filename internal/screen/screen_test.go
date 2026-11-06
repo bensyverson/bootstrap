@@ -485,8 +485,9 @@ func TestStatusDefaultsToTheFirst(t *testing.T) {
 // takes it off this list.
 func TestDraftScreens(t *testing.T) {
 	// Ben approved naming's choice of folder and github-code's line, 2026-11-06.
-	if got := Drafts(); len(got) != 0 {
-		t.Errorf("drafts = %v, want none", got)
+	// Naming's "just the tools" and done's line for it are new (VGCn9C), and wait on him.
+	if got, want := Drafts(), []ID{"naming", "done"}; !slices.Equal(got, want) {
+		t.Errorf("drafts = %v, want %v", got, want)
 	}
 	code, err := Describe(Request{Screen: "github-code", Code: "ABCD-1234"}, Context{Agent: ClaudeCode})
 	if err != nil {
@@ -519,11 +520,11 @@ func TestNoWordIsAPlaceholder(t *testing.T) {
 
 // The release refuses a build whose screens list a draft, so the list says which are.
 func TestDefinitionsMarkDrafts(t *testing.T) {
-	i := slices.IndexFunc(specs, func(s spec) bool { return s.id == "naming" })
+	i := slices.IndexFunc(specs, func(s spec) bool { return s.id == "welcome" })
 	specs[i].draft = true
 	defer func() { specs[i].draft = false }()
 	for _, d := range Definitions() {
-		if want := d.Screen == "naming"; d.Draft != want {
+		if want := d.Screen == "welcome" || slices.Contains(Drafts(), d.Screen); d.Draft != want {
 			t.Errorf("%s: draft = %v, want %v", d.Screen, d.Draft, want)
 		}
 	}

@@ -50,6 +50,13 @@ func Validate(req Request) error {
 	case len(s.reasons) > 0 && !slices.Contains(optionIDs(s.reasons), req.Reason):
 		return invalid(optionIDs(s.reasons), "unknown reason %q for the %s screen", req.Reason, s.id)
 	}
+	if req.Default != "" && !slices.ContainsFunc(s.choices, func(c choiceDef) bool { return c.id == req.Default }) {
+		var ids []string
+		for _, c := range s.choices {
+			ids = append(ids, c.id)
+		}
+		return invalid(ids, "the %s screen has no choice %q to make its default", s.id, req.Default)
+	}
 	return s.validateDetail(req)
 }
 
@@ -199,7 +206,11 @@ func (s spec) describe(req Request, ctx Context) Description {
 		if c.id == "skip" && tool.Required {
 			continue
 		}
-		d.Choices = append(d.Choices, Choice{ID: c.id, Label: fillTool(c.label, tool, ctx.Agent), Primary: i == 0 && !s.asListed})
+		primary := i == 0 && !s.asListed
+		if req.Default != "" {
+			primary = c.id == req.Default
+		}
+		d.Choices = append(d.Choices, Choice{ID: c.id, Label: fillTool(c.label, tool, ctx.Agent), Primary: primary})
 	}
 	for i, l := range s.links {
 		link := Choice{ID: l.id, Label: fillTool(l.label, tool, ctx.Agent), URL: l.url, Primary: i == 0 && len(s.choices) == 0}
@@ -379,7 +390,7 @@ func ValidateAnswer(desc Description, ans Answer) error {
 	}
 	switch {
 	// What's typed before a skip is thrown away, so it needn't be whole.
-	case ans.Choice == "skip":
+	case ans.Choice == "skip" || ans.Choice == JustTools:
 	case desc.Field.Kind == FieldName && !GitName(strings.TrimSpace(ans.Name)):
 		return invalid(nil, "type your name on one line")
 	case desc.Field.Kind == FieldEmail && !GitEmail(strings.TrimSpace(ans.Name)):

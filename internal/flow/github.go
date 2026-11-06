@@ -84,6 +84,9 @@ func actGitHub(r *run) (outcome, error) {
 			return outcome{}, err
 		}
 		if !ok {
+			if r.unattended() {
+				return r.putItOff(gitHubWaits)
+			}
 			// Only making the account needs the person in a browser; the rest is gh's.
 			if _, h, err := r.exec(Command{Kind: Change, Path: openPath, Args: []string{signupURL}}, ""); err != nil || h != nil {
 				return orHandOff(h, err)
@@ -93,6 +96,10 @@ func actGitHub(r *run) (outcome, error) {
 		if made.Choice == notNow {
 			return skipped()
 		}
+	}
+	// The sign-in waits on a code the person types, so nothing of it starts with no one there.
+	if r.unattended() {
+		return r.putItOff(gitHubWaits)
 	}
 	if _, ok := r.locate(ghPath); !ok {
 		install := Command{Kind: Change, Path: brewPath, Args: []string{"install", "gh"}}
@@ -191,13 +198,20 @@ func (r *run) skippedIdentity() (bool, error) {
 }
 
 func checkIdentity(r *run) (session.StepStatus, *session.Handoff, error) {
-	dir, err := r.mustProject()
+	// Git's name and email are the Mac's, so just the tools still sets them.
+	tools, err := r.justTools()
 	if err != nil {
 		return "", nil, err
 	}
-	// With no repo, there's nothing for a name to sign yet.
-	if !exists(filepath.Join(dir, ".git")) {
-		return session.StepSkipped, nil, nil
+	if !tools {
+		dir, err := r.mustProject()
+		if err != nil {
+			return "", nil, err
+		}
+		// With no repo, there's nothing for a name to sign yet.
+		if !exists(filepath.Join(dir, ".git")) {
+			return session.StepSkipped, nil, nil
+		}
 	}
 	_, unset, h, err := r.unsetIdentity()
 	if err != nil || h != nil {

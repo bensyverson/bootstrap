@@ -142,7 +142,17 @@ type Request struct {
 	// In is the folder the naming screen picks to begin with, from the person's
 	// preferences. Empty picks DefaultPlace.
 	In string `json:"in,omitempty"`
+	// Default is the choice the person made last time, from their preferences,
+	// which the screen shows as its main button. Empty keeps the screen's own.
+	Default string `json:"default,omitempty"`
 }
+
+// JustTools is the naming screen's choice to skip the project and keep only
+// what goes on the Mac (Ben, 2026-11-06, VGCn9C).
+const JustTools = "just-tools"
+
+// DoneJustTools is the done screen's status after a setup with no project.
+const DoneJustTools = "tools"
 
 // Context is what a description depends on besides the request.
 type Context struct {

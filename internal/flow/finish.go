@@ -86,8 +86,19 @@ func actPhone(r *run) (outcome, error) {
 
 func checkDone(r *run) (session.StepStatus, *session.Handoff, error) { return "", nil, nil }
 
+// installedBootstrap is where SETUP.md puts the program, off the PATH.
+const installedBootstrap = "~/.bootstrap/bin/bootstrap"
+
 func actDone(r *run) (outcome, error) {
-	if err := r.show(screen.Request{Screen: "done"}); err != nil {
+	tools, err := r.justTools()
+	if err != nil {
+		return outcome{}, err
+	}
+	req := screen.Request{Screen: "done"}
+	if tools {
+		req.Status = screen.DoneJustTools
+	}
+	if err := r.show(req); err != nil {
 		return outcome{}, err
 	}
 	state, err := r.state()
@@ -97,11 +108,16 @@ func actDone(r *run) (outcome, error) {
 	if slices.ContainsFunc(state.Handoffs, func(l session.Logged) bool { return l.Handoff.Kind == session.HandoffDone }) {
 		return done()
 	}
-	dir, err := r.mustProject()
-	if err != nil {
-		return outcome{}, err
+	var what string
+	if tools {
+		what = fmt.Sprintf("the setup is done, with just the tools and no project: sum it up in the chat, and tell the person how to make a project later: paste the setup link into their agent again, or run %s new <name> in Terminal", installedBootstrap)
+	} else {
+		dir, err := r.mustProject()
+		if err != nil {
+			return outcome{}, err
+		}
+		what = fmt.Sprintf("the setup is done: sum it up in the chat, and tell the person to open a new Terminal window, cd %s, and start their agent there", r.tilde(dir))
 	}
-	what := fmt.Sprintf("the setup is done: sum it up in the chat, and tell the person to open a new Terminal window, cd %s, and start their agent there", r.tilde(dir))
 	if err := r.tell(session.Handoff{Kind: session.HandoffDone, Step: StepDone, What: what}); err != nil {
 		return outcome{}, err
 	}
