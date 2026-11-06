@@ -35,13 +35,21 @@ body {
   background: radial-gradient(closest-side, #DDF7E899, #E3F7EC44 55%, #E3F7EC00);
 }
 #words { position: fixed; inset: 0; pointer-events: none; }
+/* The words start just under the object. When a window is too short for that, they rise over the object,
+   only as far as they must to stay clear of the percentage: the panel spans the window above it, and a
+   first row that may shrink holds the words down (the gap after it is the other 22px). */
 .panel {
-  position: absolute; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; pointer-events: auto;
+  position: absolute; display: grid; grid-template-columns: minmax(0, 1fr); gap: 22px; pointer-events: none;
   left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
-  top: calc(3vh + var(--S) + 6px); justify-items: center; text-align: center;
+  top: 0; bottom: 84px; grid-template-rows: minmax(0, calc(3vh + var(--S) + 6px - 22px)); align-content: start;
+  justify-items: center; text-align: center;
   will-change: transform, opacity;
 }
-.panel.leaving { pointer-events: none; }
+.panel::before { content: ""; }
+.panel > * { pointer-events: auto; }
+.panel.leaving > * { pointer-events: none; }
+.panel.overlay, .panel.low { grid-template-rows: none; }
+.panel.overlay::before, .panel.low::before { display: none; }
 .panel.overlay { top: 0; bottom: 56px; align-content: center; }
 .panel.low { top: auto; bottom: 84px; }
 h1 {

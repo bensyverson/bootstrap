@@ -62,7 +62,28 @@ function spansInto(parent, spans = []) {
   return parent;
 }
 
+/* A new working screen waits a moment before it draws: a quick step's next screen often follows within
+   milliseconds, and drawing both makes the first one flash. A newer screen replaces a waiting one. Only a
+   new screen waits; a status line under the one already shown changes at once, so steady updates never
+   hold it back. Until it draws, the screen before it stays, with its seq. */
+const HOLD_MS = 300;
+let held = null;
 function draw(frame) {
+  const d = frame.screen;
+  const key = d ? screenKey(d) : "";
+  if (d && d.mode === "working" && panel && key !== shownKey) {
+    if (!held || held.key !== key) {
+      clearTimeout(held && held.timer);
+      held = { key, timer: setTimeout(() => { const f = held.frame; held = null; paint(f); }, HOLD_MS) };
+    }
+    held.frame = frame;
+    return;
+  }
+  if (held) { clearTimeout(held.timer); held = null; }
+  paint(frame);
+}
+
+function paint(frame) {
   const d = frame.screen;
   seq = frame.seq;
   frameAnswered = !!frame.answered;
@@ -79,8 +100,11 @@ function draw(frame) {
   if (panel && panel.classList.contains("still")) { void panel.offsetWidth; panel.classList.remove("still"); }
 }
 
+/* Two descriptions with one key are the same screen, differing at most in their status lines. */
+const screenKey = d => JSON.stringify([d.title, (d.choices || []).map(c => c.label), d.rows, d.code, d.field, d.places, d.layout, d.note]);
+
 function show(d) {
-  const key = JSON.stringify([d.title, (d.choices || []).map(c => c.label), d.rows, d.code, d.field, d.places, d.layout, d.note]);
+  const key = screenKey(d);
   shown = d;
   // A status line changing under the same title moves on its own, and nothing else does.
   if (key === shownKey && panel) { swapStatus(d.status); return; }
