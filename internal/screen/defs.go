@@ -159,7 +159,7 @@ var specs = []spec{
 	{id: "live-yet", asListed: true, mode: Waiting, title: "Do people use it yet?",
 		choices: []choiceDef{{"not-yet", "Not yet"}, {"yes", "Yes"}}, next: nextAnswer},
 	{id: "naming", mode: Waiting, layout: LayoutLow, title: "What should we call this project?", status: "We’ll make a folder with this name.",
-		field: &Field{Label: "Project name", Value: "my-project"}, places: "Put it in", choices: []choiceDef{{"next", "Next"}}, next: nextAnswer, draft: true},
+		field: &Field{Label: "Project name", Value: "my-project"}, places: "Put it in", choices: []choiceDef{{"next", "Next"}}, next: nextAnswer},
 	{id: "building", mode: Working, title: "Setting up your project",
 		statuses: []option{{"folder", "Making your folder"}, {"git", "Turning on Git"}, {"rules", "Teaching {ai} how you work"}}, next: nextWork},
 	{id: "git-ask", mode: Waiting, title: "Should Git keep track of this project?",
@@ -174,7 +174,7 @@ var specs = []spec{
 	{id: "github-code", mode: Waiting, layout: LayoutLow, title: "Your turn: enter this code on GitHub.",
 		// The same words on the page and in bootstrap new's terminal.
 		status: "Open GitHub, sign in if it asks, and type this code. We’ll carry on once you’re done.",
-		links:  []linkDef{{"device", "Open GitHub", "https://github.com/login/device", ""}}, detail: codeDetail, next: nextWork, draft: true},
+		links:  []linkDef{{"device", "Open GitHub", "https://github.com/login/device", ""}}, detail: codeDetail, next: nextWork},
 	{id: "identity", mode: Waiting, layout: LayoutLow, title: "Sign your work as {name}?",
 		status:  "Git puts a name and email on every version you save. We’ll use {email}, a private address from GitHub, so your real email stays hidden.",
 		choices: []choiceDef{{"use-these", "Yes, use these"}, {"skip", "Skip"}}, detail: identityDetail, next: nextAnswer},

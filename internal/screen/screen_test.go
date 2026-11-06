@@ -140,7 +140,8 @@ var recordedCopyChanges = map[string]bool{
 	"I’ve made my account":      true,
 	"Make your GitHub account.": true,
 	"Open GitHub":               true,
-	"Open GitHub, sign in if it asks, and type this code. This page moves on by itself when you’re done.": true,
+	"Open GitHub, sign in if it asks, and type this code. We’ll carry on once you’re done.": true,
+	"Put it in":                              true,
 	"Open the sign-up page":                  true,
 	"Should Git keep track of this project?": true,
 	"Sign your work as {name}?":              true,
@@ -483,10 +484,9 @@ func TestStatusDefaultsToTheFirst(t *testing.T) {
 // ship unnoticed, and the prototype check skips them. Approving a screen's words
 // takes it off this list.
 func TestDraftScreens(t *testing.T) {
-	// Waiting on Ben, 2026-11-05: naming's choice of folder (gpvHd3), and
-	// github-code's line, which said "This page" in a terminal too (OWv6U2).
-	if got, want := Drafts(), []ID{"naming", "github-code"}; !slices.Equal(got, want) {
-		t.Errorf("drafts = %v, want %v", got, want)
+	// Ben approved naming's choice of folder and github-code's line, 2026-11-06.
+	if got := Drafts(); len(got) != 0 {
+		t.Errorf("drafts = %v, want none", got)
 	}
 	code, err := Describe(Request{Screen: "github-code", Code: "ABCD-1234"}, Context{Agent: ClaudeCode})
 	if err != nil {

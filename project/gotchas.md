@@ -29,3 +29,7 @@ It assesses apps, so a signed and notarized `bootstrap` comes back "rejected (th
 ## 2026-11-05 `pkgutil --check-signature` says "invalid signature" inside the Bash sandbox
 
 Run sandboxed, it reports `Status: invalid signature` (exit 1) for Homebrew's good package, because it can't reach the trust service. With the sandbox off, the same file says signed, notarized and `Developer ID Installer: Patrick Linnane (927JGANW46)`. Check a signature with the sandbox off. The flow refuses the sandboxed answer, which is right. See [the seams doc](2026-11-05-bootstrap-seams.md#the-real-installers-uykejv-2026-11-05).
+
+## 2026-11-06 Hiding `~/.gitconfig` from the sandbox commits under the wrong email
+
+Inside the sandbox, git can't read `~/.gitconfig` and stops with a fatal error. Setting `GIT_CONFIG_GLOBAL=/dev/null` gets past that, but git then guesses an identity from the hostname, and a commit made that way carries `ben@<host>` instead of Ben's GitHub noreply address (5c5b4ec, 2026-11-06). Run git commands that write outside the sandbox.
