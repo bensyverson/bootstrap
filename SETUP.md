@@ -1,6 +1,6 @@
 # Setting up a Mac with bootstrap
 
-You are a coding agent, and the person you're working with pasted a link to [bensyverson/bootstrap](https://github.com/bensyverson/bootstrap). This file is your playbook. Read it raw, since a summary can drop a step: `https://raw.githubusercontent.com/bensyverson/bootstrap/main/SETUP.md`. If your fetch tool summarizes pages, fetch it with `curl -fsSL` instead.
+You are a coding agent, and the person you're working with pasted a link to [bensyverson/bootstrap](https://github.com/bensyverson/bootstrap). This file is your playbook. Read it raw, since a summary can drop a step: `https://raw.githubusercontent.com/bensyverson/bootstrap/main/SETUP.md`. Fetch it with `curl -fsSL`: a fetch tool may summarize it or refuse to give it whole. Don't use `gh` or `git` for this: on a new Mac `gh` isn't installed, and `/usr/bin/git` is a stand-in that pops up Apple's installer.
 
 The person may never have used a terminal. Speak plainly, keep each message short, and never ask them to type a command during the setup. You run every command yourself. The only exceptions, each given as text to paste:
 
@@ -9,7 +9,7 @@ The person may never have used a terminal. Speak plainly, keep each message shor
 - `bootstrap new`, for their later projects;
 - a command they'd rather run themselves than approve for you ([Notes for each app](#notes-for-each-app)). They paste it into a new Terminal window (Command-N in Terminal), since the window you're in is busy running you.
 
-Never run `sudo`, and never ask for their password in the chat. Anything that needs an administrator's password goes through macOS's own window.
+Never run `sudo`, and never ask for their password in the chat. Never script other apps (`osascript`, System Events) to bring a window forward: macOS stops to ask the person for permission. If a window is hidden, tell them where to find it (Command-Tab, or the Dock). Anything that needs an administrator's password goes through macOS's own window.
 
 ## What this is
 
@@ -116,7 +116,7 @@ If the person says in the chat at any point that they want to stop, run `~/.boot
 
 A `handoff` row means the setup needs you. It says what happened (`what:`), shows the evidence (`command:`, `limit:`, `log:`, and the output's last lines), and ends with one `next:` line per way forward. While it waits, the page tells the person "Let's talk in" your app's name.
 
-- **`handoff trouble`**: something went wrong. Read the log it names, and fix what you safely can, without `sudo` or the person's password. Then `~/.bootstrap/bin/bootstrap resume --retry` runs the step again from its check. If the person would rather go on without that tool or step, and the handoff offers it, `resume --skip`. If you need to talk it over, ask the person in the chat first, then resume. After a resume, go back to `wait`.
+- **`handoff trouble`**: something went wrong. Read the log it names, and fix what you safely can, without `sudo` or the person's password. Then `~/.bootstrap/bin/bootstrap resume --retry` runs the step again from its check. If the person would rather go on without that tool or step, and the handoff offers it, `resume --skip`. If you need to talk it over, ask the person in the chat first, then resume. After a resume, go back to `wait`. If the cure is something the person does in another window, such as clicking Install, don't hand the turn back to ask them to tell you: check for its result in a loop, as [the chat-only setup's waiting rule](#the-chat-only-setup) describes, then resume.
 - **`handoff phone`**: the person wants to use you from their phone. Explain how your app does that (in Claude Code, they type `/remote-control` into this chat once the setup is over), then `wait` again.
 - **`handoff done`**: the setup is over. Sum up in the chat what was set up, then tell the person how to start you again in their project folder (the handoff names it), so the new tools are found by name. See [Starting again in the project](#starting-again-in-the-project). Nothing more to run, not even `stop`: closing the page ends the program. If they'll make more projects, tell them that next time they can skip the page: in Terminal, `~/.bootstrap/bin/bootstrap new <name>` sets up a new project and asks only what it can't tell on its own.
 
