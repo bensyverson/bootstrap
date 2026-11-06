@@ -185,10 +185,18 @@ func runNew(c *call) (output, error) {
 	if err != nil {
 		return output{}, givenFailure(err)
 	}
-	if base.ServerRunning() {
+	setup, err := base.LockSetup()
+	switch {
+	case errors.Is(err, session.ErrSetupRunning) && base.ServerRunning():
 		return output{}, &failure{code: exitTimeout, message: "a setup is running on the page on this Mac, and two setups can't install at once",
 			next: "bootstrap wait until it's done, or bootstrap stop to end it; then " + again}
+	case errors.Is(err, session.ErrSetupRunning):
+		return output{}, &failure{code: exitTimeout, message: "another bootstrap new is setting up a project on this Mac, and two setups can't install at once",
+			next: "wait for it to finish, then " + again}
+	case err != nil:
+		return output{}, err
 	}
+	defer setup()
 	if !yes && !interactive {
 		if err := refuseOpen(f, agent, again); err != nil {
 			return output{}, err

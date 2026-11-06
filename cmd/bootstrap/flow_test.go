@@ -170,9 +170,19 @@ func TestTroubleRetryTranscript(t *testing.T) {
 	r := w.start(t)
 	w.skipTour(t, r)
 
+	// --json carries the same next line, by its path.
+	var status struct{ Next string }
+	if r := w.run(t, "status", "--json"); json.Unmarshal([]byte(r.rawStdout), &status) != nil || !strings.HasPrefix(status.Next, binary+" ") {
+		t.Errorf("status --json next = %q", status.Next)
+	}
+
 	trouble := w.run(t, "wait")
 	if trouble.code != 0 || trouble.stderr != "" {
 		t.Fatalf("exit %d\n%s\n%s", trouble.code, trouble.stdout, trouble.stderr)
+	}
+	// The setup installs bootstrap off the PATH, so wait's ways forward name it by its path too.
+	if !strings.Contains(trouble.rawStdout, "then "+binary+" resume --retry\n") {
+		t.Errorf("wait's next lines don't name the program by its path:\n%s", trouble.rawStdout)
 	}
 	resume := w.run(t, "resume", "--retry")
 	resume.want(t, 0, "resumed way=retry step=tools tool=sleepy\nnext: bootstrap wait\n", "")

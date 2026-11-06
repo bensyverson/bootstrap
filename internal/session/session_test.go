@@ -349,3 +349,21 @@ func TestServerLock(t *testing.T) {
 }
 
 // The chat fallback runs wait with no page, possibly where this folder can't be written.
+
+func TestSetupLock(t *testing.T) {
+	store := Store{Dir: t.TempDir()}
+	release, err := store.LockSetup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.LockSetup(); !errors.Is(err, ErrSetupRunning) {
+		t.Errorf("a second setup: err = %v", err)
+	}
+	release()
+	again, err := store.LockSetup()
+	if err != nil {
+		t.Errorf("after release: %v", err)
+	} else {
+		again()
+	}
+}

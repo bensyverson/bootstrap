@@ -30,6 +30,8 @@ var (
 	ErrWaitTimeout   = errors.New("still waiting")
 	ErrPageGone      = errors.New("the page is closed")
 	ErrServerRunning = errors.New("a server is already running")
+	// ErrSetupRunning means another setup is installing on this Mac.
+	ErrSetupRunning = errors.New("another setup is running on this Mac")
 )
 
 // CorruptError is a log line that can't be read.

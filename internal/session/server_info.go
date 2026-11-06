@@ -63,10 +63,22 @@ func (s Store) RemoveServerInfo() { os.Remove(s.infoPath()) }
 // the kernel drops the lock either way, so a crash can't leave a stale claim, and
 // no command has to trust a pid that may have been reused.
 func (s Store) LockServer() (release func(), err error) {
+	return s.lock(s.lockPath(), ErrServerRunning)
+}
+
+// LockSetup claims this Mac's one setup slot while a setup installs: the page's
+// server while it runs the flow, or a bootstrap new. Each project keeps its own
+// log, so this lock, taken in the shared folder, is what keeps two from
+// installing at once. A second setup gets ErrSetupRunning.
+func (s Store) LockSetup() (release func(), err error) {
+	return s.lock(filepath.Join(s.Dir, "setup.lock"), ErrSetupRunning)
+}
+
+func (s Store) lock(path string, busy error) (release func(), err error) {
 	if err := ensureDir(s.Dir); err != nil {
 		return nil, err
 	}
-	f, err := os.OpenFile(s.lockPath(), os.O_CREATE|os.O_RDWR, 0o600)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +94,7 @@ func (s Store) LockServer() (release func(), err error) {
 		}
 		if attempt == 4 {
 			f.Close()
-			return nil, ErrServerRunning
+			return nil, busy
 		}
 		time.Sleep(20 * time.Millisecond)
 	}

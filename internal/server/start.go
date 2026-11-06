@@ -75,7 +75,9 @@ type report struct {
 	URL    string `json:"url,omitempty"`
 	PID    int    `json:"pid,omitempty"`
 	Reused bool   `json:"reused,omitempty"`
-	Error  string `json:"error,omitempty"`
+	// Busy means another setup holds this Mac's setup slot, so the flow can't run.
+	Busy  bool   `json:"busy,omitempty"`
+	Error string `json:"error,omitempty"`
 }
 
 // Start reuses a running server or launches one in the background, then opens the page.
@@ -164,6 +166,9 @@ func launch(opts StartOptions) (Started, error) {
 		case line.Error != "":
 			cmd.Wait()
 			return Started{}, &StartError{Reason: line.Error}
+		case line.Busy:
+			cmd.Wait()
+			return Started{}, session.ErrSetupRunning
 		case line.Reused:
 			cmd.Wait()
 			// Another serve won the race for the slot, so this one uses its server.
@@ -215,6 +220,18 @@ func RunChild(opts ChildOptions, out io.WriteCloser) {
 		return
 	}
 	defer release()
+	if opts.Flow != nil {
+		setup, err := opts.Store.LockSetup()
+		if errors.Is(err, session.ErrSetupRunning) {
+			say(report{Busy: true})
+			return
+		}
+		if err != nil {
+			say(report{Error: err.Error()})
+			return
+		}
+		defer setup()
+	}
 
 	raw := make([]byte, 16)
 	if _, err := rand.Read(raw); err != nil {

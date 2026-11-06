@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"reflect"
 	"regexp"
 	"strings"
 )
@@ -33,4 +34,37 @@ func byPath(next, program string) string {
 	return commandWord.ReplaceAllStringFunc(next, func(m string) string {
 		return strings.Replace(m, "bootstrap", program, 1)
 	})
+}
+
+// valueByPath returns a --json value with its Next field, a string or a list of
+// them, named by the program's path. It works on the field by name, here in
+// one place, so a verb's value can't forget it the way a call at each verb
+// could.
+func valueByPath(value any, program string) any {
+	v := reflect.ValueOf(value)
+	isPointer := v.Kind() == reflect.Pointer
+	if isPointer {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return value
+	}
+	out := reflect.New(v.Type()).Elem()
+	out.Set(v)
+	switch next := out.FieldByName("Next"); {
+	case !next.IsValid():
+		return value
+	case next.Kind() == reflect.String:
+		next.SetString(byPath(next.String(), program))
+	case next.Kind() == reflect.Slice && next.Type().Elem().Kind() == reflect.String:
+		lines := make([]string, next.Len())
+		for i := range lines {
+			lines[i] = byPath(next.Index(i).String(), program)
+		}
+		next.Set(reflect.ValueOf(lines).Convert(next.Type()))
+	}
+	if isPointer {
+		return out.Addr().Interface()
+	}
+	return out.Interface()
 }

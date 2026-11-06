@@ -120,6 +120,10 @@ var runCommand = command{
 		}
 		opts.Flow = true
 		started, err := server.Start(opts)
+		if errors.Is(err, session.ErrSetupRunning) {
+			return output{}, &failure{code: exitTimeout, message: "a bootstrap new is setting up a project on this Mac, and two setups can't install at once",
+				next: "wait for it to finish, then bootstrap run --agent " + agent.ID}
+		}
 		if err != nil {
 			return output{}, serveFailure(err)
 		}

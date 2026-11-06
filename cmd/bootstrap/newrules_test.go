@@ -193,3 +193,40 @@ func TestNewHelpSaysItRefusesWithNoTerminal(t *testing.T) {
 		}
 	}
 }
+
+// holdSetup stands in for a bootstrap new that is setting up a project on this Mac.
+func (w *world) holdSetup(t *testing.T) {
+	t.Helper()
+	release, err := w.store().LockSetup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(release)
+}
+
+func TestNewRefusesWhileAnotherNewSetsUp(t *testing.T) {
+	w := macForNew(t)
+	w.holdSetup(t)
+	w.run(t, "new", "pine-bakery", "--yes").wantErr(t, 3,
+		"another bootstrap new is setting up a project on this Mac, and two setups can't install at once",
+		"next: wait for it to finish, then bootstrap new pine-bakery")
+	if len(w.ran(t)) != 0 {
+		t.Error("a refused new ran something")
+	}
+}
+
+func TestRunRefusesWhileANewSetsUp(t *testing.T) {
+	w := macForNew(t)
+	w.holdSetup(t)
+	t.Cleanup(func() {
+		if info, err := w.store().ReadServerInfo(); err == nil {
+			syscall.Kill(info.PID, syscall.SIGKILL)
+		}
+	})
+	w.run(t, "run", "--agent", "claude-code").wantErr(t, 3,
+		"a bootstrap new is setting up a project on this Mac, and two setups can't install at once",
+		"next: wait for it to finish, then bootstrap run --agent claude-code")
+	if w.store().ServerRunning() {
+		t.Error("a refused run left its page running")
+	}
+}

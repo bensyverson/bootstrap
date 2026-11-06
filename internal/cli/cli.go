@@ -173,15 +173,19 @@ func Run(args []string, env Env) int {
 	if err != nil {
 		return report(env, asJSON, err)
 	}
+	prog := program(env)
 	if asJSON {
-		encode(env.Stdout, out.value)
+		encode(env.Stdout, valueByPath(out.value, prog))
 		return exitOK
 	}
 	for _, row := range out.rows {
+		if rest, ok := strings.CutPrefix(row, "next: "); ok {
+			row = "next: " + byPath(rest, prog)
+		}
 		fmt.Fprintln(env.Stdout, row)
 	}
 	if out.next != "" {
-		fmt.Fprintf(env.Stdout, "next: %s\n", byPath(out.next, program(env)))
+		fmt.Fprintf(env.Stdout, "next: %s\n", byPath(out.next, prog))
 	}
 	return exitOK
 }
