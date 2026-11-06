@@ -79,7 +79,7 @@ Each step skips what's already done, so running it again is safe. Every install 
 
    > **Superseded 2026-11-05 and 2026-11-06:** there's no question about the stage. A new project gets `stage-build` and a project set up in place gets none (Ben, 2026-11-05). The live-yet question that was meant to choose between `stage-pilot` and `stage-build` was dropped, since nothing used it (Ben, 2026-11-06).
 
-   > **Settled 2026-11-06 (Ben):** the stack is detected from the project's top-level files: `go.mod` adds `go`; `pyproject.toml`, `requirements.txt` or `setup.py` adds `python`; `Package.swift` or an `.xcodeproj` adds `swift` (`detect.ProjectStacks`). `web` and `swiftui` still come from the answer to what they're making, since no file tells a website or a SwiftUI app apart reliably. `images` isn't offered: one question too many for a beginner, and `agents add images` works later.
+   > **Settled 2026-11-06 (Ben):** the stack is detected from the project's top-level files: `go.mod` adds `go`; `pyproject.toml`, `requirements.txt` or `setup.py` adds `python`; `Package.swift` or an `.xcodeproj` adds `swift` (`detect.ProjectStacks`). `web` and `swiftui` still come from the answer to what they're making, since no file tells a website or a SwiftUI app apart reliably. `images` isn't offered: one question too many for a beginner, and `agents add images` works later. The `.gitignore` follows the stack too: Python's caches and `.venv/`, Swift's build folders, and nothing for Go, which has no standard output folder.
 6. **Install path.** If the project will install something, offer to add the default path to `PATH`: `~/go/bin` for Go and `~/.swiftpm/bin` for Swift.
 7. **Machine settings.** Offer each one separately (below).
 

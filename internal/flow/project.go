@@ -32,9 +32,16 @@ const (
 // lines join them from their own steps.
 var (
 	alwaysIgnore = []string{".DS_Store"}
+	swiftIgnore  = []string{".build/", ".swiftpm/", "DerivedData/", "xcuserdata/"}
 	ignoreFor    = map[string][]string{
 		website: {"node_modules/", ".env", "dist/"},
-		anApp:   {".build/", ".swiftpm/", "DerivedData/", "xcuserdata/"},
+		anApp:   swiftIgnore,
+	}
+	// ignoreForStack is what each stack leaves behind. Go has no standard output
+	// folder, and guessing its binary's name could hide a real file.
+	ignoreForStack = map[detect.Stack][]string{
+		detect.StackPython: {"__pycache__/", ".venv/", ".pytest_cache/", ".mypy_cache/", ".ruff_cache/"},
+		detect.StackSwift:  swiftIgnore,
 	}
 )
 
@@ -313,13 +320,26 @@ func checkRules(r *run) (session.StepStatus, *session.Handoff, error) {
 	return "", nil, nil
 }
 
-// ignored is every line the setup puts in the .gitignore, besides job's own.
+// ignored is every line the setup puts in the .gitignore, besides job's own:
+// what the making answer and the project's stacks leave behind (Ben, 2026-11-06).
 func (r *run) ignored() ([]string, error) {
 	what, _, err := r.answer(making)
 	if err != nil {
 		return nil, err
 	}
-	return slices.Concat(alwaysIgnore, ignoreFor[what.Choice], []string{localDir + "/"}), nil
+	dir, err := r.mustProject()
+	if err != nil {
+		return nil, err
+	}
+	out := slices.Concat(alwaysIgnore, ignoreFor[what.Choice])
+	for _, s := range detect.ProjectStacks(dir) {
+		for _, l := range ignoreForStack[s] {
+			if !slices.Contains(out, l) {
+				out = append(out, l)
+			}
+		}
+	}
+	return append(out, localDir+"/"), nil
 }
 
 // modulesFor are the agents-md modules each kind of project adds to the source's defaults.
