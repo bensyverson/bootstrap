@@ -195,7 +195,12 @@ In the project folder:
 
 ### 11. Machine settings (`settings`)
 
-Ask before changing anything machine-wide. Then run each tool's own `hook install`, if the installed version has one.
+Ask before changing anything machine-wide. Each tool edits your app's settings itself, keeps every other setting, and changes nothing on a second run. With their yes, run, using `--harness claude-code` in Claude Code or `--harness opencode` in OpenCode:
+
+- `/opt/homebrew/bin/contextfill hook install --harness claude-code`: after each commit, it tells you how full your context is, so you know when to wrap up (33% on the main thread, 40% for a helper agent). In OpenCode it links contextfill's plugin instead.
+- `/opt/homebrew/bin/job hook install --harness claude-code`: in a project that uses `job`, it turns plan mode down and points you to `job`'s task list instead. OpenCode has nothing to block, so it says so and changes nothing.
+
+Each prints one line per change. To take one out later: the same command with `uninstall`.
 
 ### 12. Your phone (`phone`)
 
