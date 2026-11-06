@@ -16,6 +16,8 @@ Ben asked for a `bootstrap upgrade` that brings the tools up to date and runs `a
 
 - What `upgrade` prints and its `--json` shape, following `project/agents/cli-design.md` and the other verbs (`next:` lines by path).
 - Where the moved binary lives once Homebrew has it (`/opt/homebrew/bin/bootstrap`), and what happens to `~/.bootstrap/bin/bootstrap`: a link to Homebrew's copy, or removed, with `next:` lines naming whichever runs.
+
+  > **Settled, 2026-11-06 (Ben):** delete `~/.bootstrap/bin/bootstrap` once Homebrew's copy is installed. From then on `next:` lines name `/opt/homebrew/bin/bootstrap`.
 - Whether `upgrade` refuses while a setup holds the setup slot (`session.Store.LockSetup`). It probably should, since both install.
 
 ```yaml

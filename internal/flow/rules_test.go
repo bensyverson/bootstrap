@@ -2,6 +2,7 @@ package flow_test
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -45,6 +46,44 @@ func TestTheRulesFitWhatThePersonIsMaking(t *testing.T) {
 		}
 		if len(adds) != 1 || adds[0] != tc.want {
 			t.Errorf("%s (in place %v): ran %q, want %q", tc.making, tc.inPlace, adds, tc.want)
+		}
+	}
+}
+
+// Ben, 2026-11-06: a project set up in place also gets the rules for the
+// languages its files show, alongside what the making answer calls for.
+func TestTheRulesAddTheStacksAProjectShows(t *testing.T) {
+	for _, tc := range []struct {
+		name, making string
+		files        []string
+		want         []string
+	}{
+		{"a Go project", "other", []string{"go.mod"}, []string{"agents add go"}},
+		{"a Python website", "website", []string{"pyproject.toml"}, []string{"agents add web python"}},
+		{"a Swift app adds swift once", "app", []string{"Package.swift", "go.mod"}, []string{"agents add swift swiftui go"}},
+		{"a Swift package called something else", "other", []string{"Package.swift"}, []string{"agents add swift"}},
+		{"Go and Python", "other", []string{"requirements.txt", "go.mod"}, []string{"agents add go python"}},
+	} {
+		w := newWorld(t)
+		w.answers[asked{"making", ""}] = screen.Answer{Choice: tc.making}
+		w.answers[asked{"xcode", ""}] = screen.Answer{Choice: "later"}
+		start := filepath.Join(w.home, "code", "bakery")
+		put(t, filepath.Join(start, ".git", "HEAD"), "ref: refs/heads/main\n")
+		for _, f := range tc.files {
+			put(t, filepath.Join(start, f), "\n")
+		}
+		w.probe.Cwd = start
+		if err := w.walk(); err != nil {
+			t.Fatal(err)
+		}
+		var adds []string
+		for _, c := range w.mac.Changes() {
+			if strings.HasPrefix(c, "agents add") {
+				adds = append(adds, c)
+			}
+		}
+		if !slices.Equal(adds, tc.want) {
+			t.Errorf("%s: ran %q, want %q", tc.name, adds, tc.want)
 		}
 	}
 }

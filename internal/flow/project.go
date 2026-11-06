@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/bensyverson/bootstrap/internal/detect"
 	"github.com/bensyverson/bootstrap/internal/prefs"
 	"github.com/bensyverson/bootstrap/internal/screen"
 	"github.com/bensyverson/bootstrap/internal/session"
@@ -327,15 +328,28 @@ var modulesFor = map[string][]string{website: {"web"}, anApp: {"swift", "swiftui
 // stageBuild is the stage a new project starts at.
 const stageBuild = "stage-build"
 
+// stackModules are the agents-md modules for each stack a project's files show.
+var stackModules = map[detect.Stack]string{detect.StackGo: "go", detect.StackPython: "python", detect.StackSwift: "swift"}
+
 // modules are the rules this project adds beyond the defaults: what its kind
-// calls for, and stage-build for a new project. A project that was already
-// there gets no stage, since its stage isn't known (Ben, 2026-11-05).
+// calls for, the languages its files show (Ben, 2026-11-06), and stage-build for
+// a new project. A project that was already there gets no stage, since its
+// stage isn't known (Ben, 2026-11-05).
 func (r *run) modules() ([]string, error) {
 	what, _, err := r.answer(making)
 	if err != nil {
 		return nil, err
 	}
+	dir, err := r.mustProject()
+	if err != nil {
+		return nil, err
+	}
 	out := slices.Clone(modulesFor[what.Choice])
+	for _, s := range detect.ProjectStacks(dir) {
+		if m := stackModules[s]; !slices.Contains(out, m) {
+			out = append(out, m)
+		}
+	}
 	if !r.f.inPlace {
 		out = append(out, stageBuild)
 	}
