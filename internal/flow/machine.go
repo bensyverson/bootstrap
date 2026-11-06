@@ -272,7 +272,38 @@ func checkTools(r *run) (session.StepStatus, *session.Handoff, error) {
 			return "", nil, nil
 		}
 	}
+	// Every tool is here, but one may be too old, so each session brings
+	// Homebrew's copies up to date once (Ben, 2026-11-06); its log says whether
+	// this one has.
+	status, err := r.finished()
+	if err != nil || status != session.StepDone {
+		return "", nil, err
+	}
 	return session.StepDone, nil, nil
+}
+
+// homebrewPrefix is where Homebrew keeps what it installs on Apple silicon.
+const homebrewPrefix = "/opt/homebrew/"
+
+// upgradeTool brings a tool Homebrew installed up to date. A copy from
+// anywhere else, such as one built from source, is the person's own and is
+// left alone.
+func upgradeTool(r *run, tool catalog.Tool, path string) (outcome, bool, error) {
+	if !strings.HasPrefix(path, homebrewPrefix) || tool.Formula == "" {
+		return outcome{}, false, nil
+	}
+	upgrade := Command{Kind: Change, Path: brewPath, Args: []string{"upgrade", tap + "/" + tool.Formula}}
+	res, h, err := r.exec(upgrade, tool.ID)
+	if err != nil || h != nil {
+		o, err := orHandOff(h, err)
+		return o, true, err
+	}
+	if m := cellarVersion.FindSubmatch(res.Output); m != nil {
+		if err := r.note("updated %s %s", tool.ID, m[1]); err != nil {
+			return outcome{}, true, err
+		}
+	}
+	return outcome{}, false, nil
 }
 
 var cellarVersion = regexp.MustCompile(`Cellar/[^/\s]+/([^/:\s]+)`)
@@ -284,7 +315,10 @@ func actTools(r *run) (outcome, error) {
 	}
 	trusted := false
 	for _, tool := range tools {
-		if _, ok := r.locate(tool.Detect...); ok {
+		if path, ok := r.locate(tool.Detect...); ok {
+			if o, stop, err := upgradeTool(r, tool, path); err != nil || stop {
+				return o, err
+			}
 			continue
 		}
 		if !trusted {

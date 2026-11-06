@@ -296,6 +296,9 @@ func (m *Mac) brew(args []string) flow.Result {
 			return fail(err)
 		}
 		return ok(fmt.Sprintf("🍺  /opt/homebrew/Cellar/%s/0.1.0: 5 files, 9MB", formula))
+	case len(args) == 2 && args[0] == "upgrade":
+		formula := args[1][strings.LastIndex(args[1], "/")+1:]
+		return ok(fmt.Sprintf("Warning: %s 0.1.0 already installed", formula))
 	}
 	return failed(1, "Error: Unknown command")
 }

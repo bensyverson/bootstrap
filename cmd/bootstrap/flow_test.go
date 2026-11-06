@@ -42,10 +42,14 @@ func (w *world) start(t *testing.T) running {
 }
 
 // brewScript is a pretend Homebrew: sleepy fails to install the first time and
-// installs on the next try; anything else it wasn't told about is an error.
+// installs on the next try, and every tool already there is up to date;
+// anything else it wasn't told about is an error.
 const brewScript = `#!/bin/sh
 case "$1 $2" in
 "trust bensyverson/tap") exit 0 ;;
+"upgrade bensyverson/tap/"*)
+  echo "Warning: ${2##*/} 0.2.0 already installed"
+  exit 0 ;;
 "install bensyverson/tap/sleepy")
   if [ -e %[1]q ]; then
     touch %[2]q && chmod +x %[2]q

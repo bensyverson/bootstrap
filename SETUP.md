@@ -162,7 +162,7 @@ The signature must name `927JGANW46` and say it's notarized. If it doesn't, dele
 
 ### 4. Ben's tools (`tools`)
 
-Run `/opt/homebrew/bin/brew trust bensyverson/tap` first, or the installs are refused. Then, for each tool the person kept that has a `formula`, and whose `detect` path doesn't exist yet: `/opt/homebrew/bin/brew install bensyverson/tap/<formula>`. If one fails, show the person the last lines and ask whether to try again or go on without it; required tools can't be left out.
+Run `/opt/homebrew/bin/brew trust bensyverson/tap` first, or the installs are refused. Then, for each tool the person kept that has a `formula`, and whose `detect` path doesn't exist yet: `/opt/homebrew/bin/brew install bensyverson/tap/<formula>`. A tool already there under `/opt/homebrew/` may be too old, so run `/opt/homebrew/bin/brew upgrade bensyverson/tap/<formula>` for it; a copy anywhere else (one they built themselves) is theirs, so leave it. If one fails, show the person the last lines and ask whether to try again or go on without it; required tools can't be left out.
 
 ### 5. The project folder (`folder`)
 
