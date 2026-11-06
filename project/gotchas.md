@@ -12,7 +12,7 @@ Format: one dated H2 headline, then one paragraph. If an entry needs more than t
 
 ## 2026-11-05 Headless Sleepy never ticks animation frames
 
-`requestAnimationFrame` never fires in `sleepy`, and a probe that awaits it hangs. Web animations and CSS transitions also sit at their first frame, so a page that fades in screenshots as blank, and `#pct` is never written or shown (`scripts/page-fit.sh` and its stills fill it in themselves). `setTimeout` does run, so timing logic can be probed with `sleepy eval` (`scripts/page-hold.sh`). Draw once directly and test stills through a link that opens a screen at rest (`#tools-jobs` in the prototype). Live motion can only be judged in a real browser.
+`requestAnimationFrame` never fires in `sleepy`, and a probe that awaits it hangs. Web animations and CSS transitions also sit at their first frame, so a page that fades in screenshots as blank, and `#pct` is never written or shown (`scripts/page-fit.sh` and its stills fill it in themselves). `setTimeout` does run, so timing logic can be probed with `sleepy eval` (`scripts/page-hold.sh`). Draw once directly and test stills through a link that opens a screen at rest (`#tools-jobs` in the prototype). Live motion can only be judged in a real browser: `scripts/page-demo.sh` runs the real page there against a pretend Mac, changing nothing on this one.
 
 ## 2026-11-05 `spctl -a -t exec` rejects every bare command-line tool
 
