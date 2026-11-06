@@ -152,6 +152,9 @@ var screensCommand = command{
 					cells = append(cells, list.key+"="+strings.Join(list.values, ","))
 				}
 			}
+			if d.Draft {
+				cells = append(cells, "draft")
+			}
 			if d.Internal {
 				cells = append(cells, "appears=on-its-own")
 			} else {

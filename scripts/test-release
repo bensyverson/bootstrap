@@ -40,7 +40,8 @@ fail() {
 stubs="${work}/stubs"
 mkdir -p "$stubs"
 # go build writes a script that answers --version with the stamped version, so the
-# release can read the stamp back. STUB_STAMP overrides what it answers.
+# release can read the stamp back. STUB_STAMP overrides what it answers, and
+# STUB_DRAFT makes its screens list show a draft.
 cat >"${stubs}/go" <<'EOF'
 #!/usr/bin/env bash
 echo "go $* CGO_ENABLED=${CGO_ENABLED:-} GOOS=${GOOS:-} GOARCH=${GOARCH:-}" >>"$STUB_LOG"
@@ -56,7 +57,12 @@ case "$1" in
                 *) shift ;;
             esac
         done
-        printf '#!/bin/sh\necho "bootstrap %s"\n' "${STUB_STAMP:-$stamp}" >"$out"
+        {
+            printf '#!/bin/sh\nif [ "$1" = screens ]; then\n'
+            printf '  if [ -n "${STUB_DRAFT:-}" ]; then echo %s; else echo %s; fi\n  exit 0\nfi\n' \
+                "'{\"screens\": [{\"screen\": \"naming\", \"draft\": true}]}'" "'{\"screens\": [{\"screen\": \"naming\"}]}'"
+            printf 'echo "bootstrap %s"\n' "${STUB_STAMP:-$stamp}"
+        } >"$out"
         chmod +x "$out"
         ;;
 esac
@@ -183,7 +189,7 @@ EOF
     export STUB_REMOTE="$remote"
     build_dir="${repo}/local/release/v0.1.0"
     export STUB_PUBLIC_FILE="${build_dir}/bootstrap"
-    unset STUB_STAMP STUB_VERIFY_FAIL STUB_TEAM STUB_NOTARY_STATUS STUB_SPCTL_REJECT STUB_ORIGIN
+    unset STUB_STAMP STUB_DRAFT STUB_VERIFY_FAIL STUB_TEAM STUB_NOTARY_STATUS STUB_SPCTL_REJECT STUB_ORIGIN
     unset STUB_GH_VISIBILITY STUB_GH_ASSETS
 }
 
@@ -374,6 +380,14 @@ setup
 export STUB_STAMP=dev
 release 5 0.1.0
 assert_out "bootstrap dev"
+refute_log "codesign --force"
+assert_unpinned
+
+case_name="a screen in draft stops before signing"
+setup
+export STUB_DRAFT=1
+release 5 0.1.0
+assert_out "naming"
 refute_log "codesign --force"
 assert_unpinned
 

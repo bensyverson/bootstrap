@@ -11,6 +11,7 @@
 #
 #     1. build ./cmd/bootstrap for darwin/arm64 with cgo off, the version stamped in,
 #        into local/release/v<X.Y.Z>/, and read the stamp back with --version
+#        and refuse it if any screen's words are still a draft
 #                                          (unless that folder holds a build of this source)
 #     2. sign it with the hardened runtime and a secure timestamp     (unless it is signed)
 #     3. notarize it: a bare binary goes up zipped, and can't be stapled, so Gatekeeper
@@ -209,6 +210,13 @@ if ! $built; then
         die 5 "the build says '${stamp}', not 'bootstrap ${version}'; is ${version_var} still the version?"
     echo "$current_fp" >"${dir}/source"
 fi
+
+# Words Ben hasn't approved are drafts (screen.Drafts()), and none may ship. This checks
+# the built file itself, so a resumed build is checked too.
+screens="$("$bin" screens --json)" || die 5 "the built binary would not list its screens: ${bin} screens --json"
+drafts="$(python3 -I -c 'import json,sys; print(" ".join(s["screen"] for s in json.load(sys.stdin)["screens"] if s.get("draft")))' <<<"$screens")" ||
+    die 5 "could not read the screens list from ${bin} screens --json"
+[[ -z "$drafts" ]] || die 5 "these screens' words are drafts Ben hasn't approved: ${drafts}. Approve them (screen.Drafts()), then rerun"
 
 # --- 2. Sign ------------------------------------------------------------------------------
 

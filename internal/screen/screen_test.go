@@ -516,3 +516,15 @@ func TestNoWordIsAPlaceholder(t *testing.T) {
 		}
 	}
 }
+
+// The release refuses a build whose screens list a draft, so the list says which are.
+func TestDefinitionsMarkDrafts(t *testing.T) {
+	i := slices.IndexFunc(specs, func(s spec) bool { return s.id == "naming" })
+	specs[i].draft = true
+	defer func() { specs[i].draft = false }()
+	for _, d := range Definitions() {
+		if want := d.Screen == "naming"; d.Draft != want {
+			t.Errorf("%s: draft = %v, want %v", d.Screen, d.Draft, want)
+		}
+	}
+}

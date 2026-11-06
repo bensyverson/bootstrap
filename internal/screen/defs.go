@@ -69,6 +69,8 @@ type Definition struct {
 	Choices  []string `json:"choices,omitempty"`
 	Next     string   `json:"next,omitempty"`
 	Internal bool     `json:"internal,omitempty"`
+	// Draft marks words Ben hasn't approved; the release refuses to ship one.
+	Draft bool `json:"draft,omitempty"`
 }
 
 // spec is one screen's words and rules. In text, {link:id} is a tool's linked
@@ -260,7 +262,7 @@ func (s spec) toolIDs() []string {
 func Definitions() []Definition {
 	var out []Definition
 	for _, s := range specs {
-		def := Definition{Screen: s.id, Mode: s.mode, Tools: s.toolIDs(), Statuses: optionIDs(s.statuses), Reasons: optionIDs(s.reasons), Next: s.next, Internal: s.internal}
+		def := Definition{Screen: s.id, Mode: s.mode, Tools: s.toolIDs(), Statuses: optionIDs(s.statuses), Reasons: optionIDs(s.reasons), Next: s.next, Internal: s.internal, Draft: s.draft}
 		for _, c := range s.choices {
 			def.Choices = append(def.Choices, c.id)
 		}
