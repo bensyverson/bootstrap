@@ -8,6 +8,7 @@ Got it. We’ll only stop if we need you.
 step plan done 1 of 13
 step apple done 2 of 13
 step homebrew done 3 of 13
+note kept ~/.bootstrap/bin/bootstrap: brew install bensyverson/tap/bootstrap exited 1
 step tools done 4 of 13
 Making your folder
 note made ~/Projects/pine-bakery

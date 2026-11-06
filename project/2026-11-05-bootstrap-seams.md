@@ -187,6 +187,8 @@ Ben's rulings of 2026-11-05 are notes on both tasks.
 
 Ben, 2026-11-06: a Mac may already have one of the tools at an older version, such as job 0.1.0, which has no `hook install`. So the tools step runs `brew upgrade bensyverson/tap/<formula>` for each picked tool it finds under `/opt/homebrew/` (`upgradeTool` in `internal/flow/machine.go`), and notes `updated <tool> <version>` when brew upgraded it. A copy anywhere else, such as one built into `~/go/bin`, is the person's own and is left alone. A failed upgrade hands off like a failed install. The step runs once per session: `checkTools` reports done only when every tool is there and this session's log already finished the step, so a second walk still runs only inspections.
 
+bootstrap itself rides the same step (Ben, 2026-11-06, `wz9ORc`): after the tools, `moveOntoHomebrew` in `internal/flow/selfmove.go` installs or upgrades `bensyverson/tap/bootstrap` and deletes `~/.bootstrap/bin/bootstrap`. It has no card and never hands off; a failure notes `kept ~/.bootstrap/bin/bootstrap` and the download runs on. `detect.Bootstrap` says which copy is live, and `program` in `internal/cli/program.go` uses it, so `next:` lines from the download name Homebrew's copy after the move. See [the upgrade plan](2026-11-06-bootstrap-upgrade-plan.md).
+
 ## Remembered answers, and just the tools (`XbdzWw`, `VGCn9C`, 2026-11-06)
 
 From [the clean-Mac trial](2026-11-06-clean-mac-trial-findings.md), run 2, findings 4 and 7, and Ben's rulings of 2026-11-06 (the "Settled" blocks in [the `new` plan](2026-11-05-bootstrap-new-plan.md) and [the server-driven flow](2026-11-05-server-driven-flow.md)).

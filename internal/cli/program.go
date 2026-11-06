@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/bensyverson/bootstrap/internal/detect"
 )
 
 // The setup installs bootstrap at ~/.bootstrap/bin/bootstrap, off the PATH, so
@@ -11,6 +13,9 @@ import (
 // found". Every next: line, on success or in an error, names the program by
 // the path it ran from. Help and the primer document the verbs, so they keep
 // the short name.
+//
+// Once the setup has moved bootstrap into Homebrew it deletes the downloaded
+// copy, so that copy, still running a wait, names Homebrew's instead.
 
 // commandWord is "bootstrap" where it starts a command in a next: line: at the
 // start, or after a space, a semicolon or a parenthesis, and followed by a
@@ -25,6 +30,13 @@ func program(env Env) string {
 	exe, err := env.Exe()
 	if err != nil || exe == "" {
 		return "bootstrap"
+	}
+	if env.Getenv == nil {
+		return exe
+	}
+	p := detect.Probe{Root: env.Getenv(envRoot), Home: env.Getenv("HOME")}
+	if p.Home != "" && detect.IsDownloadedBootstrap(p, exe) && detect.Bootstrap(p) == detect.HomebrewBootstrap {
+		return detect.HomebrewBootstrap
 	}
 	return exe
 }

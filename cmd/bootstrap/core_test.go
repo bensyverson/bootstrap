@@ -109,6 +109,40 @@ func TestNextNamesTheProgramByItsPath(t *testing.T) {
 	}
 }
 
+// After the setup has moved bootstrap into Homebrew and deleted the downloaded
+// copy, next: lines name Homebrew's copy, even from a wait the downloaded copy
+// started (wz9ORc).
+func TestNextNamesHomebrewsCopyAfterTheMove(t *testing.T) {
+	w := newWorld(t)
+	downloaded := filepath.Join(w.home, ".bootstrap", "bin", "bootstrap")
+	body, err := os.ReadFile(binary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(downloaded), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(downloaded, body, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	detect := func() string {
+		cmd := exec.Command(downloaded, "detect")
+		cmd.Env, cmd.Dir = w.env, w.cwd
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("%v\n%s", err, out)
+		}
+		return string(out)
+	}
+	if out := detect(); !strings.HasSuffix(out, "next: "+downloaded+" tools\n") {
+		t.Errorf("before the move:\n%s", out)
+	}
+	touchExec(t, filepath.Join(w.root, "opt/homebrew/bin/bootstrap"))
+	if out := detect(); !strings.HasSuffix(out, "next: /opt/homebrew/bin/bootstrap tools\n") {
+		t.Errorf("after the move:\n%s", out)
+	}
+}
+
 func (r result) want(t *testing.T, code int, stdout, stderr string) {
 	t.Helper()
 	if r.code != code || r.stdout != stdout || r.stderr != stderr {

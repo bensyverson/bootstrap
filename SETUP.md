@@ -32,7 +32,7 @@ Say it in your own words if you like, but keep every fact: it downloads a progra
 
 Then ask again. Don't go on without a clear yes in the chat. Some apps (Claude Code's auto mode) only let a downloaded program run once the person has said yes in the chat.
 
-To undo the program later: `~/.bootstrap/bin/bootstrap stop`, then `rm -rf ~/.bootstrap`. What it installed stays.
+To undo the program later: `~/.bootstrap/bin/bootstrap stop`, then `rm -rf ~/.bootstrap`. Once the setup has moved it into Homebrew, it's `/opt/homebrew/bin/bootstrap stop`, then `brew uninstall bootstrap` and `rm -rf ~/.bootstrap`. What it installed stays.
 
 ## 2. Check this Mac
 
@@ -101,7 +101,9 @@ Stay in the folder the person started you in: the program looks at it to decide 
 ~/.bootstrap/bin/bootstrap wait
 ```
 
-`wait` blocks until the setup needs you, or for 90 seconds, then prints what happened since your last wait. **Run it again every time, until it says the setup is over.** Every output ends with `next:` lines; follow them. They name the program as plain `bootstrap`, but it isn't on `PATH`, so always call it as `~/.bootstrap/bin/bootstrap`. Don't pass a longer `--timeout`: your shell tool may cut a command off at 2 minutes.
+`wait` blocks until the setup needs you, or for 90 seconds, then prints what happened since your last wait. **Run it again every time, until it says the setup is over.** Every output ends with `next:` lines; follow them. They name the program by its full path, so run them as written.
+
+**The program moves into Homebrew partway through.** In the tools step, once Homebrew is in, the setup installs bootstrap from Homebrew too, so `brew upgrade` keeps it current, and deletes `~/.bootstrap/bin/bootstrap`. From then on the `next:` lines name `/opt/homebrew/bin/bootstrap`: use that path wherever this page says `~/.bootstrap/bin/bootstrap`. If Homebrew's copy can't be installed, a `note kept ~/.bootstrap/bin/bootstrap` row says so, and the download keeps running the setup. Nothing for you to fix. Don't pass a longer `--timeout`: your shell tool may cut a command off at 2 minutes.
 
 - **Exit 0** means it has something for you: rows to retell, a `handoff` (below), or the end of the setup.
 - **Exit 3, `still working, run wait again`**, is normal: an install is running, or the person is reading. Run `wait` again straight away.
@@ -118,7 +120,7 @@ A `handoff` row means the setup needs you. It says what happened (`what:`), show
 
 - **`handoff trouble`**: something went wrong. Read the log it names, and fix what you safely can, without `sudo` or the person's password. Then `~/.bootstrap/bin/bootstrap resume --retry` runs the step again from its check. If the person would rather go on without that tool or step, and the handoff offers it, `resume --skip`. If you need to talk it over, ask the person in the chat first, then resume. After a resume, go back to `wait`. If the cure is something the person does in another window, such as clicking Install, don't hand the turn back to ask them to tell you: check for its result in a loop, as [the chat-only setup's waiting rule](#the-chat-only-setup) describes, then resume.
 - **`handoff phone`**: the person wants to use you from their phone. Explain how your app does that (in Claude Code, they type `/remote-control` into this chat once the setup is over), then `wait` again.
-- **`handoff done`**: the setup is over. Sum up in the chat what was set up, then tell the person how to start you again in their project folder (the handoff names it), so the new tools are found by name. See [Starting again in the project](#starting-again-in-the-project). Nothing more to run, not even `stop`: closing the page ends the program. If they'll make more projects, tell them that next time they can skip the page: in Terminal, `~/.bootstrap/bin/bootstrap new <name>` sets up a new project and asks only what it can't tell on its own.
+- **`handoff done`**: the setup is over. Sum up in the chat what was set up, then tell the person how to start you again in their project folder (the handoff names it), so the new tools are found by name. See [Starting again in the project](#starting-again-in-the-project). Nothing more to run, not even `stop`: closing the page ends the program. If they'll make more projects, tell them that next time they can skip the page: in Terminal, `/opt/homebrew/bin/bootstrap new <name>` (or `~/.bootstrap/bin/bootstrap new <name>` if a `note kept` row said it stayed there) sets up a new project and asks only what it can't tell on its own.
 
 Other ways `wait` can end, each exit 5:
 
@@ -152,7 +154,7 @@ Each app goes by a few names in these commands:
 
 **Claude Code.** In auto mode, the first run of a downloaded program is blocked until the person has said yes in the chat, which is why step 1 asks. If a later command is blocked anyway, tell the person what it is and ask them to approve it. Run each `wait` as its own command, in the foreground; its 90-second budget is under the Bash tool's 2-minute default.
 
-Claude Code may also run your commands in a sandbox (the person turns it on with `/sandbox`). Inside it, commands can't write to `~/.bootstrap`, open apps or files with `open`, or reach Apple's signature service, so `mkdir` fails with `Operation not permitted`, `open` fails, and `pkgutil --check-signature` calls a good package invalid. Run the downloads, the checks in step 4 and every `bootstrap` command outside the sandbox, and in the chat-only setup, every command (it writes outside the starting folder, to `~/.gitconfig` and to your own settings, and signs in over the network). Claude Code asks the person to approve each one; say what it is first. `wait` runs every 90 seconds while they're on the page, so at the first prompt for `~/.bootstrap/bin/bootstrap`, ask them to pick the option that stops asking for that command; otherwise the loop stalls on a prompt they can't see. If they'd rather not approve something, give them the exact command as text to paste into a new Terminal window.
+Claude Code may also run your commands in a sandbox (the person turns it on with `/sandbox`). Inside it, commands can't write to `~/.bootstrap`, open apps or files with `open`, or reach Apple's signature service, so `mkdir` fails with `Operation not permitted`, `open` fails, and `pkgutil --check-signature` calls a good package invalid. Run the downloads, the checks in step 4 and every `bootstrap` command outside the sandbox, and in the chat-only setup, every command (it writes outside the starting folder, to `~/.gitconfig` and to your own settings, and signs in over the network). Claude Code asks the person to approve each one; say what it is first. `wait` runs every 90 seconds while they're on the page, so at the first prompt for `~/.bootstrap/bin/bootstrap`, and again when the program moves to `/opt/homebrew/bin/bootstrap`, ask them to pick the option that stops asking for that command; otherwise the loop stalls on a prompt they can't see. If they'd rather not approve something, give them the exact command as text to paste into a new Terminal window.
 
 **OpenCode.** It has no `/remote-control`; if the person asks about their phone, say so plainly rather than inventing a way. Its shell tool also stops a command at 2 minutes by default, so the same `wait` loop fits. Some models stop after one `wait` and hand the turn back: don't. Keep looping until a `handoff` or the end, even when nothing seems to change. OpenCode has no auto mode, so the person may be asked to allow each command; say why before the first one.
 
@@ -250,4 +252,4 @@ Ask whether they'd like to use you from their phone. If so, explain how your app
 
 ### 13. Done (`done`)
 
-Sum up what was set up, and tell the person how to start you again in the project folder, as in [Starting again in the project](#starting-again-in-the-project). With just the tools, tell them how to make a project later instead: paste the setup link into you again, or run `~/.bootstrap/bin/bootstrap new <name>` in Terminal if the program is there.
+Sum up what was set up, and tell the person how to start you again in the project folder, as in [Starting again in the project](#starting-again-in-the-project). With just the tools, tell them how to make a project later instead: paste the setup link into you again, or run `bootstrap new <name>` in Terminal if the program is there (`/opt/homebrew/bin/bootstrap`, or `~/.bootstrap/bin/bootstrap`).

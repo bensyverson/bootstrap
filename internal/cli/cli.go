@@ -29,9 +29,6 @@ const (
 	fallbackNext = "tell the person in one sentence that the page can't open, then set up in the chat"
 )
 
-// Version is the release's version, stamped at link time by scripts/release.
-var Version = "dev"
-
 // Environment variables. All but the agent's are seams for tests and for the fallback path.
 const (
 	envDir  = "BOOTSTRAP_DIR"

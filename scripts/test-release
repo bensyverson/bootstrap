@@ -155,6 +155,13 @@ EOF
 chmod +x "${stubs}"/*
 export PATH="${stubs}:${PATH}"
 
+# The tap's release, beside the repo as on Ben's Mac: it logs how it was run, and
+# fails when STUB_TAP_FAIL is set.
+tap_release_stub='#!/usr/bin/env bash
+echo "tap-release $*" >>"$STUB_LOG"
+[[ -z "${STUB_TAP_FAIL:-}" ]]'
+
+
 # --- Fixture ----------------------------------------------------------------------------
 
 # setup: a fresh repo shaped like this one, committed and pushed to a bare origin.
@@ -172,6 +179,7 @@ setup() {
     echo "module example.com/bootstrap" >"${repo}/go.mod"
     echo "package main" >"${repo}/cmd/bootstrap/main.go"
     echo "package cli" >"${repo}/internal/cli/cli.go"
+    printf 'package cli\n\nvar Version = "0.0.0"\n' >"${repo}/internal/cli/version.go"
     echo "local/" >"${repo}/.gitignore"
     cat >"${repo}/SETUP.md" <<EOF
 # Setup
@@ -184,14 +192,21 @@ EOF
     git -C "$repo" remote add origin "$remote"
     git -C "$repo" push -q origin main
 
+    mkdir -p "${root}/homebrew-tap/scripts"
+    printf '%s\n' "$tap_release_stub" >"${root}/homebrew-tap/scripts/release"
+    chmod +x "${root}/homebrew-tap/scripts/release"
+
     export STUB_LOG="${root}/stub.log"
     : >"$STUB_LOG"
     export STUB_REMOTE="$remote"
     build_dir="${repo}/local/release/v0.1.0"
     export STUB_PUBLIC_FILE="${build_dir}/bootstrap"
     unset STUB_STAMP STUB_DRAFT STUB_VERIFY_FAIL STUB_TEAM STUB_NOTARY_STATUS STUB_SPCTL_REJECT STUB_ORIGIN
-    unset STUB_GH_VISIBILITY STUB_GH_ASSETS
+    unset STUB_GH_VISIBILITY STUB_GH_ASSETS STUB_TAP_FAIL
 }
+
+# stated <version>: whether internal/cli/version.go states it.
+stated() { grep -qxF "var Version = \"$1\"" "${repo}/internal/cli/version.go"; }
 
 # release <expected exit> <args…>: runs the repo's script from a subdirectory.
 release() {
@@ -257,6 +272,13 @@ release 3 0.1.0
 assert_out "SETUP.md"
 refute_log "go build"
 
+case_name="no version.go"
+setup
+rm "${repo}/internal/cli/version.go"
+release 3 0.1.0
+assert_out "internal/cli/version.go"
+refute_log "go build"
+
 case_name="no SETUP.md"
 setup
 rm "${repo}/SETUP.md"
@@ -278,14 +300,17 @@ assert_unpinned
 refute_log "go build"
 refute_log "codesign"
 refute_log "xcrun"
+stated 0.0.0 || fail "dry run changed version.go"
 
 case_name="dry run with --publish lists the publishing steps"
 setup
 release 0 0.1.0 --dry-run --publish
 assert_out "would publish"
 assert_out "bensyverson/bootstrap"
+assert_out "would run the tap's release"
 refute_log "gh release"
 refute_log "go build"
+refute_log "tap-release"
 [[ -z "$(remote_tag 0.1.0)" ]] || fail "dry run tagged"
 
 case_name="full local release: builds, signs, notarizes, verifies and pins"
@@ -301,6 +326,8 @@ assert_pinned
 assert_out "$(built_sha)"
 assert_out "Accepted"
 assert_out "next: scripts/release 0.1.0 --publish"
+stated 0.1.0 || fail "version.go doesn't state 0.1.0"
+refute_log "tap-release"
 refute_log "gh "
 refute_log "curl"
 [[ "$(git -C "$repo" rev-list --count HEAD)" == 1 ]] || fail "a local release committed"
@@ -484,6 +511,29 @@ assert_log "https://raw.githubusercontent.com/bensyverson/bootstrap/main/SETUP.m
 assert_out "Released bootstrap 0.1.0"
 [[ "$(grep -n 'gh release create' "$STUB_LOG" | cut -d: -f1)" -gt "$(grep -n 'spctl' "$STUB_LOG" | cut -d: -f1)" ]] ||
     fail "uploaded before verifying"
+git -C "$remote" show v0.1.0:internal/cli/version.go | grep -qxF 'var Version = "0.1.0"' ||
+    fail "the tag's version.go doesn't state 0.1.0"
+assert_log "tap-release --repo ${repo}"
+[[ "$(grep -n 'tap-release' "$STUB_LOG" | cut -d: -f1)" -gt "$(grep -n 'raw.githubusercontent.com/bensyverson/bootstrap/main' "$STUB_LOG" | tail -1 | cut -d: -f1)" ]] ||
+    fail "ran the tap's release before checking what the public gets"
+
+case_name="publish: no tap beside the repo stops before building"
+setup
+rm -rf "${work}/case/homebrew-tap"
+release 3 0.1.0 --publish
+assert_out "homebrew-tap"
+refute_log "go build"
+
+case_name="publish: a failed tap release fails, and a rerun runs it again"
+setup
+export STUB_TAP_FAIL=1
+release 5 0.1.0 --publish
+assert_out "rerun"
+unset STUB_TAP_FAIL
+export STUB_GH_ASSETS=$'bootstrap\nbootstrap.sha256'
+: >"$STUB_LOG"
+release 0 0.1.0 --publish
+assert_log "tap-release --repo ${repo}"
 
 case_name="publish: a pin already committed is not committed again"
 setup

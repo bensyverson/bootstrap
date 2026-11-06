@@ -366,6 +366,15 @@ func actTools(r *run) (outcome, error) {
 		return outcome{}, err
 	}
 	trusted := false
+	// A new account refuses the tap until it's trusted (project/2026-11-05-vm-run-findings.md).
+	trust := func() (*session.Handoff, error) {
+		if trusted {
+			return nil, nil
+		}
+		_, h, err := r.exec(Command{Kind: Change, Path: brewPath, Args: []string{"trust", tap}}, "")
+		trusted = err == nil && h == nil
+		return h, err
+	}
 	for _, tool := range tools {
 		if path, ok := r.locate(tool.Detect...); ok {
 			if o, stop, err := upgradeTool(r, tool, path); err != nil || stop {
@@ -373,12 +382,8 @@ func actTools(r *run) (outcome, error) {
 			}
 			continue
 		}
-		if !trusted {
-			// A new account refuses the tap until it's trusted (project/2026-11-05-vm-run-findings.md).
-			if _, h, err := r.exec(Command{Kind: Change, Path: brewPath, Args: []string{"trust", tap}}, ""); err != nil || h != nil {
-				return orHandOff(h, err)
-			}
-			trusted = true
+		if h, err := trust(); err != nil || h != nil {
+			return orHandOff(h, err)
 		}
 		if err := r.show(screen.Request{Screen: "tool", Tool: tool.ID, Status: "installing"}); err != nil {
 			return outcome{}, err
@@ -400,6 +405,11 @@ func actTools(r *run) (outcome, error) {
 		if err := r.note("%s", line); err != nil {
 			return outcome{}, err
 		}
+	}
+	// bootstrap itself has no card, and a failed trust only leaves the download running.
+	err = r.moveOntoHomebrew(func() error { _, err := trust(); return err })
+	if err != nil {
+		return outcome{}, err
 	}
 	return done()
 }

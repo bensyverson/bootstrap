@@ -86,9 +86,6 @@ func actPhone(r *run) (outcome, error) {
 
 func checkDone(r *run) (session.StepStatus, *session.Handoff, error) { return "", nil, nil }
 
-// installedBootstrap is where SETUP.md puts the program, off the PATH.
-const installedBootstrap = "~/.bootstrap/bin/bootstrap"
-
 func actDone(r *run) (outcome, error) {
 	tools, err := r.justTools()
 	if err != nil {
@@ -110,7 +107,7 @@ func actDone(r *run) (outcome, error) {
 	}
 	var what string
 	if tools {
-		what = fmt.Sprintf("the setup is done, with just the tools and no project: sum it up in the chat, and tell the person how to make a project later: paste the setup link into their agent again, or run %s new <name> in Terminal", installedBootstrap)
+		what = fmt.Sprintf("the setup is done, with just the tools and no project: sum it up in the chat, and tell the person how to make a project later: paste the setup link into their agent again, or run %s in Terminal", r.bootstrapCommand("new <name>"))
 	} else {
 		dir, err := r.mustProject()
 		if err != nil {

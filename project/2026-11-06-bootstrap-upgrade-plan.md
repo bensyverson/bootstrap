@@ -12,6 +12,18 @@ Ben asked for a `bootstrap upgrade` that brings the tools up to date and runs `a
 - **`bootstrap upgrade --all`** runs `agents update --all` over every repo `agents` has registered (`~/.config/agents/repos`), instead of just this one.
 - **Rules that move are left uncommitted.** `agents update` shows a diff of what changed and re-renders. A repo that refuses to overwrite a hand-edited region is reported with its path, and the exit status says so; nothing is forced.
 
+## Rulings on shipping it (Ben, 2026-11-06, later)
+
+- **One command does both releases.** `scripts/release X.Y.Z --publish` states the version in `internal/cli/version.go` (the tap's `scripts/release` reads a tool's version from its source), commits it with SETUP.md's pin, tags and uploads, then runs the tap's release from `../homebrew-tap` for the formula and bottle. An unstamped build now reports the last release's version, not `dev`.
+- **The move happens in the tools step, with no card.** After the tools, the step runs `brew install bensyverson/tap/bootstrap` (or `brew upgrade` when Homebrew's copy is there) and deletes `~/.bootstrap/bin/bootstrap`. If brew fails, as it will until the formula is published, the run notes `kept ~/.bootstrap/bin/bootstrap` and goes on with the download. It never hands off.
+
+## What was built (`wz9ORc`, 2026-11-06)
+
+- `detect.Bootstrap` names the live copy: Homebrew's once it's there, the download until then. The done handoff uses it.
+- `next:` lines from the downloaded copy name `/opt/homebrew/bin/bootstrap` once that exists, so a `wait` started before the move points the agent at the copy that's left. A build run from anywhere else (a checkout) is still named by its own path.
+- `Formula/bootstrap.rb` in the tap: built from source with Go, `depends_on macos: :sequoia` like the other Go tools, the version stamped by `-ldflags`. It points at v0.2.0 until the first release rewrites it. The repo has no license file yet, so the formula has no `license` line.
+- `scripts/release` step 0 (state the version) and step 9 (the tap's release); `scripts/test-release` covers both.
+
 ## Open questions for the builder
 
 - What `upgrade` prints and its `--json` shape, following `project/agents/cli-design.md` and the other verbs (`next:` lines by path).

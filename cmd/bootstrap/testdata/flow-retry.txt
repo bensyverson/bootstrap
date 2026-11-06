@@ -21,6 +21,7 @@ next: bootstrap wait
 $ bootstrap wait --timeout 2s (exit 3, stderr)
 error: still working, run wait again
 note installed sleepy 0.2.0
+note kept ~/.bootstrap/bin/bootstrap: brew install bensyverson/tap/bootstrap exited 1
 step tools done 4 of 13
 step folder started 5 of 13
 state working step=folder 5 of 13 screen=naming
