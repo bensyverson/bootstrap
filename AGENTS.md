@@ -2,14 +2,14 @@ IMPORTANT: As you implement features, keep the documentation in `project/` and `
 
 ## Overview
 
-Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben Syverson's way of working: `agents` and the `agents-md` rules, `job`, Git, the supporting tools, and the `project/` and `local/` folders. It is for Mac users who are comfortable pasting into an agent, including people with no Homebrew or GitHub account yet. There is little code here: the repo is mostly a README an agent reads first, a playbook it follows, and a `Brewfile`; the tools themselves live in their own repos and ship through `bensyverson/homebrew-tap`.
+Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben Syverson's way of working: `agents` and the `agents-md` rules, `job`, Git, the supporting tools, and the `project/` and `local/` folders. It is for Mac users who are comfortable pasting into an agent, including people with no Homebrew or GitHub account yet. The repo holds a README an agent reads first, the playbook it follows (`SETUP.md`), and the `bootstrap` program (Go) that runs the setup and shows it on a local page; `catalog/tools.json` lists the tools it offers. The tools themselves live in their own repos and ship through `bensyverson/homebrew-tap`.
 
 **The `local/` folder rule lives here, not in `agents-md`** (Ben, 2026-11-05). The setup creates `local/` and its `.gitignore` entry; `local/` is private and never committed.
 
 ## Documentation
 
 - [README.md](README.md) — the page a pasted link lands on; it sends an agent to `SETUP.md`
-- [SETUP.md](SETUP.md) — the agent's playbook: for now the trial stub, which fetches, verifies and starts the pinned binary and stops after the list screen
+- [SETUP.md](SETUP.md) — the agent's playbook: consent, fetching and verifying the pinned binary, `bootstrap run` and the `wait` loop, handoffs, and the chat-only setup
 - [`scripts/release`](scripts/release) — builds, signs, notarizes and pins a version of the binary, and with `--publish` puts it on GitHub; `--help` lists the steps, `scripts/test-release` tests it
 - [project/](project/) — dated plans, findings and decisions; the current plan is [the setup link plan](project/2026-11-05-setup-link-plan.md)
 - [The `bootstrap` binary plan](project/2026-11-05-bootstrap-binary-plan.md) — the detail for the `VNF9sG` job: commands, session log and build order

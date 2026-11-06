@@ -10,11 +10,19 @@ The person may never have used a terminal. Speak plainly, keep each message shor
 
 ## 1. Ask first
 
-Before you download anything, send the person one message that says what will happen, and wait for a yes. Something like:
+Before you download anything, send the person one short message that says what will happen, and wait for a yes. Something like:
 
-> I can set up this Mac the way Ben Syverson works. To do that, I'll download his small setup program, check that it's really his and approved by Apple, and run it. It opens a page in your browser where you pick what gets installed: Apple's developer tools, Homebrew, and a few of Ben's tools. Then it makes a project folder for you. It installs software, and nothing is installed that you don't pick on the page. It never asks for your password in the chat; if your Mac asks, that's macOS itself. OK to go ahead?
+> I can set up this Mac the way Ben Syverson works. I'll download his small setup program, check that it's really his and approved by Apple, and run it. It installs software: a page in your browser lets you pick what gets installed.
+>
+> OK to go ahead, or want the details first?
 
-Say it in your own words if you like, but keep every fact: it downloads a program, checks it, runs it, and installs software the person picks. Don't go on without a clear yes in the chat. Some apps (Claude Code's auto mode) only let a downloaded program run once the person has said yes in the chat.
+Say it in your own words if you like, but keep every fact: it downloads a program, checks it, runs it, and installs software the person picks. If they want the details, tell them:
+
+- The page offers Apple's developer tools, Homebrew (a tool that installs other tools), and a few of Ben's tools, each with a line on what it's for. Nothing is installed that they don't pick.
+- Then it makes a project folder for them, or sets up the one you started in.
+- It never asks for their password in the chat. If their Mac asks, that's macOS itself.
+
+Then ask again. Don't go on without a clear yes in the chat. Some apps (Claude Code's auto mode) only let a downloaded program run once the person has said yes in the chat.
 
 To undo the program later: `~/.bootstrap/bin/bootstrap stop`, then `rm -rf ~/.bootstrap`. What it installed stays.
 
@@ -90,7 +98,7 @@ A `handoff` row means the setup needs you. It says what happened (`what:`), show
 
 - **`handoff trouble`**: something went wrong. Read the log it names, and fix what you safely can. Then `~/.bootstrap/bin/bootstrap resume --retry` runs the step again from its check. If the person would rather go on without that tool or step, and the handoff offers it, `resume --skip`. If you need to talk it over, ask the person in the chat first, then resume. After a resume, go back to `wait`.
 - **`handoff phone`**: the person wants to use you from their phone. Explain how your app does that (in Claude Code, `/remote-control`), then `wait` again.
-- **`handoff done`**: the setup is over. Sum up in the chat what was set up, and tell the person to open a new Terminal window, go to their project folder (the handoff names it), and start you there. Nothing more to run; closing the page ends the program.
+- **`handoff done`**: the setup is over. Sum up in the chat what was set up, and tell the person to open a new Terminal window, go to their project folder (the handoff names it), and start you there. Nothing more to run; closing the page ends the program. If they'll make more projects, tell them that next time they can skip the page: in Terminal, `~/.bootstrap/bin/bootstrap new <name>` sets up a new project and asks only what it can't tell on its own.
 
 Other ways `wait` can end, each exit 5:
 
