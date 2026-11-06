@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/bensyverson/bootstrap/catalog"
 	"github.com/bensyverson/bootstrap/internal/detect"
@@ -163,8 +164,8 @@ func actApple(r *run) (outcome, error) {
 	if _, h, err := r.exec(Command{Kind: Change, Path: xcodeSelectPath, Args: []string{"--install"}}, "clt"); err != nil || h != nil {
 		return orHandOff(h, err)
 	}
-	if _, h, err := r.exec(Command{Kind: Change, Path: openPath, Args: []string{"-a", appleInstaller}}, "clt"); err != nil || h != nil {
-		return orHandOff(h, err)
+	if err := r.raiseApple(); err != nil {
+		return outcome{}, err
 	}
 	if err := r.note("installing Apple's tools: the person is clicking through Apple's window"); err != nil {
 		return outcome{}, err
@@ -186,6 +187,57 @@ func actApple(r *run) (outcome, error) {
 		if err := r.show(screen.Request{Screen: "apple-wait"}); err != nil {
 			return outcome{}, err
 		}
+	}
+}
+
+const (
+	// raiseTries is how many times the Apple step tries to bring Apple's window forward.
+	raiseTries = 3
+	// raiseTicks is how many looks for Apple's installer fit in Limits.AppleWindow;
+	// one tick is also the pause between tries.
+	raiseTicks = 10
+)
+
+// raiseApple brings Apple's installer to the front, as best it can. open -a
+// fails with launchd's "Launch failed" while the installer is still starting
+// (project/2026-11-06-clean-mac-trial-findings.md), so it waits for the
+// installer's process first and tries again after a failure. A window that never
+// comes forward isn't trouble: the person can still find it, and the step's
+// wait for Apple's tools carries on either way.
+func (r *run) raiseApple() error {
+	tool, _ := catalog.Find("clt")
+	tick := r.f.cfg.Limits.AppleWindow / raiseTicks
+	deadline := time.Now().Add(r.f.cfg.Limits.AppleWindow)
+	for !detect.InstallerRunning(r.f.cfg.Probe, tool) && time.Now().Before(deadline) {
+		if err := r.pause(tick); err != nil {
+			return err
+		}
+	}
+	for try := 1; ; try++ {
+		_, h, err := r.exec(Command{Kind: Change, Path: openPath, Args: []string{"-a", appleInstaller}}, "clt")
+		switch {
+		case err != nil:
+			return err
+		case h == nil:
+			return nil
+		case try == raiseTries:
+			return r.note("couldn't bring Apple's window to the front (%s); the person may need to find it", h.What)
+		}
+		if err := r.pause(tick); err != nil {
+			return err
+		}
+	}
+}
+
+// pause waits for d, or until ctx is done.
+func (r *run) pause(d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-r.ctx.Done():
+		return r.ctx.Err()
+	case <-t.C:
+		return nil
 	}
 }
 

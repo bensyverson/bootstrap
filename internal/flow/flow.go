@@ -71,12 +71,15 @@ type Limits struct {
 	Homebrew time.Duration
 	// Login is gh's web sign-in, which waits on the person in a browser.
 	Login time.Duration
+	// AppleWindow is how long the Apple step waits for Apple's installer to
+	// start before it tries to bring the installer's window forward anyway.
+	AppleWindow time.Duration
 }
 
 // DefaultLimits are the limits outside tests. Each is far past what the step
 // takes on a working Mac, since going past one hands off.
 func DefaultLimits() Limits {
-	return Limits{Command: 10 * time.Minute, Apple: time.Hour, Homebrew: 30 * time.Minute, Login: 15 * time.Minute}
+	return Limits{Command: 10 * time.Minute, Apple: time.Hour, Homebrew: 30 * time.Minute, Login: 15 * time.Minute, AppleWindow: 5 * time.Second}
 }
 
 // DefaultHooks are the tools whose own `hook install` the settings step runs (GGbVZ5).
@@ -140,6 +143,7 @@ func New(cfg Config) (*Flow, error) {
 	for _, pair := range []struct{ got, def *time.Duration }{
 		{&cfg.Limits.Command, &defaults.Command}, {&cfg.Limits.Apple, &defaults.Apple},
 		{&cfg.Limits.Homebrew, &defaults.Homebrew}, {&cfg.Limits.Login, &defaults.Login},
+		{&cfg.Limits.AppleWindow, &defaults.AppleWindow},
 	} {
 		if *pair.got == 0 {
 			*pair.got = *pair.def

@@ -86,7 +86,7 @@ func newWorld(t *testing.T) *world {
 
 func (w *world) config() flow.Config {
 	limits := flow.DefaultLimits()
-	limits.Apple, limits.Homebrew = 2*time.Second, 2*time.Second
+	limits.Apple, limits.Homebrew, limits.AppleWindow = 2*time.Second, 2*time.Second, 50*time.Millisecond
 	return flow.Config{Store: w.store, Runner: w.mac, Probe: w.probe, HomebrewPkg: pkgURL, Hooks: flow.DefaultHooks(), Limits: limits, Poll: 2 * time.Millisecond, Preferences: w.prefs}
 }
 
