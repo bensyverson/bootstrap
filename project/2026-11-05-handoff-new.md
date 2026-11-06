@@ -42,6 +42,7 @@
   - the dry read in a fresh session;
   - whether a Brewfile is still wanted (the flow installs from `catalog/tools.json`).
 - **`QKSluk`:** release, then the trial in both apps. Before releasing, make `scripts/release` refuse any `screen.Drafts()` (none today). Ask Ben before publishing.
+- **`gpvHd3`:** where new projects go becomes configurable (Ben, 2026-11-05): `--in <folder>` on `new`, a remembered choice in bootstrap's preferences file, and `~/Projects` or `~/git` on the naming screen. That preferences file is shared with `t5FAqu`.
 - **`OWv6U2`**, and **`t5FAqu`** (the "skip the tour" preference and the `new-project` skill, which can now call `bootstrap new`).
 
 ## Traps
