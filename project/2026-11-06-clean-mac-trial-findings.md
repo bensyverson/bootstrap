@@ -44,11 +44,13 @@ The Gatekeeper `rejected` of the first run didn't recur: this VM says `accepted`
 
 **What this run settled:**
 
-1. **Apple's and Homebrew's windows came to the front** on their own (Ben, watching). The second run's finding that Apple's window opened behind the browser is fixed by `6374e0f`. One caveat follows in the next item.
+1. **Apple's and Homebrew's windows came to the front** on their own (Ben, watching). The second run's finding that Apple's window opened behind the browser is fixed by `6374e0f`. Ben saw no dialog before the welcome screen, so the window was the setup's own.
 2. **bootstrap moved onto Homebrew as designed** (`wz9ORc`). After the tools, `brew install bensyverson/tap/bootstrap` poured the 0.3.0 bottle (`bootstrap.log`), and the run noted `installed bootstrap 0.3.0` and `deleted ~/.bootstrap/bin/bootstrap; /opt/homebrew/bin/bootstrap runs from now on` (seq 54, 55). The agent's next `wait` was `/opt/homebrew/bin/bootstrap wait`, as the `next:` line said, and Claude Code asked for no approval (Ben). Afterward `~/.bootstrap/bin` was empty and `/opt/homebrew/bin/bootstrap --version` said 0.3.0.
 3. **No working screen flashed** after the tool list or naming (Ben), matching his check of the demo page (`a6Q6ie`).
 
 **Findings:**
+
+> **Corrected, 2026-11-06 (Ben):** no dialog appeared before the welcome screen, so the window that came to the front was the setup's own, and the early `git clone` showed nothing to the person. Why Apple's stand-in printed its message without a dialog showing is not established. The finding below stands only as "the agent tries `gh` and `git` first".
 
 1. **Before reading anything, the agent ran `git clone`, which pops Apple's dialog on a clean Mac.** Its first moves on the bare link were `gh repo view` (`command not found`) and then `git clone --depth 1 https://github.com/bensyverson/bootstrap.git` into its scratchpad. Apple's stand-in `git` printed "…cancel the installation dialog", so the "install the command line developer tools?" dialog opened about 50 s before the setup asked for it. Then the agent fell back to `curl` on the GitHub API and the raw SETUP.md, as the README says. The README can't prevent this, because the agent acts before it reads the README. Whether the window Ben saw come to the front was this early dialog or the setup's own is not settled. Ben wasn't sure when it first appeared, and the setup's `xcode-select --install` still reported "install requested" and exited 0 (`clt.log`). It did no harm here: clicking Install on either dialog installs the same tools, and the setup's check finds them. The second run (Sonnet 5.5) didn't do it. Filed in `job`.
 2. **The new tool line** came out of this run: Ben asked for "Standard developer tools, including Git." instead of "Apple's tools, which include Git." (`977f655`, for the next release).
