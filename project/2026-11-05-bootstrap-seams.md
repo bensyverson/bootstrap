@@ -203,3 +203,8 @@ From [the clean-Mac trial](2026-11-06-clean-mac-trial-findings.md), run 2, findi
 
 > **Words approved, 2026-11-06 (Ben):** naming's button is "Skip", not "Just the tools for now", and done's line for just the tools is "You can close this. When you want a project, ask {ai} to run bootstrap new." The terminal prompt now reads "Project name (Enter skips): ". Neither screen is a draft any more. Ben's first choice for the done line, "Next time, you can just ask Claude to bootstrap a project", waits on an instruction for the whole Mac that tells every session about bootstrap (filed in `job`).
 - **Drafts:** naming and done are marked `draft`, so `screen.Drafts()` lists them and `scripts/release` refuses to ship until Ben approves the words: previews `/preview#naming.claude-code`, `/preview#done.tools.claude-code` (and `.opencode`).
+
+## No phone step in OpenCode (`PjAKYq`, 2026-11-06)
+
+- **What the agent can do is a fact about the agent.** `screen.Agent.RemoteControl()` is the app's own command that carries a session to a phone: `/remote-control` for Claude Code, empty for OpenCode. OpenCode has no first-party equivalent (searched 2026-11-06: only third-party bridges such as OpenCode Pilot, HAPI, Happier and Sesori, none of which the setup installs).
+- **`checkPhone` returns done when the agent has none,** so the step never runs: no `phone` screen, no `phone` handoff, and `bootstrap new` notes no tip. The hint and the handoff's words name the agent's command rather than hard-coding Claude Code's. The page's samples still render `phone.opencode.json`, as they render every screen for both apps; it is never shown on OpenCode's path.

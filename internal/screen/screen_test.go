@@ -533,3 +533,12 @@ func TestDefinitionsMarkDrafts(t *testing.T) {
 		}
 	}
 }
+
+func TestOnlyClaudeCodeHasRemoteControl(t *testing.T) {
+	if got := ClaudeCode.RemoteControl(); got != "/remote-control" {
+		t.Errorf("Claude Code's remote control = %q", got)
+	}
+	if got := OpenCode.RemoteControl(); got != "" {
+		t.Errorf("OpenCode's remote control = %q, want none", got)
+	}
+}

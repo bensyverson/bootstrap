@@ -200,6 +200,13 @@ var (
 	OpenCode   = Agent{ID: "opencode", App: "OpenCode", AI: "OpenCode"}
 )
 
+// remoteControl is each agent's command that carries a session to the person's phone.
+// OpenCode has none of its own (PjAKYq, 2026-11-06).
+var remoteControl = map[string]string{ClaudeCode.ID: "/remote-control"}
+
+// RemoteControl is the command that carries a session to the person's phone, or "" when the app has none.
+func (a Agent) RemoteControl() string { return remoteControl[a.ID] }
+
 // Agents returns every agent.
 func Agents() []Agent { return []Agent{ClaudeCode, OpenCode} }
 

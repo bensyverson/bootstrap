@@ -68,6 +68,12 @@ func defaultAnswers() map[asked]screen.Answer {
 
 func newWorld(t *testing.T) *world {
 	t.Helper()
+	return newWorldFor(t, screen.ClaudeCode)
+}
+
+// newWorldFor is a world whose session runs under agent.
+func newWorldFor(t *testing.T, agent screen.Agent) *world {
+	t.Helper()
 	root := t.TempDir()
 	home := t.TempDir()
 	w := &world{t: t, mac: flowtest.New(root), home: home, answers: defaultAnswers(), free: 100_000_000_000}
@@ -78,7 +84,7 @@ func newWorld(t *testing.T) *world {
 		Running: func(p string) bool { w.mu.Lock(); r := w.running; w.mu.Unlock(); return r(p) },
 	}
 	w.store = session.Store{Dir: filepath.Join(t.TempDir(), "bootstrap")}
-	if _, err := w.store.Begin(screen.ClaudeCode, 1, time.Now()); err != nil {
+	if _, err := w.store.Begin(agent, 1, time.Now()); err != nil {
 		t.Fatal(err)
 	}
 	return w

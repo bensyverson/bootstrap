@@ -5,7 +5,7 @@ You are a coding agent, and the person you're working with pasted a link to [ben
 The person may never have used a terminal. Speak plainly, keep each message short, and never ask them to type a command during the setup. You run every command yourself. The only exceptions, each given as text to paste:
 
 - starting you again in the project at the end ([below](#starting-again-in-the-project));
-- `/remote-control`, typed into this chat once the setup is over, if they want to use you from their phone;
+- `/remote-control` (Claude Code only), typed into this chat once the setup is over, if they want to use you from their phone;
 - `bootstrap new`, for their later projects;
 - a command they'd rather run themselves than approve for you ([Notes for each app](#notes-for-each-app)). They paste it into a new Terminal window (Command-N in Terminal), since the window you're in is busy running you.
 
@@ -119,7 +119,7 @@ If the person says in the chat at any point that they want to stop, run `~/.boot
 A `handoff` row means the setup needs you. It says what happened (`what:`), shows the evidence (`command:`, `limit:`, `log:`, and the output's last lines), and ends with one `next:` line per way forward. While it waits, the page tells the person "Let's talk in" your app's name.
 
 - **`handoff trouble`**: something went wrong. Read the log it names, and fix what you safely can, without `sudo` or the person's password. Then `~/.bootstrap/bin/bootstrap resume --retry` runs the step again from its check. If the person would rather go on without that tool or step, and the handoff offers it, `resume --skip`. If you need to talk it over, ask the person in the chat first, then resume. After a resume, go back to `wait`. If the cure is something the person does in another window, such as clicking Install, don't hand the turn back to ask them to tell you: check for its result in a loop, as [the chat-only setup's waiting rule](#the-chat-only-setup) describes, then resume.
-- **`handoff phone`**: the person wants to use you from their phone. Explain how your app does that (in Claude Code, they type `/remote-control` into this chat once the setup is over), then `wait` again.
+- **`handoff phone`**: the person wants to use you from their phone. Explain how your app does that (in Claude Code, they type `/remote-control` into this chat once the setup is over), then `wait` again. OpenCode never gets this handoff: it has no way of its own to reach a phone, so the setup skips the question there.
 - **`handoff done`**: the setup is over. Sum up in the chat what was set up, then tell the person how to start you again in their project folder (the handoff names it), so the new tools are found by name. See [Starting again in the project](#starting-again-in-the-project). Nothing more to run, not even `stop`: closing the page ends the program. If they'll make more projects, tell them that next time they can skip the page: in a new Terminal window, `bootstrap new <name>` (or `~/.bootstrap/bin/bootstrap new <name>` if a `note kept` row said it stayed there) sets up a new project and asks only what it can't tell on its own.
 
 Other ways `wait` can end, each exit 5:
@@ -156,7 +156,7 @@ Each app goes by a few names in these commands:
 
 Claude Code may also run your commands in a sandbox (the person turns it on with `/sandbox`). Inside it, commands can't write to `~/.bootstrap`, open apps or files with `open`, or reach Apple's signature service, so `mkdir` fails with `Operation not permitted`, `open` fails, and `pkgutil --check-signature` calls a good package invalid. Run the downloads, the checks in step 4 and every `bootstrap` command outside the sandbox, and in the chat-only setup, every command (it writes outside the starting folder, to `~/.gitconfig` and to your own settings, and signs in over the network). Claude Code asks the person to approve each one; say what it is first. `wait` runs every 90 seconds while they're on the page, so at the first prompt for `~/.bootstrap/bin/bootstrap`, and again when the program moves to `/opt/homebrew/bin/bootstrap`, ask them to pick the option that stops asking for that command; otherwise the loop stalls on a prompt they can't see. If they'd rather not approve something, give them the exact command as text to paste into a new Terminal window.
 
-**OpenCode.** It has no `/remote-control`; if the person asks about their phone, say so plainly rather than inventing a way. Its shell tool also stops a command at 2 minutes by default, so the same `wait` loop fits. Some models stop after one `wait` and hand the turn back: don't. Keep looping until a `handoff` or the end, even when nothing seems to change. OpenCode has no auto mode, so the person may be asked to allow each command; say why before the first one.
+**OpenCode.** It has no `/remote-control`, so the setup never asks about the phone; if the person asks, say so plainly rather than inventing a way. Its shell tool also stops a command at 2 minutes by default, so the same `wait` loop fits. Some models stop after one `wait` and hand the turn back: don't. Keep looping until a `handoff` or the end, even when nothing seems to change. OpenCode has no auto mode, so the person may be asked to allow each command; say why before the first one.
 
 ## The chat-only setup
 
@@ -248,7 +248,7 @@ Each prints one line per change. To take one out later: the same command with `u
 
 ### 12. Your phone (`phone`)
 
-Ask whether they'd like to use you from their phone. If so, explain how your app does it (in Claude Code, they type `/remote-control` into the chat). OpenCode has none; say so.
+In Claude Code, ask whether they'd like to use you from their phone, and if so, explain that they type `/remote-control` into the chat. In OpenCode, skip this step: it has no way to reach a phone.
 
 ### 13. Done (`done`)
 

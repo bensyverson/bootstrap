@@ -473,9 +473,5 @@ func (r *run) see(state session.State, req screen.Request) error {
 
 // phoneHint is the phone question as a line to pass on, since only the page asks it.
 func phoneHint(agent screen.Agent) string {
-	hint := fmt.Sprintf("to use %s from your phone, ask %s how", agent.AI, agent.AI)
-	if agent.ID == screen.ClaudeCode.ID {
-		hint += " (in Claude Code, it's /remote-control)"
-	}
-	return hint
+	return fmt.Sprintf("to use %s from your phone, ask %s how (in %s, it's %s)", agent.AI, agent.AI, agent.App, agent.RemoteControl())
 }

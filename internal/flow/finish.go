@@ -56,8 +56,15 @@ func actSettings(r *run) (outcome, error) {
 }
 
 func checkPhone(r *run) (session.StepStatus, *session.Handoff, error) {
-	status, err := r.finished()
-	return status, nil, err
+	state, err := r.state()
+	if err != nil {
+		return "", nil, err
+	}
+	// With no way to reach the phone, there is nothing to ask or tell.
+	if state.Agent.RemoteControl() == "" {
+		return session.StepDone, nil, nil
+	}
+	return state.Finished[r.def.ID], nil, nil
 }
 
 func actPhone(r *run) (outcome, error) {
@@ -78,7 +85,12 @@ func actPhone(r *run) (outcome, error) {
 	if a.Choice == notNow {
 		return skipped()
 	}
-	if err := r.tell(session.Handoff{Kind: session.HandoffPhone, Step: StepPhone, What: "the person wants to use their agent from their phone: explain /remote-control in the chat", Ways: []session.Way{session.WayTalk}}); err != nil {
+	state, err := r.state()
+	if err != nil {
+		return outcome{}, err
+	}
+	what := fmt.Sprintf("the person wants to use their agent from their phone: explain %s in the chat", state.Agent.RemoteControl())
+	if err := r.tell(session.Handoff{Kind: session.HandoffPhone, Step: StepPhone, What: what, Ways: []session.Way{session.WayTalk}}); err != nil {
 		return outcome{}, err
 	}
 	return done()
