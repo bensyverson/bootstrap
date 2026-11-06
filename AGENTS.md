@@ -11,7 +11,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - [README.md](README.md) — the page a pasted link lands on; it sends an agent to `SETUP.md`
 - [SETUP.md](SETUP.md) — the agent's playbook: consent, fetching and verifying the pinned binary, `bootstrap run` and the `wait` loop, handoffs, and the chat-only setup
 - [`scripts/release`](scripts/release) — builds, signs, notarizes and pins a version of the binary, and with `--publish` puts it on GitHub; `--help` lists the steps, `scripts/test-release` tests it
-- [project/](project/) — dated plans, findings and decisions; the current plan is [the setup link plan](project/2026-11-05-setup-link-plan.md)
+- [project/](project/) — dated plans, findings and decisions; the current plan is [the setup link plan](project/2026-11-05-setup-link-plan.md), and the latest handoff is [2026-11-06](project/2026-11-06-handoff.md)
 - [The `bootstrap` binary plan](project/2026-11-05-bootstrap-binary-plan.md) — the detail for the `VNF9sG` job: commands, session log and build order
 - [The binary's seams](project/2026-11-05-bootstrap-seams.md) — packages, what the page and an agent get, and decisions made while building
 - [Setup page prototype](project/2026-11-05-setup-page-mock/prototype/) — the approved look and motion, in one page; `build.py` makes `local.html`; the [mock](project/2026-11-05-setup-page-mock/) shows the options tried
@@ -22,6 +22,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - [The server drives the setup](project/2026-11-05-server-driven-flow.md) — the agent starts one run and supervises (approved)
 - [Building the server-driven flow](project/2026-11-05-server-driven-build-plan.md) — the order and the leaves, imported under `CAwBVg`
 - [`bootstrap new`](project/2026-11-05-bootstrap-new-plan.md) — the setup from the command line, with flags and opt-out defaults (`l2isVc`)
+- [`bootstrap upgrade`](project/2026-11-06-bootstrap-upgrade-plan.md) — updating the tools and rules later, and bootstrap moving into the tap (`wz9ORc`, `mEPQUI`)
 - [project/backlog.md](project/backlog.md) and [project/gotchas.md](project/gotchas.md) — work parked, and traps to know
 
 <!-- agents:begin core@cfc86c -->
