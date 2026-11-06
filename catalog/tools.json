@@ -4,7 +4,7 @@
       "id": "clt",
       "name": "Command Line Tools",
       "url": "https://developer.apple.com/xcode/resources/",
-      "say": "Apple’s tools, which include Git.",
+      "say": "Standard developer tools, including Git.",
       "required": true,
       "own_step": true,
       "detect": ["/Library/Developer/CommandLineTools/usr/bin/git"],

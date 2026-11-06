@@ -7,7 +7,7 @@
       "text": "Adding Apple’s tools"
     }
   ],
-  "note": "Apple’s tools, which include Git.",
+  "note": "Standard developer tools, including Git.",
   "status": [
     {
       "text": "Apple’s window shows how far along it is. This can take a while."

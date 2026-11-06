@@ -126,10 +126,11 @@ var recordedCopyChanges = map[string]bool{
 	"Your turn: click through the installer.":     true,
 	"This adds ":                                  true,
 	", which installs other software for you. It will ask for your Mac password.": true,
-	"Apple’s tools, which include Git.":                                           true,
-	"Let’s talk in {app}.":                                                        true,
-	"{ai} has a question.":                                                        true,
-	"That’s all for now.":                                                         true,
+	// Ben, 2026-11-06, during the third clean-Mac pass.
+	"Standard developer tools, including Git.": true,
+	"Let’s talk in {app}.":                     true,
+	"{ai} has a question.":                     true,
+	"That’s all for now.":                      true,
 	// Ben approved done's line for just the tools in the preview, 2026-11-06.
 	"You can close this. When you want a project, ask {ai} to run bootstrap new.": true,
 	// Ben approved these from the live preview, 2026-11-05.
