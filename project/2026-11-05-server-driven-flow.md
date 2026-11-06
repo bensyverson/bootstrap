@@ -118,3 +118,5 @@ The server runs the [setup order](2026-11-05-setup-link-plan.md#setup-order) as 
 
     > **Superseded 2026-11-06:** Ben dropped `live-yet`, the live-yet question, since nothing used its answer. A new project gets `stage-build`, a project set up in place gets no stage, and `new` has no `--live` flag. This now covers only `making`.
 11. **A screen too tall for the space under the object sits low**, over its lower part, and the object never changes size (Ben, 2026-11-05). `github-code` and `identity` joined `naming`, `identity-name` and `identity-email`.
+
+> **Settled 2026-11-06 (Ben), from [the clean-Mac trial](2026-11-06-clean-mac-trial-findings.md):** the naming screen gets a "just the tools" choice. It skips the project steps (folder, Git, rules, what they're making) and keeps the machine-wide ones (GitHub sign-in, Git's name and email, Claude's helpers, the phone). The done handoff then says how to make a project later. The new words go to Ben as rendered screens. Leaf `VGCn9C`.

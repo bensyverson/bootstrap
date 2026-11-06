@@ -46,3 +46,5 @@ tasks:
       - The project type comes from package.json or Package.swift when present, and "other" otherwise, shown by tests
       - The page flow's existing tests pass unchanged
 ```
+
+> **Settled 2026-11-06 (Ben), from [the clean-Mac trial](2026-11-06-clean-mac-trial-findings.md):** later setups remember the person's answers. A decline on the page stays declined in a later `bootstrap new --yes`. An explicit flag (`--github`, `--no-github`, …) overrides the remembered answer and becomes the new one. `bootstrap prefs` lists what's remembered, and `bootstrap prefs reset <name>` forgets one, so the next setup asks again. `--yes` never starts a step that waits on a person; it skips it and says so. Answers live in `~/.bootstrap/preferences.json`, beside `projects_in`. Leaf `XbdzWw`.

@@ -29,3 +29,7 @@ Run sandboxed, it reports `Status: invalid signature` (exit 1) for Homebrew's go
 ## 2026-11-06 Hiding `~/.gitconfig` from the sandbox commits under the wrong email
 
 Inside the sandbox, git can't read `~/.gitconfig` and stops with a fatal error. Setting `GIT_CONFIG_GLOBAL=/dev/null` gets past that, but git then guesses an identity from the hostname, and a commit made that way carries `ben@<host>` instead of Ben's GitHub noreply address (5c5b4ec, 2026-11-06). That override was once the handoffs' tip for running `agents` in the sandbox, and a commit made with it nearly reached a pushed release of `agents`. Run `git commit`, and any release script that commits, outside the sandbox with the real config, and check `git log -1 --format='%ae'` before pushing.
+
+## 2026-11-06 A subagent can't sync its worktree with main
+
+The briefing's sync step (`git merge --ff-only main`) fails inside the sandbox because git can't read `~/.gitconfig`, and the classifier refuses the agent's retry with the sandbox off. The agent then works on whatever base its worktree started from. Commit before dispatching so the harness's worktree starts at HEAD, tell the agent the sync will fail and to skip it, and merge with the squash at integration, which handles a stale base.
