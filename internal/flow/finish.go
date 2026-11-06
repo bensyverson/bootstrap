@@ -57,6 +57,16 @@ func checkPhone(r *run) (session.StepStatus, *session.Handoff, error) {
 }
 
 func actPhone(r *run) (outcome, error) {
+	if r.f.cfg.Person != nil {
+		state, err := r.state()
+		if err != nil {
+			return outcome{}, err
+		}
+		if err := r.note("%s", phoneHint(state.Agent)); err != nil {
+			return outcome{}, err
+		}
+		return done()
+	}
 	a, ask, err := r.asked(phone)
 	if err != nil || ask != nil {
 		return deref(ask, err)

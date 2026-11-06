@@ -46,13 +46,17 @@ type Env struct {
 	Environ func() []string
 	Cwd     func() (string, error)
 	Exe     func() (string, error)
-	Stdout  io.Writer
-	Stderr  io.Writer
+	Stdin   io.Reader
+	// Terminal reports whether a person is at a keyboard: stdin and stdout are both a terminal.
+	Terminal func() bool
+	Stdout   io.Writer
+	Stderr   io.Writer
 }
 
 // SystemEnv is the real environment.
 func SystemEnv() Env {
-	return Env{Getenv: os.Getenv, Environ: os.Environ, Cwd: os.Getwd, Exe: os.Executable, Stdout: os.Stdout, Stderr: os.Stderr}
+	return Env{Getenv: os.Getenv, Environ: os.Environ, Cwd: os.Getwd, Exe: os.Executable, Stdin: os.Stdin,
+		Terminal: func() bool { return isTerminal(os.Stdin) && isTerminal(os.Stdout) }, Stdout: os.Stdout, Stderr: os.Stderr}
 }
 
 // output is what a verb reports: rows for the default form, value for --json.
@@ -100,14 +104,18 @@ type command struct {
 	flags   []string
 	// switches are flags that take no value.
 	switches []string
-	run      func(c *call) (output, error)
+	// lists are flags that may be given more than once, or with commas between values.
+	lists []string
+	run   func(c *call) (output, error)
 }
 
 // call is one invocation of a verb.
 type call struct {
 	env     Env
+	verb    string
 	args    []string
 	options map[string]string
+	lists   map[string][]string
 }
 
 func (c *call) flag(name string) string { return c.options[name] }
@@ -120,7 +128,7 @@ func (c *call) switched(name string) bool {
 
 // verbs lists the commands in the order the primer gives them.
 func verbs() []command {
-	return []command{detectCommand, toolsCommand, screensCommand, statusCommand, runCommand, waitCommand, resumeCommand, serveCommand, showCommand, stopCommand}
+	return []command{detectCommand, toolsCommand, screensCommand, statusCommand, newCommand, runCommand, waitCommand, resumeCommand, serveCommand, showCommand, stopCommand}
 }
 
 func verbNames() []string {
@@ -177,9 +185,9 @@ func Run(args []string, env Env) int {
 
 func parse(verb command, args []string, env Env) (*call, error) {
 	help := "bootstrap " + verb.name + " --help"
-	c := &call{env: env, options: map[string]string{}}
+	c := &call{env: env, verb: verb.name, options: map[string]string{}, lists: map[string][]string{}}
 	valid := []string{}
-	for _, f := range append(slices.Concat(verb.flags, verb.switches), "json") {
+	for _, f := range append(slices.Concat(verb.flags, verb.lists, verb.switches), "json") {
 		valid = append(valid, "--"+f)
 	}
 	valid = append(valid, "--help")
@@ -200,7 +208,8 @@ func parse(verb command, args []string, env Env) (*call, error) {
 			c.options[name] = ""
 			continue
 		}
-		if !slices.Contains(verb.flags, name) {
+		listed := slices.Contains(verb.lists, name)
+		if !listed && !slices.Contains(verb.flags, name) {
 			return nil, &failure{code: exitUsage, message: "unknown flag --" + name, valid: valid, next: help}
 		}
 		if !hasValue {
@@ -209,6 +218,14 @@ func parse(verb command, args []string, env Env) (*call, error) {
 			}
 			i++
 			value = args[i]
+		}
+		if listed {
+			for v := range strings.SplitSeq(value, ",") {
+				if v = strings.TrimSpace(v); v != "" {
+					c.lists[name] = append(c.lists[name], v)
+				}
+			}
+			continue
 		}
 		c.options[name] = value
 	}
@@ -293,7 +310,7 @@ func (c *call) agent() (agent screen.Agent, known bool, err error) {
 		if err != nil {
 			var invalid *screen.InvalidError
 			errors.As(err, &invalid)
-			return screen.Agent{}, false, &failure{code: exitUsage, message: invalid.Message, valid: invalid.Valid, next: "bootstrap serve --help"}
+			return screen.Agent{}, false, &failure{code: exitUsage, message: invalid.Message, valid: invalid.Valid, next: "bootstrap " + c.verb + " --help"}
 		}
 		return found, true, nil
 	}

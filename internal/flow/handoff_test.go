@@ -120,8 +120,15 @@ func TestAHandoffShowsTheChatScreen(t *testing.T) {
 	w.mac.On("brew install bensyverson/tap/sleepy", flow.Result{Exit: 1}, 0)
 	var screenAtHandoff string
 	w.resume = func(h session.Handoff) session.Way {
-		state, _ := w.store.Load()
-		screenAtHandoff = string(state.Current.Request.Screen)
+		// The handoff is logged a moment before the chat screen goes up, so an
+		// agent that looks at once can land between the two under load.
+		for deadline := time.Now().Add(2 * time.Second); ; time.Sleep(time.Millisecond) {
+			state, _ := w.store.Load()
+			screenAtHandoff = string(state.Current.Request.Screen)
+			if screenAtHandoff == "chat" || time.Now().After(deadline) {
+				break
+			}
+		}
 		return session.WaySkip
 	}
 	if err := w.walk(); err != nil {

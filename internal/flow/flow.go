@@ -101,6 +101,10 @@ type Config struct {
 	// Poll is how often the flow reads the log while it waits on the page or the
 	// agent, for writes that don't ring Store.Bell.
 	Poll time.Duration
+	// Person, when set, asks the person with no page (bootstrap new; see person.go).
+	Person Person
+	// Given is what the person said up front, for a run with a Person.
+	Given Given
 }
 
 // Flow is one run of the setup.
@@ -139,20 +143,26 @@ func New(cfg Config) (*Flow, error) {
 	if cfg.Poll == 0 {
 		cfg.Poll = defaultPoll
 	}
+	if _, err := cfg.Given.answers(); err != nil {
+		return nil, err
+	}
 	return &Flow{cfg: cfg}, nil
 }
 
 // Run walks every step to the end. It returns early only when the log can't be
 // written, the session ends, or ctx is done: anything else is a handoff.
 func (f *Flow) Run(ctx context.Context) error {
-	start := detect.Run(f.cfg.Probe).Folder
-	// A home folder that's a Git repo (dotfiles) is still the home folder.
-	f.inPlace = start.Git == detect.Yes && start.Kind == detect.KindProject
+	f.inPlace = startsInPlace(f.cfg.Probe)
 	if err := os.MkdirAll(f.logs(), 0o700); err != nil {
 		return err
 	}
 	if _, err := f.cfg.Store.Drive(time.Now()); err != nil {
 		return err
+	}
+	if f.cfg.Person != nil {
+		if err := f.pickUp(); err != nil {
+			return err
+		}
 	}
 	for i, def := range steps {
 		r := &run{f: f, ctx: ctx, def: def, index: i + 1}
@@ -272,6 +282,9 @@ func (r *run) handOff(h session.Handoff) (finished bool, err error) {
 	if err := r.record(session.StepHandedOff); err != nil {
 		return false, err
 	}
+	if r.f.cfg.Person != nil {
+		return false, &HandedOff{Handoff: h}
+	}
 	if err := r.show(screen.Request{Screen: "chat"}); err != nil {
 		return false, err
 	}
@@ -340,8 +353,10 @@ func (r *run) show(req screen.Request) error {
 	if state.Current != nil && state.Current.Request == req {
 		return nil
 	}
-	_, err = r.f.cfg.Store.Show(req, 0, time.Now())
-	return err
+	if state, err = r.f.cfg.Store.Show(req, 0, time.Now()); err != nil || r.f.cfg.Person == nil {
+		return err
+	}
+	return r.see(state, req)
 }
 
 // answer is the person's latest answer to a question, from anywhere in this
@@ -362,6 +377,9 @@ func (r *run) answer(req screen.Request) (screen.Answer, bool, error) {
 // ask shows a question and waits for the person's answer. If another screen
 // replaces it, as an agent's stray show would, the question goes back up.
 func (r *run) ask(req screen.Request) error {
+	if r.f.cfg.Person != nil {
+		return r.askPerson(req)
+	}
 	for {
 		state, err := r.f.cfg.Store.Show(req, 0, time.Now())
 		if err != nil {

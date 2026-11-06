@@ -1,0 +1,65 @@
+$ bootstrap new
+
+What should we call this project?
+  We’ll make a folder with this name.
+Project name: project path=~/Projects/pine-bakery log=$DIR/new/pine-bakery-$HASH/session.jsonl
+note person named the project pine-bakery
+Got it. We’ll only stop if we need you.
+step plan done 1 of 13
+step apple done 2 of 13
+step homebrew done 3 of 13
+step tools done 4 of 13
+Making your folder
+note made ~/Projects/pine-bakery
+step folder done 5 of 13
+
+Should Git keep track of this project?
+  Git saves every version of your work, so you can always go back.
+  1. Yes, use Git (default)
+  2. Not now
+Choose 1-2, or press Enter for Yes, use Git: note person chose yes on git-ask
+Turning on Git
+note turned on Git in ~/Projects/pine-bakery
+step git done 6 of 13
+step github done 7 of 13
+
+Sign your work as Ada Lovelace?
+  Git puts a name and email on every version you save. We’ll use 1234+ada@users.noreply.github.com, a private address from GitHub, so your real email stays hidden.
+  1. Yes, use these (default)
+  2. Skip
+Choose 1-2, or press Enter for Yes, use these: note person chose use-these on identity
+note set Git's user.name to Ada Lovelace
+note set Git's user.email to 1234+ada@users.noreply.github.com
+step identity done 8 of 13
+
+What are you working on?
+  1. A website
+  2. A Mac or iPhone app
+  3. Some code
+  4. Something else (default)
+Choose 1-4, or press Enter for Something else: note person chose website on making
+
+Do people use it yet?
+  1. Not yet (default)
+  2. Yes
+Choose 1-2, or press Enter for Not yet: note person chose not-yet on live-yet
+step stage done 9 of 13
+Teaching Claude how you work
+note added the rules with agents init
+note added the rules for web, stage-build
+note started Jobs in ~/Projects/pine-bakery
+step rules done 10 of 13
+
+Turn on Claude’s helpers?
+  They warn Claude before a session runs too long, and keep its plans in Jobs.
+  1. Yes, turn them on (default)
+  2. Not now
+Choose 1-2, or press Enter for Yes, turn them on: note person chose yes on settings
+note installed contextfill's hook
+note installed jobs's hook
+step settings done 11 of 13
+note to use Claude from your phone, ask Claude how (in Claude Code, it's /remote-control)
+step phone done 12 of 13
+All set!
+step done done 13 of 13
+next: open a new Terminal window, cd ~/Projects/pine-bakery, and start Claude Code there

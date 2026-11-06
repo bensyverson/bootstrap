@@ -1,0 +1,37 @@
+$ bootstrap new pine-bakery --yes
+project path=~/Projects/pine-bakery log=$DIR/new/pine-bakery-$HASH/session.jsonl
+note person named the project pine-bakery
+Got it. We’ll only stop if we need you.
+step plan done 1 of 13
+step apple done 2 of 13
+step homebrew done 3 of 13
+step tools done 4 of 13
+Making your folder
+note made ~/Projects/pine-bakery
+step folder done 5 of 13
+note person chose yes on git-ask
+Turning on Git
+note turned on Git in ~/Projects/pine-bakery
+step git done 6 of 13
+step github done 7 of 13
+note person chose use-these on identity
+note set Git's user.name to Ada Lovelace
+note set Git's user.email to 1234+ada@users.noreply.github.com
+step identity done 8 of 13
+note person chose other on making
+note person chose not-yet on live-yet
+step stage done 9 of 13
+Teaching Claude how you work
+note added the rules with agents init
+note added the rules for stage-build
+note started Jobs in ~/Projects/pine-bakery
+step rules done 10 of 13
+note person chose yes on settings
+note installed contextfill's hook
+note installed jobs's hook
+step settings done 11 of 13
+note to use Claude from your phone, ask Claude how (in Claude Code, it's /remote-control)
+step phone done 12 of 13
+All set!
+step done done 13 of 13
+next: open a new Terminal window, cd ~/Projects/pine-bakery, and start Claude Code there

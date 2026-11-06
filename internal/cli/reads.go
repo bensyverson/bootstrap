@@ -24,6 +24,11 @@ Read (needs no session, except status)
   bootstrap screens                every screen, with its statuses and reasons
   bootstrap status                 the session: the current screen and every answer
 
+Act: the setup in the terminal, with no page
+  bootstrap new [<name>] [--yes]   set up this project, or ~/Projects/<name>; asks
+                                   at a terminal, else takes the defaults. Trouble
+                                   is exit 4, and running new again picks up
+
 Act: the setup runs itself, and you narrate
   bootstrap run [--agent <app>]    start the setup and its page in the background
   bootstrap wait [--timeout 90s]   block until the setup needs you; print what

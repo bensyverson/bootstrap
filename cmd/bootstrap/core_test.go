@@ -144,7 +144,7 @@ func TestPrimer(t *testing.T) {
 		t.Errorf("exit %d, stderr %q", r.code, r.stderr)
 	}
 	golden(t, "primer.txt", r.stdout)
-	for _, verb := range []string{"detect", "tools", "screens", "status", "run", "wait", "resume", "serve", "show", "stop"} {
+	for _, verb := range []string{"detect", "tools", "screens", "status", "new", "run", "wait", "resume", "serve", "show", "stop"} {
 		if !strings.Contains(r.stdout, "bootstrap "+verb) {
 			t.Errorf("primer lacks %s", verb)
 		}
@@ -183,7 +183,7 @@ func TestPrimerNeedsNoNetwork(t *testing.T) {
 
 func TestEveryVerbHasHelpWithAnExample(t *testing.T) {
 	w := newWorld(t)
-	for _, verb := range []string{"detect", "tools", "screens", "status", "run", "wait", "resume", "serve", "show", "stop"} {
+	for _, verb := range []string{"detect", "tools", "screens", "status", "new", "run", "wait", "resume", "serve", "show", "stop"} {
 		t.Run(verb, func(t *testing.T) {
 			r := w.run(t, verb, "--help")
 			if r.code != 0 || r.stderr != "" {
@@ -202,7 +202,7 @@ func TestEveryVerbHasHelpWithAnExample(t *testing.T) {
 }
 
 func TestUnknownVerb(t *testing.T) {
-	newWorld(t).run(t, "nope").wantErr(t, 2, `unknown command "nope"`, "valid: detect, tools, screens, status, run, wait, resume, serve, show, stop", "next: bootstrap")
+	newWorld(t).run(t, "nope").wantErr(t, 2, `unknown command "nope"`, "valid: detect, tools, screens, status, new, run, wait, resume, serve, show, stop", "next: bootstrap")
 }
 
 func TestUnknownFlag(t *testing.T) {

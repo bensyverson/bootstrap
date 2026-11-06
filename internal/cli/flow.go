@@ -29,18 +29,27 @@ const (
 // newFlow is the setup as the background server runs it, on this Mac. The
 // runner shares the detect seam's root, so a test's pretend Mac holds the programs too.
 func (c *call) newFlow(store session.Store) (*flow.Flow, error) {
-	cwd, err := c.env.Cwd()
+	cfg, err := c.flowConfig(store)
 	if err != nil {
 		return nil, err
 	}
+	return flow.New(cfg)
+}
+
+// flowConfig is the setup's config on this Mac, for the server's flow and for new's.
+func (c *call) flowConfig(store session.Store) (flow.Config, error) {
+	cwd, err := c.env.Cwd()
+	if err != nil {
+		return flow.Config{}, err
+	}
 	root := c.env.Getenv(envRoot)
-	return flow.New(flow.Config{
+	return flow.Config{
 		Store:       store,
 		Runner:      flow.ExecRunner{Root: root},
 		Probe:       detect.Probe{Root: root, Home: c.env.Getenv("HOME"), Cwd: cwd, Chip: detect.Chip, Free: detect.FreeBytes, Running: detect.Running},
 		HomebrewPkg: flow.DefaultHomebrewPkg,
 		Hooks:       flow.DefaultHooks(),
-	})
+	}, nil
 }
 
 // startOptions is how serve and run start the background server.
