@@ -26,7 +26,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - [`bootstrap upgrade`](project/2026-11-06-bootstrap-upgrade-plan.md) — updating the tools and rules later, and bootstrap moving into the tap (`wz9ORc`, `mEPQUI`)
 - [project/backlog.md](project/backlog.md) and [project/gotchas.md](project/gotchas.md) — work parked, and traps to know
 
-<!-- agents:begin core@cfc86c -->
+<!-- agents:begin core@ffe7d8 -->
 ## Working rules
 
 **Understand the why.** If the goal behind a request isn't clear, ask before solving — beware the XY problem.
@@ -65,7 +65,8 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - **On the main thread, read `project/agents/delegation.md` in full before you begin, so whether to delegate is a choice, not a default.** A subagent skips this: its brief is its scope, and it doesn’t delegate further.
 - **Unless the user says they're around, assume they aren't.** Make the call yourself when it's safe and a two-way door, queue the rest, and report every decision at the end. While they're around, bring questions as they come up, including ones an agent raises mid-flight.
 - **Before starting, say what needs the user's eyes.**
-- **Keep working while there's work; once past your context line, start nothing new.** The main thread's line is 33%, a subagent's 40% (read with contextfill; never estimate). The line is where wrapping up begins: finishing what's in flight and handing off happen after it, however far past it that takes. A delegating main thread: delegation.md ▸ Carving the work.
+- **Get independent review of the code you land**, at the triggers in `project/agents/review.md`, and before handoff.
+- **Keep working while there's work; once past your context line, start nothing new.** The main thread's line is 33%, a subagent's 40% (read with contextfill; never estimate). Those are defaults: when the contextfill hook names a line, its line wins. The line is where wrapping up begins: finishing what's in flight and handing off happen after it, however far past it that takes. It is not a cutoff, so until you reach it, keep taking on work; don't start wrapping up early. A delegating main thread: delegation.md ▸ Carving the work.
 
 ## Git
 
@@ -97,7 +98,7 @@ Defaults, not laws. When we break one, we do it consciously and say so in the re
 - **Event streams where they fit.** Append-only logs are auditable, undoable, and time-travelable.
 <!-- agents:end principles -->
 
-<!-- agents:begin docs@7ba2fd -->
+<!-- agents:begin docs@426033 -->
 ## Documentation practice
 
 - **Plans, findings, designs and decisions go in `project/` as dated documents** (`YYYY-MM-DD-title.md`) — the written history of the project. They are point-in-time records: correct an earlier one *in place*, as a marked block quote, rather than silently editing a number or leaving a stale claim standing.
@@ -107,13 +108,13 @@ Defaults, not laws. When we break one, we do it consciously and say so in the re
 - **A wrong documented cause is worse than none** — it stops the next reader looking. Correcting one means saying it was wrong, not quietly rewording.
 - **Open the note before you cite it**, and check whether a recorded ruling has been superseded before passing it on.
 - **Every repo has a README; if none exists, write one (delegate it if you can).** It is tight: the project's name and a one-line description a non-technical reader understands (6th-grade reading level); one short paragraph of what it is; how to install or consume it; a crisp Quick Start with an example or two; links out to the specific docs for anything more; authorship and license at the end.
-- **The head of `AGENTS.md` lists where the docs live; keep that list current.**
+- **The head of `AGENTS.md` lists where the docs live; keep that list current with documentation, but exclude project/ docs such as plans and research.**
 <!-- agents:end docs -->
 
-<!-- agents:begin go@91ab6a -->
+<!-- agents:begin go@4864fc -->
 ## Go
 
-- Before committing: `go fix ./...`, `gofmt -w .`, `go vet ./...` and `go mod tidy`, then the tests you touched. `go fix` converges over several passes — "re-run to apply more" is progress, not failure; re-run until clean before editing code.
+- Before committing: `go fix ./...`, `gofmt -w .`, `go vet ./...` and `go mod tidy`, then the tests you touched. `go fix` converges over several passes — "re-run to apply more" is progress, not failure; re-run until clean before editing code. The pre-commit hook `agents hooks install` writes checks all four without rewriting anything, then runs the tests.
 - **Run `go fix ./...` before staging, not just before committing.** A pre-commit hook that re-stages `gofmt` rewrites will not re-stage `go fix` rewrites: a file `go fix` changed that is already gofmt-clean commits unfixed, and your working tree quietly diverges from what you committed.
 - **Tests that share a database need `-p 1` and a database per agent.** `go test ./...` runs packages in parallel, so packages that seed the same fixtures and truncate the same tables produce a wall of unrelated-looking failures that survives a re-run and reads as a real regression.
 - **Schema changes are numbered migrations** in the project's migrations directory (the head names it). Never run one by hand — the binary migrates when it starts or opens the database and records the version; the next run applies it. Read the full note history on the task (`job show <id>`) before writing schema; it is the most expensive thing to change.
@@ -124,7 +125,7 @@ Defaults, not laws. When we break one, we do it consciously and say so in the re
 - **`r.ParseForm()` reads a body only when it is urlencoded**; for multipart it leaves it empty without erroring. Keep one wire format per route — a handler that accepts two body shapes needs two sets of checks where the design wanted one.
 <!-- agents:end go -->
 
-<!-- agents:begin index@f4b312 -->
+<!-- agents:begin index@114667 -->
 ## Situational instructions
 
 These files carry instructions for specific situations. When one applies, read the file before acting and follow it.
@@ -137,4 +138,5 @@ These files carry instructions for specific situations. When one applies, read t
 | Before dispatching any subagent | `project/agents/delegation.md` |
 | The first time a tool call is refused or denied, and before briefing a subagent | `project/agents/harness.md` |
 | Before building or extending a command-line tool | `project/agents/cli-design.md` |
+| Before handoff, when a job container closes, and before building on unreviewed code | `project/agents/review.md` |
 <!-- agents:end index -->
