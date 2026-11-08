@@ -22,6 +22,10 @@ const (
 	// xcodeInAppStore opens Xcode's page in the App Store.
 	xcodeInAppStore = "macappstore://apps.apple.com/app/xcode/id497799835"
 	localDir        = "local"
+	// claudeLocalSettings is Claude Code's per-person settings file; its shared settings.json stays checkable.
+	claudeLocalSettings = ".claude/settings.local.json"
+	// claudeWorktrees is where Claude Code puts the agent worktrees it makes.
+	claudeWorktrees = ".claude/worktrees/"
 	// defaultBranch is the first branch of every repo Git makes, unless the person chose one.
 	defaultBranch = "main"
 )
@@ -31,15 +35,18 @@ const (
 // answer adds what a website's or an app's tools leave behind. local/ and job's
 // lines join them from their own steps.
 var (
-	alwaysIgnore = []string{".DS_Store"}
+	// alwaysIgnore keeps secrets out of every project: an agent can write a .env anywhere,
+	// and the negation, which must follow the pattern it undoes, keeps a template committable.
+	alwaysIgnore = []string{".DS_Store", claudeLocalSettings, claudeWorktrees, ".env", ".env.*", "!.env.example"}
 	swiftIgnore  = []string{".build/", ".swiftpm/", "DerivedData/", "xcuserdata/"}
 	ignoreFor    = map[string][]string{
-		website: {"node_modules/", ".env", "dist/"},
+		website: {"node_modules/", "dist/"},
 		anApp:   swiftIgnore,
 	}
 	// ignoreForStack is what each stack leaves behind. Go has no standard output
 	// folder, and guessing its binary's name could hide a real file.
 	ignoreForStack = map[detect.Stack][]string{
+		detect.StackNode:   {"node_modules/"},
 		detect.StackPython: {"__pycache__/", ".venv/", ".pytest_cache/", ".mypy_cache/", ".ruff_cache/"},
 		detect.StackSwift:  swiftIgnore,
 	}
@@ -402,7 +409,7 @@ func (r *run) modules() ([]string, error) {
 	}
 	out := slices.Clone(modulesFor[what.Choice])
 	for _, s := range detect.ProjectStacks(dir) {
-		if m := stackModules[s]; !slices.Contains(out, m) {
+		if m := stackModules[s]; m != "" && !slices.Contains(out, m) {
 			out = append(out, m)
 		}
 	}

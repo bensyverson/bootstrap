@@ -9,6 +9,12 @@ local/
 
 # Agent worktrees
 .claude/worktrees/
+.claude/settings.local.json
+
+# Secrets; a committed template stays
+.env
+.env.*
+!.env.example
 
 .DS_Store
 

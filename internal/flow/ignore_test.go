@@ -18,10 +18,11 @@ func TestTheGitignoreFitsTheStacksAProjectShows(t *testing.T) {
 		files        []string
 		want         string
 	}{
-		{"a Python project", "other", []string{"pyproject.toml"}, ".DS_Store\n" + python + "local/\n.jobs.db\n"},
-		{"a Swift package called something else", "other", []string{"Package.swift"}, ".DS_Store\n" + swift + "local/\n.jobs.db\n"},
-		{"a Swift app with Python keeps Swift's lines once", "app", []string{"Package.swift", "requirements.txt"}, ".DS_Store\n" + swift + python + "local/\n.jobs.db\n"},
-		{"a Python website", "website", []string{"setup.py"}, ".DS_Store\nnode_modules/\n.env\ndist/\n" + python + "local/\n.jobs.db\n"},
+		{"a Python project", "other", []string{"pyproject.toml"}, ".DS_Store\n.claude/settings.local.json\n.claude/worktrees/\n.env\n.env.*\n!.env.example\n" + python + "local/\n.jobs.db\n"},
+		{"a Swift package called something else", "other", []string{"Package.swift"}, ".DS_Store\n.claude/settings.local.json\n.claude/worktrees/\n.env\n.env.*\n!.env.example\n" + swift + "local/\n.jobs.db\n"},
+		{"a Swift app with Python keeps Swift's lines once", "app", []string{"Package.swift", "requirements.txt"}, ".DS_Store\n.claude/settings.local.json\n.claude/worktrees/\n.env\n.env.*\n!.env.example\n" + swift + python + "local/\n.jobs.db\n"},
+		{"a Node project made as something else", "other", []string{"package.json"}, ".DS_Store\n.claude/settings.local.json\n.claude/worktrees/\n.env\n.env.*\n!.env.example\nnode_modules/\nlocal/\n.jobs.db\n"},
+		{"a Python website", "website", []string{"setup.py"}, ".DS_Store\n.claude/settings.local.json\n.claude/worktrees/\n.env\n.env.*\n!.env.example\nnode_modules/\ndist/\n" + python + "local/\n.jobs.db\n"},
 	} {
 		w := newWorld(t)
 		w.answers[asked{"making", ""}] = screen.Answer{Choice: tc.making}

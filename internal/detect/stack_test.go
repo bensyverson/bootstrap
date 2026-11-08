@@ -19,12 +19,13 @@ func TestProjectStacks(t *testing.T) {
 		{"a pyproject.toml", []string{"pyproject.toml"}, nil, []Stack{StackPython}},
 		{"a requirements.txt", []string{"requirements.txt"}, nil, []Stack{StackPython}},
 		{"a setup.py", []string{"setup.py"}, nil, []Stack{StackPython}},
+		{"a package.json", []string{"package.json"}, nil, []Stack{StackNode}},
 		{"a Package.swift", []string{"Package.swift"}, nil, []Stack{StackSwift}},
 		{"an Xcode project", nil, []string{"Bakery.xcodeproj"}, []Stack{StackSwift}},
-		{"several, in a fixed order", []string{"Package.swift", "requirements.txt", "go.mod"}, nil, []Stack{StackGo, StackPython, StackSwift}},
+		{"several, in a fixed order", []string{"Package.swift", "package.json", "requirements.txt", "go.mod"}, nil, []Stack{StackGo, StackPython, StackNode, StackSwift}},
 		{"two Python markers count once", []string{"pyproject.toml", "requirements.txt"}, nil, []Stack{StackPython}},
 		{"a go.mod that's a folder says nothing", nil, []string{"go.mod"}, nil},
-		{"other files say nothing", []string{"README.md", "package.json", "main.go"}, nil, nil},
+		{"other files say nothing", []string{"README.md", "main.go"}, nil, nil},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

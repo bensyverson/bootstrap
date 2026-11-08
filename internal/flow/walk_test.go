@@ -63,7 +63,7 @@ func TestWalkFromNothingToDone(t *testing.T) {
 		}
 	}
 	ignore, _ := os.ReadFile(filepath.Join(project, ".gitignore"))
-	if got, want := string(ignore), ".DS_Store\nnode_modules/\n.env\ndist/\nlocal/\n.jobs.db\n"; got != want {
+	if got, want := string(ignore), ".DS_Store\n.claude/settings.local.json\n.claude/worktrees/\n.env\n.env.*\n!.env.example\nnode_modules/\ndist/\nlocal/\n.jobs.db\n"; got != want {
 		t.Errorf(".gitignore = %q, want %q", got, want)
 	}
 	if hooks := w.mac.Hooks(); !slices.Equal(hooks, []string{"contextfill", "job"}) {
@@ -267,7 +267,7 @@ func TestAnAppAsksAboutXcode(t *testing.T) {
 		t.Errorf("didn't open the App Store: %v", w.mac.Changes())
 	}
 	ignore, _ := os.ReadFile(filepath.Join(w.home, "Projects", "pine-bakery", ".gitignore"))
-	if got, want := string(ignore), ".DS_Store\n.build/\n.swiftpm/\nDerivedData/\nxcuserdata/\nlocal/\n.jobs.db\n"; got != want {
+	if got, want := string(ignore), ".DS_Store\n.claude/settings.local.json\n.claude/worktrees/\n.env\n.env.*\n!.env.example\n.build/\n.swiftpm/\nDerivedData/\nxcuserdata/\nlocal/\n.jobs.db\n"; got != want {
 		t.Errorf(".gitignore = %q, want %q", got, want)
 	}
 }
@@ -279,7 +279,7 @@ func TestOtherWorkIgnoresOnlyWhatsKnown(t *testing.T) {
 		t.Fatal(err)
 	}
 	ignore, _ := os.ReadFile(filepath.Join(w.home, "Projects", "pine-bakery", ".gitignore"))
-	if got, want := string(ignore), ".DS_Store\nlocal/\n.jobs.db\n"; got != want {
+	if got, want := string(ignore), ".DS_Store\n.claude/settings.local.json\n.claude/worktrees/\n.env\n.env.*\n!.env.example\nlocal/\n.jobs.db\n"; got != want {
 		t.Errorf(".gitignore = %q, want %q", got, want)
 	}
 }
@@ -294,7 +294,7 @@ func TestAnExistingGitignoreKeepsItsLines(t *testing.T) {
 		t.Fatal(err)
 	}
 	ignore, _ := os.ReadFile(filepath.Join(start, ".gitignore"))
-	if got, want := string(ignore), "secrets.txt\nnode_modules/\n.DS_Store\n.env\ndist/\nlocal/\n.jobs.db\n"; got != want {
+	if got, want := string(ignore), "secrets.txt\nnode_modules/\n.DS_Store\n.claude/settings.local.json\n.claude/worktrees/\n.env\n.env.*\n!.env.example\ndist/\nlocal/\n.jobs.db\n"; got != want {
 		t.Errorf(".gitignore = %q, want %q", got, want)
 	}
 }

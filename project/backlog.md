@@ -10,6 +10,12 @@ Format: one dated H2 per entry, a headline, then what it is, why it's parked, an
 
 ---
 
+## 2026-11-06: A clean-account check of the bootstrap note
+
+v0.3.1 writes a short note to `~/.claude/CLAUDE.md` (or OpenCode's `~/.config/opencode/AGENTS.md`) when the person accepts the helpers, so a later session in a folder with no project knows to run `bootstrap new` (`S2lZZq`). The flow tests cover the writing, the merging and done's wording, but no one has yet seen a real new session on a clean Mac act on the note. Ben parked that run on 2026-11-06, after the release.
+
+**Would un-park it:** the next clean-Mac trial for any other reason (add it as a last step: take just the tools with the helpers on, then start a new session in an empty folder and ask it to "bootstrap a project"), or a report of a session that didn't know about bootstrap. Run it on a `tart clone` of `trial-base`, never `trial-base` itself.
+
 ## 2026-11-06: A chat-only setup
 
 SETUP.md used to carry the whole setup a second time, in prose (13 steps, ~95 lines), for when the `bootstrap` program couldn't run, with `TestTheChatOnlySetupFollowsTheFlowsSteps` keeping its step order in line with `internal/flow`. Ben removed it (2026-11-06) before its first real run (`W2yASt`'s `gjk`): on a clean Mac, nearly every reason the program can't run also stops the prose copy. A blocked download blocks Homebrew's `.pkg` too, since both come from GitHub's release-assets host; an older macOS ends the setup either way; the sandbox and a model that won't loop break both. The program's own `resume --retry`/`--skip` gets past a broken step. SETUP.md now tells the person what stays, how to pick up later, and where to report it. The last version is `git show ab39cfe:SETUP.md`, section "The chat-only setup".

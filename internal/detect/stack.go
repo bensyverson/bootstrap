@@ -12,6 +12,7 @@ type Stack string
 const (
 	StackGo     Stack = "go"
 	StackPython Stack = "python"
+	StackNode   Stack = "node"
 	StackSwift  Stack = "swift"
 )
 
@@ -23,6 +24,7 @@ var stackMarkers = []struct {
 }{
 	{StackGo, []string{"go.mod"}},
 	{StackPython, []string{"pyproject.toml", "requirements.txt", "setup.py"}},
+	{StackNode, []string{"package.json"}},
 	{StackSwift, []string{"Package.swift"}},
 }
 

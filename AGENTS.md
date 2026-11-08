@@ -26,7 +26,7 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 - [`bootstrap upgrade`](project/2026-11-06-bootstrap-upgrade-plan.md) — updating the tools and rules later, and bootstrap moving into the tap (`wz9ORc`, `mEPQUI`)
 - [project/backlog.md](project/backlog.md) and [project/gotchas.md](project/gotchas.md) — work parked, and traps to know
 
-<!-- agents:begin core@ffe7d8 -->
+<!-- agents:begin core@c84939 -->
 ## Working rules
 
 **Understand the why.** If the goal behind a request isn't clear, ask before solving — beware the XY problem.
@@ -58,6 +58,8 @@ Bootstrap lets someone paste one link into Claude Code or OpenCode and get Ben S
 **Where these rules come from.** The marked regions are generated and shared across repos via a CLI tool named `agents`; don't edit inside them. If a rule here is wrong or cost you time, say so in `project/gotchas.md` prefixed `rule:`; that is how shared rules get reviewed.
 
 **Local rulings.** A repo-local ruling, or an override of a shared rule, lives in the project-owned head of `AGENTS.md`, above the generated regions — say plainly that it overrides, and link a dated project doc for the why.
+
+**American English.** Write American English everywhere; code, comments, docs, commit messages, memories: color, behavior, center, -ize, labeled, gray, catalog. Keep an external API's own spelling as-is (e.g. Apple's `isCancelled`).
 
 ## A session
 
