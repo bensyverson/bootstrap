@@ -55,7 +55,7 @@ This version and its checksum are pinned here on purpose. Don't swap in a newer 
 
 ```sh
 mkdir -p ~/.bootstrap/bin
-curl -fsSL -o ~/.bootstrap/bin/bootstrap.download https://github.com/bensyverson/bootstrap/releases/download/v0.3.1/bootstrap
+curl -fsSL -o ~/.bootstrap/bin/bootstrap.download https://github.com/bensyverson/bootstrap/releases/download/v0.3.2/bootstrap
 ```
 
 If the download fails, try once more. If it fails again, see [When the program can't go on](#when-the-program-cant-go-on). In Claude Code, `Operation not permitted` here means its sandbox is on; see [Notes for each app](#notes-for-each-app).
@@ -65,7 +65,7 @@ If the download fails, try once more. If it fails again, see [When the program c
 You can't read a binary, so these checks are how you know it's the file Ben released.
 
 ```sh
-echo "932b311c1617a7eb632794625da3d4771fd6205b3ac3bf9a307e7c0870f99356  $HOME/.bootstrap/bin/bootstrap.download" | shasum -a 256 -c
+echo "e8ab1259891dbec85253950daf7ec304d9e0b6584f6d71c0bc005798a019dd7c  $HOME/.bootstrap/bin/bootstrap.download" | shasum -a 256 -c
 codesign --verify --strict ~/.bootstrap/bin/bootstrap.download
 codesign -dv ~/.bootstrap/bin/bootstrap.download 2>&1 | grep TeamIdentifier
 spctl -a -vvv -t open --context context:primary-signature ~/.bootstrap/bin/bootstrap.download
